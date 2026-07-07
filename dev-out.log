@@ -5,3 +5,10 @@
 ✓ Ready in 1126ms
 [instrumentation] Admin user ensured.
 
+[v1/chat] request received
+[v1/chat] auth ok, keyId: cmragmjyn0001kz04nhx90vb3 masterApiKey set: true
+[v1/chat] model: glm-5.2
+[v1/chat] resolved master model: prokuy/glm-5.2
+[v1/chat] forwarding to: https://ai.prokuy.com/v1/chat/completions stream: false
+[v1/chat] upstream status: 200
+ POST /v1/chat/completions 200 in 4.2s (next.js: 108ms, application-code: 4.1s)
