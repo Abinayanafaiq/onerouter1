@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
+
 const BTCPAY_URL = (process.env.BTCPAY_URL || "").replace(/\/+$/, "");
 const BTCPAY_STORE_ID = process.env.BTCPAY_STORE_ID || "";
 const BTCPAY_API_KEY = process.env.BTCPAY_API_KEY || "";
@@ -92,22 +94,11 @@ export function verifyWebhookSignature(
   const secret = process.env.BTCPAY_WEBHOOK_SECRET || "";
   if (!secret) return false;
 
-  const expected = `sha256=${computeHmacSha256(secret, body)}`;
-  return timingSafeEqual(expected, sigHeader);
-}
-
-function computeHmacSha256(secret: string, body: string): string {
-  // Node.js crypto based HMAC
-  const crypto = require("crypto");
-  return crypto.createHmac("sha256", secret).update(body, "utf8").digest("hex");
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  const crypto = require("crypto");
+  const expected = `sha256=${createHmac("sha256", secret).update(body, "utf8").digest("hex")}`;
   try {
-    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    return cryptoTimingSafeEqual(Buffer.from(expected), Buffer.from(sigHeader));
   } catch {
-    return a === b;
+    return expected === sigHeader;
   }
 }
 

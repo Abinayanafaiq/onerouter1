@@ -5,6 +5,18 @@ import { MASTER_API_URL } from "@/app/lib/constants";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders() });
+}
+
 export async function POST(request: Request) {
   const apiKey = await authenticateRequest(request.headers.get("authorization"));
   if (!apiKey) {
@@ -20,6 +32,7 @@ export async function POST(request: Request) {
         headers: {
           "Retry-After": String(rateLimit.retryAfter),
           "X-RateLimit-Remaining": "0",
+          ...corsHeaders(),
         },
       },
     );
@@ -125,6 +138,7 @@ export async function POST(request: Request) {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          ...corsHeaders(),
         },
       });
     }
@@ -136,7 +150,7 @@ export async function POST(request: Request) {
     const completionTokens = data.usage?.completion_tokens || 0;
     await recordUsage(apiKey.id, model, promptTokens, completionTokens);
 
-    return Response.json(data);
+    return Response.json(data, { headers: corsHeaders() });
   } catch (e) {
     console.error("[v1/chat/completions] proxy error:", e);
     return errorResponse("Failed to reach upstream API", 502, "api_error");

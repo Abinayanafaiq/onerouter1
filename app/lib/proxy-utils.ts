@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { hashKey } from "./apikey";
-import { mapModelToMaster } from "./constants";
+import { mapModelToMaster, MASTER_API_KEY } from "./constants";
 
 export async function authenticateRequest(authHeader: string | null) {
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
@@ -18,7 +18,10 @@ export async function authenticateRequest(authHeader: string | null) {
   if (new Date(apiKey.expiresAt) <= new Date()) return null;
   if (Number(apiKey.tokenUsed) >= Number(apiKey.tokenQuota)) return null;
 
-  return apiKey;
+  return {
+    ...apiKey,
+    masterApiKey: apiKey.masterApiKey || MASTER_API_KEY || null,
+  };
 }
 
 export function resolveMasterModel(model: string): string | null {
