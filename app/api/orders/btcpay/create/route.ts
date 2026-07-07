@@ -1,0 +1,80 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/app/lib/auth";
+import { prisma } from "@/app/lib/prisma";
+import { findPackage } from "@/app/lib/packages";
+import { createInvoice, CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
+
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Harap login" }, { status: 401 });
+    }
+
+    const userId = (session.user as { id: string }).id;
+    const body = (await request.json()) as { packageId: string; chain: string };
+    const { packageId, chain } = body;
+
+    const pkg = await findPackage(packageId);
+    if (!pkg) {
+      return NextResponse.json({ success: false, error: "Paket tidak ditemukan" }, { status: 400 });
+    }
+
+    if (pkg.stock <= 0) {
+      return NextResponse.json({ success: false, error: "Paket habis terjual" }, { status: 400 });
+    }
+
+    const chainDef = CRYPTO_CHAINS.find((c) => c.id === chain);
+    if (!chainDef) {
+      return NextResponse.json({ success: false, error: "Chain tidak valid" }, { status: 400 });
+    }
+
+    if (!isBtcpayConfigured()) {
+      return NextResponse.json(
+        { success: false, error: "BTCPay belum dikonfigurasi. Gunakan Transfer Bank." },
+        { status: 503 },
+      );
+    }
+
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        packageId,
+        amount: pkg.price,
+        paymentMethod: "CRYPTO",
+        cryptoChain: chainDef.chain,
+        status: "PENDING",
+      },
+    });
+
+    await prisma.package.update({
+      where: { id: packageId },
+      data: { stock: { decrement: 1 } },
+    });
+
+    const invoice = await createInvoice({
+      orderId: order.id,
+      amount: pkg.price,
+      currency: "IDR",
+      chain: chainDef.chain,
+    });
+
+    if ("error" in invoice) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { status: "CANCELLED", adminNote: invoice.error },
+      });
+      return NextResponse.json({ success: false, error: invoice.error }, { status: 502 });
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { btcpayInvoiceId: invoice.invoiceId },
+    });
+
+    return NextResponse.json({ success: true, checkoutLink: invoice.checkoutLink });
+  } catch (e) {
+    console.error("[btcpay/create] exception:", e);
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
+}

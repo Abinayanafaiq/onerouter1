@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "app/v1/chat/completions/route.ts": { "maxDuration": 60 }
+  }
+}

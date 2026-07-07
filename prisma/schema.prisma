@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  apiKeys   ApiKey[]
+  orders    Order[]
+}
+
+model Package {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  tokenQuota   BigInt
+  price        Int
+  durationDays Int      @default(7)
+  isActive     Boolean  @default(true)
+  sort         Int      @default(0)
+  stock        Int      @default(0)
+  orders       Order[]
+  createdAt    DateTime @default(now())
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId       String
+  package         Package  @relation(fields: [packageId], references: [id])
+  amount          Int
+  paymentMethod   String   @default("MANUAL")
+  cryptoChain     String?
+  cryptoAmount    String?
+  btcpayInvoiceId String?
+  status          String   @default("PENDING")
+  paymentProof    String?
+  adminNote       String?
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  apiKeyId        String?
+  apiKey          ApiKey?   @relation(fields: [apiKeyId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ApiKey {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key            String     @unique
+  keyHash        String     @unique
+  masterApiKey   String?
+  label          String?
+  tokenQuota     BigInt
+  tokenUsed      BigInt     @default(0)
+  requestCount   Int        @default(0)
+  requestToday   Int        @default(0)
+  lastRequestAt  DateTime?
+  lastResetDay   DateTime   @default(now())
+  expiresAt      DateTime
+  isActive       Boolean    @default(true)
+  usageLogs      UsageLog[]
+  orders         Order[]
+  createdAt      DateTime   @default(now())
+}
+
+model UsageLog {
+  id                String   @id @default(cuid())
+  apiKeyId          String
+  apiKey            ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  model             String
+  promptTokens      Int
+  completionTokens  Int
+  totalTokens       Int
+  createdAt         DateTime @default(now())
+
+  @@index([apiKeyId, createdAt])
+}
