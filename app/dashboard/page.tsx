@@ -1,6 +1,5 @@
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
-import { maskKey } from "@/app/lib/apikey";
 import Link from "next/link";
 import { UploadProof } from "./upload-proof";
 import { RevealKey } from "./reveal-key";
@@ -10,7 +9,7 @@ export default async function DashboardPage() {
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
-  const [orders, apiKeys, aggReq, aggToken] = await Promise.all([
+  const [orders, apiKeys, aggReq, aggToken, aggQuota] = await Promise.all([
     prisma.order.findMany({
       where: { userId },
       include: { package: true },
@@ -28,11 +27,17 @@ export default async function DashboardPage() {
       where: { userId },
       _sum: { tokenUsed: true },
     }),
+    prisma.apiKey.aggregate({
+      where: { userId },
+      _sum: { tokenQuota: true },
+    }),
   ]);
 
   const hasActiveKey = apiKeys.some((k) => k.isActive && new Date(k.expiresAt) > new Date());
   const totalReq = aggReq._sum.requestCount || 0;
-  const totalTokens = Number(aggToken._sum.tokenUsed || 0);
+  const totalUsed = Number(aggToken._sum.tokenUsed || 0);
+  const totalQuota = Number(aggQuota._sum.tokenQuota || 0);
+  const totalRemaining = Math.max(0, totalQuota - totalUsed);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -52,12 +57,49 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats row - minimal */}
-      <div className="grid grid-cols-4 gap-2">
-        <Stat label="Status" value={hasActiveKey ? "Aktif" : "—"} accent={hasActiveKey ? "text-green-500" : ""} />
-        <Stat label="Request" value={totalReq.toLocaleString("id-ID")} />
-        <Stat label="Token" value={`${(totalTokens / 1_000_000).toFixed(1)}J`} />
-        <Stat label="Order" value={String(orders.filter((o) => o.status === "APPROVED").length)} />
+      {/* Token Usage - prominent */}
+      <div className="border rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Token Usage</h2>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+            hasActiveKey ? "bg-green-500/15 text-green-500" : "bg-gray-500/15 text-gray-500"
+          }`}>
+            {hasActiveKey ? "● Active" : "● No Active Key"}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <div className="text-xs text-muted-foreground">Terpakai</div>
+            <div className="text-2xl font-bold mt-0.5">{(totalUsed / 1_000_000).toFixed(2)}</div>
+            <div className="text-[10px] text-muted-foreground">Juta token</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Sisa</div>
+            <div className="text-2xl font-bold mt-0.5 text-green-500">{(totalRemaining / 1_000_000).toFixed(2)}</div>
+            <div className="text-[10px] text-muted-foreground">Juta token</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Total Request</div>
+            <div className="text-2xl font-bold mt-0.5">{totalReq.toLocaleString("id-ID")}</div>
+            <div className="text-[10px] text-muted-foreground">API calls</div>
+          </div>
+        </div>
+        {totalQuota > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{((totalUsed / totalQuota) * 100).toFixed(1)}% terpakai</span>
+              <span>{((totalRemaining / totalQuota) * 100).toFixed(1)}% sisa</span>
+            </div>
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  (totalUsed / totalQuota) * 100 > 80 ? "bg-red-500" : "bg-foreground"
+                }`}
+                style={{ width: `${Math.min(100, (totalUsed / totalQuota) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* API Keys */}
@@ -74,9 +116,10 @@ export default async function DashboardPage() {
           <div className="space-y-2">
             {apiKeys.map((key) => {
               const isExpired = new Date(key.expiresAt) <= new Date();
-              const pct = Number(key.tokenQuota) > 0
-                ? Math.min(100, Math.round((Number(key.tokenUsed) / Number(key.tokenQuota)) * 100))
-                : 0;
+              const used = Number(key.tokenUsed);
+              const quota = Number(key.tokenQuota);
+              const remaining = Math.max(0, quota - used);
+              const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
               return (
                 <div key={key.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
@@ -87,28 +130,97 @@ export default async function DashboardPage() {
                       {isExpired ? "Expired" : "Active"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>
-                      {(Number(key.tokenUsed) / 1_000_000).toFixed(1)}/{(Number(key.tokenQuota) / 1_000_000).toFixed(0)}Jt
-                    </span>
-                    <span>{key.requestCount.toLocaleString("id-ID")} req</span>
-                    <span>s/d {key.expiresAt.toLocaleDateString("id-ID")}</span>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block">Terpakai</span>
+                      <span className="font-bold">{(used / 1_000_000).toFixed(2)}Jt</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Sisa</span>
+                      <span className="font-bold text-green-500">{(remaining / 1_000_000).toFixed(2)}Jt</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Request</span>
+                      <span className="font-bold">{key.requestCount.toLocaleString("id-ID")}</span>
+                    </div>
                   </div>
-                  <div className="w-full h-1 bg-muted rounded-full mt-1.5 overflow-hidden">
+                  <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${pct > 80 ? "bg-red-500" : "bg-foreground"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
+                  <div className="text-[10px] text-muted-foreground mt-1.5">
+                    Berlaku s/d {key.expiresAt.toLocaleDateString("id-ID")}
+                  </div>
                 </div>
               );
             })}
-            {/* Endpoint info - collapsible feel */}
-            <div className="border rounded-lg p-3 bg-muted/20">
-              <p className="text-xs text-muted-foreground mb-1">Endpoint:</p>
-              <code className="text-xs font-mono block break-all">
-                {process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.com"}/v1/chat/completions
-              </code>
+
+            {/* Usage Instructions */}
+            <div className="border rounded-lg p-4 bg-muted/20 mt-3">
+              <h3 className="text-sm font-medium mb-3">📖 Cara Pakai API</h3>
+              <ol className="space-y-2 text-xs text-muted-foreground list-decimal list-inside">
+                <li>Dapatkan API key di atas (klik <span className="font-medium text-foreground">Show</span> lalu <span className="font-medium text-foreground">Copy</span>)</li>
+                <li>Set base URL ke <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">https://onerouter.my.id/v1</code></li>
+                <li>Set Authorization header: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">Bearer sk_live_xxx</code></li>
+                <li>Pilih model: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">glm-5.2</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">qwen-3.7-plus</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">qwen-3.7-max</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">deepseek-v4-pro</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">kimi-2.7-coding</code></li>
+              </ol>
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground mb-1">Contoh cURL:</p>
+                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
+{`curl https://onerouter.my.id/v1/chat/completions \\
+  -H "Authorization: Bearer sk_live_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "glm-5.2",
+    "messages": [
+      {"role": "user", "content": "Halo!"}
+    ]
+  }'`}
+                </pre>
+              </div>
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground mb-1">Python (OpenAI SDK):</p>
+                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
+{`from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://onerouter.my.id/v1",
+    api_key="sk_live_xxx"
+)
+
+resp = client.chat.completions.create(
+    model="glm-5.2",
+    messages=[{"role": "user", "content": "Halo!"}]
+)
+print(resp.choices[0].message.content)`}
+                </pre>
+              </div>
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground mb-1">JavaScript (OpenAI SDK):</p>
+                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
+{`import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://onerouter.my.id/v1",
+  apiKey: "sk_live_xxx"
+});
+
+const resp = await client.chat.completions.create({
+  model: "glm-5.2",
+  messages: [{ role: "user", content: "Halo!" }]
+});
+console.log(resp.choices[0].message.content);`}
+                </pre>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground mb-1">Cek sisa token via API:</p>
+                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto">
+{`GET https://onerouter.my.id/v1/models
+Authorization: Bearer sk_live_xxx`}
+                </pre>
+              </div>
             </div>
           </div>
         )}
@@ -155,15 +267,6 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
-    </div>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <div className="border rounded-lg p-2.5 text-center">
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-lg font-bold mt-0.5 ${accent || ""}`}>{value}</div>
     </div>
   );
 }
