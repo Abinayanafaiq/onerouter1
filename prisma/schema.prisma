@@ -41,6 +41,7 @@ model Order {
   packageId       String
   package         Package  @relation(fields: [packageId], references: [id])
   amount          Int
+  whatsapp        String?
   paymentMethod   String   @default("MANUAL")
   cryptoChain     String?
   cryptoAmount    String?
@@ -88,4 +89,11 @@ model UsageLog {
   createdAt         DateTime @default(now())
 
   @@index([apiKeyId, createdAt])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }

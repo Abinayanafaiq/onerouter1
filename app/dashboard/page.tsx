@@ -9,29 +9,27 @@ export default async function DashboardPage() {
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
-  const [orders, apiKeys, aggReq, aggToken, aggQuota] = await Promise.all([
-    prisma.order.findMany({
-      where: { userId },
-      include: { package: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.apiKey.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.apiKey.aggregate({
-      where: { userId },
-      _sum: { requestCount: true },
-    }),
-    prisma.apiKey.aggregate({
-      where: { userId },
-      _sum: { tokenUsed: true },
-    }),
-    prisma.apiKey.aggregate({
-      where: { userId },
-      _sum: { tokenQuota: true },
-    }),
-  ]);
+  const orders = await prisma.order.findMany({
+    where: { userId },
+    include: { package: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const apiKeys = await prisma.apiKey.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+  const aggReq = await prisma.apiKey.aggregate({
+    where: { userId },
+    _sum: { requestCount: true },
+  });
+  const aggToken = await prisma.apiKey.aggregate({
+    where: { userId },
+    _sum: { tokenUsed: true },
+  });
+  const aggQuota = await prisma.apiKey.aggregate({
+    where: { userId },
+    _sum: { tokenQuota: true },
+  });
 
   const hasActiveKey = apiKeys.some((k) => k.isActive && new Date(k.expiresAt) > new Date());
   const totalReq = aggReq._sum.requestCount || 0;

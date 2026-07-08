@@ -30,6 +30,7 @@ export default async function AdminOrderDetailPage({
 
       <div className="border border-neutral-800 rounded-lg bg-neutral-900">
         <Row label="User" value={order.user.email} />
+        {order.whatsapp && <Row label="WhatsApp" value={order.whatsapp} />}
         <Row label="Paket" value={order.package.name} />
         <Row label="Harga" value={`Rp${order.amount.toLocaleString("id-ID")}`} />
         <Row label="Metode" value={order.paymentMethod} />

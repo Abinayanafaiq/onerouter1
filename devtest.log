@@ -1,0 +1,10 @@
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.10.203:3000
+- Environments: .env
+✓ Ready in 1260ms
+[instrumentation] Admin user ensured.
+
+ GET / 200 in 2.7s (next.js: 279ms, application-code: 2.4s)
+ GET /pricing 200 in 1063ms (next.js: 74ms, application-code: 989ms)
+ GET /admin 307 in 2.8s (next.js: 145ms, proxy.ts: 94ms, application-code: 2.5s)

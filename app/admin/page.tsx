@@ -2,23 +2,20 @@ import { prisma } from "@/app/lib/prisma";
 import Link from "next/link";
 
 export default async function AdminPage() {
-  const [userCount, orderCount, pendingCount, activeKeyCount, totalRequests, recentOrders, revenue] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.order.count(),
-      prisma.order.count({ where: { status: "PENDING" } }),
-      prisma.apiKey.count({ where: { isActive: true } }),
-      prisma.apiKey.aggregate({ _sum: { requestCount: true } }),
-      prisma.order.findMany({
-        include: { user: true, package: true },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-      prisma.order.aggregate({
-        where: { status: "APPROVED" },
-        _sum: { amount: true },
-      }),
-    ]);
+  const userCount = await prisma.user.count();
+  const orderCount = await prisma.order.count();
+  const pendingCount = await prisma.order.count({ where: { status: "PENDING" } });
+  const activeKeyCount = await prisma.apiKey.count({ where: { isActive: true } });
+  const totalRequests = await prisma.apiKey.aggregate({ _sum: { requestCount: true } });
+  const recentOrders = await prisma.order.findMany({
+    include: { user: true, package: true },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+  const revenue = await prisma.order.aggregate({
+    where: { status: "APPROVED" },
+    _sum: { amount: true },
+  });
 
   const stats = [
     { label: "Users", value: String(userCount), accent: "text-blue-400" },

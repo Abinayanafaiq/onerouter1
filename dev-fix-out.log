@@ -51,3 +51,9 @@ C:\Users\Lenovo\Downloads\onerouter\.next\dev\server\chunks\ssr\[root-of-the-ser
 Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 17)
  GET / 200 in 10.3s (next.js: 19ms, application-code: 10.3s)
  GET / 200 in 2.6s (next.js: 12ms, application-code: 2.6s)
+ GET /dashboard 200 in 1043ms (next.js: 74ms, proxy.ts: 89ms, application-code: 880ms)
+ GET / 200 in 1182ms (next.js: 9ms, application-code: 1173ms)
+ POST /dashboard 303 in 1287ms (next.js: 10ms, proxy.ts: 21ms, application-code: 1256ms)
+  └─ ƒ <inline action>() in 30ms app/dashboard/layout.tsx
+  Reload env: .env
+ GET / 200 in 587ms (next.js: 172ms, application-code: 415ms)
