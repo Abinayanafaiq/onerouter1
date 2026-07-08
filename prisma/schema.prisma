@@ -26,7 +26,7 @@ model Package {
   description  String?
   tokenQuota   BigInt
   price        Int
-  durationDays Int      @default(7)
+  durationDays Int      @default(14)
   isActive     Boolean  @default(true)
   sort         Int      @default(0)
   stock        Int      @default(0)

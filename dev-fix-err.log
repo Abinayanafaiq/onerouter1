@@ -1,0 +1,416 @@
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⚠ ./instrumentation.ts:1:1
+A Node.js module is loaded ('dns' at line 1) which is not supported in the Edge Runtime.
+    Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { setDefaultResultOrder } [36mfrom[0m [32m"dns"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mexport[0m [36masync[0m [36mfunction[0m register() {
+  [90m4 |[0m   setDefaultResultOrder([32m"ipv4first"[0m);
+
+Ecmascript file had an error
+
+
+⨯ Error [PrismaClientKnownRequestError]: 
+Invalid `{imported module ./app/lib/prisma.ts}["prisma"].package.findMany()` invocation in
+C:\Users\Lenovo\Downloads\onerouter\.next\dev\server\chunks\ssr\[root-of-the-server]__0qrccx7._.js:71:163
+
+  68     };
+  69 }
+  70 async function getAllPackages() {
+→ 71     const packages = await {imported module ./app/lib/prisma.ts}["prisma"].package.findMany(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 17)
+    at <unknown> (app\lib\packages.ts:41:41)
+    at async getAllPackages (app\lib\packages.ts:41:20)
+    at async Home (app\page.tsx:51:20)
+  39 |
+  40 | export async function getAllPackages(): Promise<PackageDef[]> {
+> 41 |   const packages = await prisma.package.findMany({
+     |                                         ^
+  42 |     where: { isActive: true },
+  43 |     orderBy: { sort: "asc" },
+  44 |   }); {
+  code: 'P2024',
+  meta: { modelName: 'Package', connection_limit: 17, timeout: 10 },
+  clientVersion: '6.19.3',
+  digest: '3097731388'
+}
+[browser] Uncaught PrismaClientKnownRequestError: 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$prisma$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["prisma"].package.findMany()` invocation in
+C:\Users\Lenovo\Downloads\onerouter\.next\dev\server\chunks\ssr\[root-of-the-server]__0qrccx7._.js:71:163
+
+  68     };
+  69 }
+  70 async function getAllPackages() {
+→ 71     const packages = await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$prisma$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["prisma"].package.findMany(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 17)
+    at <unknown> (app\lib\packages.ts:41:41)
+    at  getAllPackages (app\lib\packages.ts:41:20)
+    at  Home (app\page.tsx:51:20)
+  39 |
+  40 | export async function getAllPackages(): Promise<PackageDef[]> {
+> 41 |   const packages = await prisma.package.findMany({
+     |                                         ^
+  42 |     where: { isActive: true },
+  43 |     orderBy: { sort: "asc" },
+  44 |   });

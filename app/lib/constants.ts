@@ -15,31 +15,10 @@ export const SUPPORTED_MODELS = [
     contextWindow: "1M",
   },
   {
-    id: "qwen-3.7-plus",
-    masterId: "prokuy/qwen3.7-plus",
-    name: "Qwen 3.7 Plus",
-    description: "Qwen Plus, balanced quality & speed",
-    contextWindow: "1M",
-  },
-  {
-    id: "qwen-3.7-max",
-    masterId: "prokuy/qwen3.7-max",
-    name: "Qwen 3.7 Max",
-    description: "Qwen Max, kualitas terbaik untuk reasoning kompleks",
-    contextWindow: "1M",
-  },
-  {
     id: "deepseek-v4-pro",
     masterId: "prokuy/deepseek-v4-pro",
     name: "DeepSeek V4 Pro",
     description: "Coding & reasoning kelas atas, harga terjangkau",
-    contextWindow: "1M",
-  },
-  {
-    id: "kimi-2.7-coding",
-    masterId: "prokuy/kimi-2.7-coding",
-    name: "Kimi 2.7 Coding",
-    description: "Khusus coding & analisis teknis mendalam",
     contextWindow: "1M",
   },
 ] as const;

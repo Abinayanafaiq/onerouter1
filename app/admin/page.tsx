@@ -22,10 +22,10 @@ export default async function AdminPage() {
 
   const stats = [
     { label: "Users", value: String(userCount), accent: "text-blue-400" },
-    { label: "Orders", value: String(orderCount), accent: "text-purple-400" },
+    { label: "Orders", value: String(orderCount), accent: "text-cyan-400" },
     { label: "Pending", value: String(pendingCount), accent: pendingCount > 0 ? "text-yellow-400" : "text-neutral-400" },
     { label: "API Keys", value: String(activeKeyCount), accent: "text-green-400" },
-    { label: "Requests", value: (totalRequests._sum.requestCount || 0).toLocaleString("id-ID"), accent: "text-indigo-400" },
+    { label: "Requests", value: (totalRequests._sum.requestCount || 0).toLocaleString("id-ID"), accent: "text-teal-400" },
     { label: "Revenue", value: `Rp${(revenue._sum.amount || 0).toLocaleString("id-ID")}`, accent: "text-emerald-400" },
   ];
 

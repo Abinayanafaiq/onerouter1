@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OneRouter - Token AI Murah Multi Model",
   description:
-    "Beli token AI dengan harga terjangkau. Akses GLM-5.2, Qwen 3.7, DeepSeek V4 Pro, Kimi 2.7 Coding via endpoint OpenAI-compatible.",
+    "Beli token AI dengan harga terjangkau. Akses GLM-5.2 & DeepSeek V4 Pro via endpoint OpenAI-compatible.",
 };
 
 export default function RootLayout({

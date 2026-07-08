@@ -1,0 +1,52 @@
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.10.203:3000
+- Environments: .env
+✓ Ready in 1220ms
+[instrumentation] Admin user ensured.
+
+ GET / 200 in 1182ms (next.js: 269ms, application-code: 914ms)
+ GET / 200 in 341ms (next.js: 14ms, application-code: 328ms)
+ GET /login 200 in 275ms (next.js: 198ms, application-code: 77ms)
+ GET /admin 200 in 4.4s (next.js: 161ms, proxy.ts: 121ms, application-code: 4.1s)
+ POST /login 303 in 4.8s (next.js: 15ms, application-code: 4.8s)
+  └─ ƒ loginAction({}) in 374ms app/actions/auth.ts
+✓ Compiled in 138ms
+ GET /admin 200 in 1395ms (next.js: 178ms, proxy.ts: 66ms, application-code: 1151ms)
+ GET /admin 200 in 6.0s (next.js: 20ms, proxy.ts: 24ms, application-code: 5.9s)
+✓ Compiled in 135ms
+ GET /admin 200 in 4.4s (next.js: 172ms, proxy.ts: 57ms, application-code: 4.2s)
+ GET /admin/packages 200 in 811ms (next.js: 87ms, proxy.ts: 12ms, application-code: 712ms)
+✓ Compiled in 108ms
+ GET /admin/packages 200 in 747ms (next.js: 162ms, proxy.ts: 55ms, application-code: 530ms)
+ GET /admin/packages 200 in 596ms (next.js: 179ms, proxy.ts: 28ms, application-code: 389ms)
+ GET /admin/orders 200 in 3.7s (next.js: 115ms, proxy.ts: 30ms, application-code: 3.6s)
+ GET /admin/orders 200 in 2.4s (next.js: 169ms, proxy.ts: 62ms, application-code: 2.2s)
+ GET /admin/orders/cmragi95y0002i604y8quw1xh 200 in 1960ms (next.js: 1547ms, proxy.ts: 22ms, application-code: 391ms)
+ GET /admin/orders/cmragi95y0002i604y8quw1xh 200 in 574ms (next.js: 205ms, proxy.ts: 58ms, application-code: 312ms)
+ GET /admin/orders 200 in 2.3s (next.js: 29ms, proxy.ts: 13ms, application-code: 2.2s)
+ GET /admin/packages 200 in 153ms (next.js: 28ms, proxy.ts: 12ms, application-code: 113ms)
+ GET /admin 200 in 31.0s (next.js: 25ms, proxy.ts: 27ms, application-code: 30.9s)
+✓ Compiled in 152ms
+ GET /admin 200 in 2.8s (next.js: 22ms, proxy.ts: 8ms, application-code: 2.8s)
+ GET /admin 200 in 1239ms (next.js: 27ms, proxy.ts: 26ms, application-code: 1186ms)
+ GET /admin 200 in 4.3s (next.js: 213ms, proxy.ts: 105ms, application-code: 4.0s)
+ GET /admin 200 in 3.9s (next.js: 141ms, proxy.ts: 62ms, application-code: 3.7s)
+ GET /admin 200 in 4.3s (next.js: 378ms, proxy.ts: 66ms, application-code: 3.8s)
+ GET /admin 200 in 4.3s (next.js: 260ms, proxy.ts: 65ms, application-code: 4.0s)
+ GET /admin 200 in 4.5s (next.js: 44ms, proxy.ts: 61ms, application-code: 4.4s)
+ GET /dashboard 200 in 453ms (next.js: 99ms, proxy.ts: 10ms, application-code: 343ms)
+ GET / 200 in 1301ms (next.js: 487ms, application-code: 815ms)
+✓ Compiled in 201ms
+ GET / 200 in 782ms (next.js: 239ms, application-code: 543ms)
+✓ Compiled in 295ms
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$prisma$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["prisma"].package.findMany()` invocation in
+C:\Users\Lenovo\Downloads\onerouter\.next\dev\server\chunks\ssr\[root-of-the-server]__0qrccx7._.js:71:163
+
+  68     };
+  69 }
+  70 async function getAllPackages() {
+→ 71     const packages = await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$prisma$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["prisma"].package.findMany(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 17)
+ GET / 200 in 10.3s (next.js: 19ms, application-code: 10.3s)

@@ -6,20 +6,20 @@ export type PackageDef = Package & { features: string[]; highlight?: boolean };
 const FEATURES: Record<string, string[]> = {
   mini: [
     "10 Juta Token",
-    "Aktif 7 hari",
+    "Aktif 14 hari",
     "Semua model AI tersedia",
     "Limit request 20/menit",
   ],
   mid: [
     "25 Juta Token",
-    "Aktif 7 hari",
+    "Aktif 14 hari",
     "Semua model AI tersedia",
     "Limit request 60/menit",
     "Priority support",
   ],
   pro: [
     "40 Juta Token",
-    "Aktif 7 hari",
+    "Aktif 14 hari",
     "Semua model AI tersedia",
     "Tanpa limit request",
     "Priority support",

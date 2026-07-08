@@ -11,7 +11,7 @@ export default async function PricingPage() {
       <section className="container mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-center mb-2">Paket Harga</h1>
         <p className="text-center text-muted-foreground mb-10">
-          Semua paket aktif 7 hari, akses semua model AI
+          Semua paket aktif 14 hari, akses semua model AI
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {packages.map((p) => (
@@ -32,7 +32,7 @@ export default async function PricingPage() {
                 <span className="text-3xl font-bold">
                   Rp{p.price.toLocaleString("id-ID")}
                 </span>
-                <span className="text-muted-foreground text-sm"> / 7 hari</span>
+                <span className="text-muted-foreground text-sm"> / 14 hari</span>
               </div>
               <div className="mt-1 text-sm font-medium">
                 {(Number(p.tokenQuota) / 1_000_000).toFixed(0)} Juta token

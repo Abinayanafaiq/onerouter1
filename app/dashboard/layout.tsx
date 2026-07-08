@@ -15,7 +15,7 @@ export default async function DashboardLayout({
       <header className="border-b bg-background">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <Link href="/" className="font-bold flex items-center gap-2">
-            <span className="bg-foreground text-background px-1.5 py-0.5 rounded text-[10px] font-mono">1R</span>
+            <span className="bg-white text-black px-1.5 py-0.5 rounded text-[10px] font-mono">1R</span>
             OneRouter
           </Link>
           <div className="flex items-center gap-3">

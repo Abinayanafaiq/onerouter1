@@ -164,7 +164,7 @@ export default async function DashboardPage() {
                 <li>Dapatkan API key di atas (klik <span className="font-medium text-foreground">Show</span> lalu <span className="font-medium text-foreground">Copy</span>)</li>
                 <li>Set base URL ke <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">https://www.onerouter.my.id/v1</code></li>
                 <li>Set Authorization header: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">Bearer sk_live_xxx</code></li>
-                <li>Pilih model: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">glm-5.2</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">qwen-3.7-plus</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">qwen-3.7-max</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">deepseek-v4-pro</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">kimi-2.7-coding</code></li>
+                <li>Pilih model: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">glm-5.2</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">deepseek-v4-pro</code></li>
               </ol>
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground mb-1">Contoh cURL:</p>
