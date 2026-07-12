@@ -36,6 +36,20 @@ export default async function AdminOrderDetailPage({
         <Row label="Metode" value={order.paymentMethod} />
         {order.cryptoChain && <Row label="Chain" value={order.cryptoChain} />}
         {order.btcpayInvoiceId && <Row label="BTCPay" value={<span className="font-mono text-xs">{order.btcpayInvoiceId}</span>} />}
+        {order.pakasirMethod && <Row label="Pakasir Method" value={order.pakasirMethod} />}
+        {order.pakasirPaymentNumber && (
+          <Row
+            label="Pakasir QR/VA"
+            value={
+              <span className="font-mono text-xs break-all max-w-[260px] inline-block">
+                {order.pakasirPaymentNumber.slice(0, 40)}...
+              </span>
+            }
+          />
+        )}
+        {order.pakasirExpiredAt && (
+          <Row label="Pakasir Expired" value={order.pakasirExpiredAt.toLocaleString("id-ID")} />
+        )}
         <Row
           label="Status"
           value={

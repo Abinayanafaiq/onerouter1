@@ -1,17 +1,10 @@
 import { auth } from "@/app/lib/auth";
 import { findPackage } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
-import { prisma } from "@/app/lib/prisma";
+import { isPakasirConfigured } from "@/app/lib/pakasir";
 import { redirect } from "next/navigation";
 import { CheckoutForm } from "./form";
 import Link from "next/link";
-
-async function getQrisImage(): Promise<string | null> {
-  const setting = await prisma.setting.findUnique({
-    where: { key: "qris_image" },
-  });
-  return setting?.value ?? null;
-}
 
 export default async function CheckoutPage({
   params,
@@ -25,7 +18,7 @@ export default async function CheckoutPage({
   const pkg = await findPackage(packageId);
   if (!pkg) redirect("/pricing");
 
-  const qrisImage = await getQrisImage();
+  const pakasirConfigured = await isPakasirConfigured();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -47,7 +40,7 @@ export default async function CheckoutPage({
           amount={pkg.price}
           chains={[...CRYPTO_CHAINS]}
           btcpayConfigured={isBtcpayConfigured()}
-          qrisImage={qrisImage}
+          pakasirConfigured={pakasirConfigured}
         />
       </main>
     </div>

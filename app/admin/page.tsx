@@ -6,13 +6,21 @@ export default async function AdminPage() {
   const orderCount = await prisma.order.count();
   const pendingCount = await prisma.order.count({ where: { status: "PENDING" } });
   const activeKeyCount = await prisma.apiKey.count({ where: { isActive: true } });
-  const totalRequests = await prisma.apiKey.aggregate({ _sum: { requestCount: true } });
+
+  // Wallet-based stats
+  const totalRequests = await prisma.usageLog.count();
+  const revenueAgg = await prisma.usageLog.aggregate({ _sum: { totalCost: true } });
+  const totalRevenue = Number(revenueAgg._sum.totalCost || 0);
+
+  const walletAgg = await prisma.wallet.aggregate({ _sum: { balance: true } });
+  const totalWalletBalance = Number(walletAgg._sum.balance || 0);
+
   const recentOrders = await prisma.order.findMany({
     include: { user: true, package: true },
     orderBy: { createdAt: "desc" },
     take: 5,
   });
-  const revenue = await prisma.order.aggregate({
+  const orderRevenue = await prisma.order.aggregate({
     where: { status: "APPROVED" },
     _sum: { amount: true },
   });
@@ -22,8 +30,10 @@ export default async function AdminPage() {
     { label: "Orders", value: String(orderCount), accent: "text-cyan-400" },
     { label: "Pending", value: String(pendingCount), accent: pendingCount > 0 ? "text-yellow-400" : "text-neutral-400" },
     { label: "API Keys", value: String(activeKeyCount), accent: "text-green-400" },
-    { label: "Requests", value: (totalRequests._sum.requestCount || 0).toLocaleString("id-ID"), accent: "text-teal-400" },
-    { label: "Revenue", value: `Rp${(revenue._sum.amount || 0).toLocaleString("id-ID")}`, accent: "text-emerald-400" },
+    { label: "AI Requests", value: totalRequests.toLocaleString("id-ID"), accent: "text-teal-400" },
+    { label: "AI Revenue", value: `Rp${totalRevenue.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`, accent: "text-emerald-400" },
+    { label: "Wallet Balance", value: `Rp${totalWalletBalance.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`, accent: "text-violet-400" },
+    { label: "Order Revenue", value: `Rp${(orderRevenue._sum.amount || 0).toLocaleString("id-ID")}`, accent: "text-emerald-400" },
   ];
 
   return (
@@ -34,14 +44,14 @@ export default async function AdminPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((s) => (
           <div
             key={s.label}
             className="border border-neutral-800 rounded-lg p-4 bg-neutral-900"
           >
             <div className="text-xs text-neutral-500">{s.label}</div>
-            <div className={`text-2xl font-bold mt-1.5 ${s.accent}`}>{s.value}</div>
+            <div className={`text-xl font-bold mt-1.5 ${s.accent}`}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -97,7 +107,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <Link
           href="/admin/orders"
           className="border border-neutral-800 rounded-lg p-3 hover:bg-neutral-900 transition flex items-center gap-2"
@@ -106,6 +116,36 @@ export default async function AdminPage() {
           <div>
             <div className="font-medium text-sm text-neutral-200">Orders</div>
             <div className="text-xs text-neutral-500">Approve / reject</div>
+          </div>
+        </Link>
+        <Link
+          href="/admin/wallets"
+          className="border border-neutral-800 rounded-lg p-3 hover:bg-neutral-900 transition flex items-center gap-2"
+        >
+          <span className="text-neutral-400 text-sm">💰</span>
+          <div>
+            <div className="font-medium text-sm text-neutral-200">Wallets</div>
+            <div className="text-xs text-neutral-500">Kelola saldo user</div>
+          </div>
+        </Link>
+        <Link
+          href="/admin/models"
+          className="border border-neutral-800 rounded-lg p-3 hover:bg-neutral-900 transition flex items-center gap-2"
+        >
+          <span className="text-neutral-400 text-sm">🤖</span>
+          <div>
+            <div className="font-medium text-sm text-neutral-200">Models</div>
+            <div className="text-xs text-neutral-500">Atur harga AI</div>
+          </div>
+        </Link>
+        <Link
+          href="/admin/analytics"
+          className="border border-neutral-800 rounded-lg p-3 hover:bg-neutral-900 transition flex items-center gap-2"
+        >
+          <span className="text-neutral-400 text-sm">📊</span>
+          <div>
+            <div className="font-medium text-sm text-neutral-200">Analytics</div>
+            <div className="text-xs text-neutral-500">Statistik pemakaian</div>
           </div>
         </Link>
         <Link

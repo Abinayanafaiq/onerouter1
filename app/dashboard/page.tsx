@@ -1,5 +1,8 @@
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
+import { getAvailableModels } from "@/app/lib/models";
+import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
 import Link from "next/link";
 import { UploadProof } from "./upload-proof";
 import { RevealKey } from "./reveal-key";
@@ -8,6 +11,10 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
+
+  const wallet = await getOrCreateWallet(userId);
+  const recentTransactions = await getTransactions(wallet.id, 10);
+  const enabledModels = await getAvailableModels();
 
   const orders = await prisma.order.findMany({
     where: { userId },
@@ -18,24 +25,15 @@ export default async function DashboardPage() {
     where: { userId },
     orderBy: { createdAt: "desc" },
   });
-  const aggReq = await prisma.apiKey.aggregate({
-    where: { userId },
-    _sum: { requestCount: true },
-  });
-  const aggToken = await prisma.apiKey.aggregate({
-    where: { userId },
-    _sum: { tokenUsed: true },
-  });
-  const aggQuota = await prisma.apiKey.aggregate({
-    where: { userId },
-    _sum: { tokenQuota: true },
-  });
 
-  const hasActiveKey = apiKeys.some((k) => k.isActive && new Date(k.expiresAt) > new Date());
-  const totalReq = aggReq._sum.requestCount || 0;
-  const totalUsed = Number(aggToken._sum.tokenUsed || 0);
-  const totalQuota = Number(aggQuota._sum.tokenQuota || 0);
-  const totalRemaining = Math.max(0, totalQuota - totalUsed);
+  const totalUsageCost = await prisma.usageLog.aggregate({
+    where: { userId },
+    _sum: { totalCost: true },
+  });
+  const totalRequests = await prisma.usageLog.count({ where: { userId } });
+
+  const balance = Number(wallet.balance);
+  const totalSpent = Number(totalUsageCost._sum.totalCost || 0);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -47,109 +45,114 @@ export default async function DashboardPage() {
             {session?.user?.email}
           </p>
         </div>
-        <Link
-          href="/pricing"
-          className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 transition"
-        >
-          + Beli Paket
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/chat"
+            className="border px-3 py-1.5 rounded-md text-xs font-medium hover:bg-muted transition"
+          >
+            Chat Playground
+          </Link>
+          <Link
+            href="/dashboard/wallet"
+            className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 transition"
+          >
+            + Top Up
+          </Link>
+        </div>
       </div>
 
-      {/* Token Usage - prominent */}
+      {/* Wallet Balance - prominent */}
       <div className="border rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Token Usage</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Wallet Balance</h2>
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-            hasActiveKey ? "bg-green-500/15 text-green-500" : "bg-gray-500/15 text-gray-500"
+            balance > 0 ? "bg-green-500/15 text-green-500" : "bg-gray-500/15 text-gray-500"
           }`}>
-            {hasActiveKey ? "● Active" : "● No Active Key"}
+            {balance > 0 ? "● Active" : "● No Balance"}
           </span>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <div className="text-xs text-muted-foreground">Terpakai</div>
-            <div className="text-2xl font-bold mt-0.5">{(totalUsed / 1_000_000).toFixed(2)}</div>
-            <div className="text-[10px] text-muted-foreground">Juta token</div>
+            <div className="text-xs text-muted-foreground">Saldo Kredit</div>
+            <div className="text-2xl font-bold mt-0.5 text-green-500">
+              {idrToToks(balance).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              {TOKS_LABEL} · ≈ Rp{balance.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+            </div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Sisa</div>
-            <div className="text-2xl font-bold mt-0.5 text-green-500">{(totalRemaining / 1_000_000).toFixed(2)}</div>
-            <div className="text-[10px] text-muted-foreground">Juta token</div>
+            <div className="text-xs text-muted-foreground">Total Terpakai</div>
+            <div className="text-2xl font-bold mt-0.5">
+              {idrToToks(totalSpent).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+            </div>
+            <div className="text-[10px] text-muted-foreground">{TOKS_LABEL} biaya AI</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Total Request</div>
-            <div className="text-2xl font-bold mt-0.5">{totalReq.toLocaleString("id-ID")}</div>
+            <div className="text-2xl font-bold mt-0.5">{totalRequests.toLocaleString("id-ID")}</div>
             <div className="text-[10px] text-muted-foreground">API calls</div>
           </div>
         </div>
-        {totalQuota > 0 && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{((totalUsed / totalQuota) * 100).toFixed(1)}% terpakai</span>
-              <span>{((totalRemaining / totalQuota) * 100).toFixed(1)}% sisa</span>
-            </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  (totalUsed / totalQuota) * 100 > 80 ? "bg-red-500" : "bg-foreground"
-                }`}
-                style={{ width: `${Math.min(100, (totalUsed / totalQuota) * 100)}%` }}
-              />
-            </div>
+        {balance <= 0 && (
+          <div className="mt-4 border border-yellow-500/30 bg-yellow-500/10 rounded-md p-3 text-xs text-yellow-600">
+            Kredit {TOKS_LABEL} habis. <Link href="/dashboard/wallet" className="font-medium underline">Top up sekarang</Link> untuk mulai pakai AI.
           </div>
         )}
       </div>
 
+      {/* Available Models */}
+      <div className="border rounded-xl p-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Model Tersedia</h2>
+        <div className="space-y-2">
+          {enabledModels.map((m) => (
+            <div key={m.id} className="flex items-center justify-between text-sm">
+              <div>
+                <span className="font-medium">{m.name}</span>
+                <code className="ml-2 text-xs text-muted-foreground">{m.modelId}</code>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                In: Rp{Number(m.inputPricePerMillion).toLocaleString("id-ID")}/Jt ·
+                Out: Rp{Number(m.outputPricePerMillion).toLocaleString("id-ID")}/Jt
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* API Keys */}
       <section>
-        <h2 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">API Keys</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">API Keys</h2>
+          <Link href="/dashboard/api-keys" className="text-xs text-muted-foreground hover:text-foreground transition">
+            Manage all →
+          </Link>
+        </div>
         {apiKeys.length === 0 ? (
           <div className="border rounded-lg p-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Belum ada API key.{" "}
-              <Link href="/pricing" className="font-medium hover:underline">Beli paket</Link>
+              No API keys yet.{" "}
+              <Link href="/dashboard/api-keys" className="font-medium hover:underline">Generate one</Link>{" "}
+              to start using the API.
             </p>
           </div>
         ) : (
           <div className="space-y-2">
             {apiKeys.map((key) => {
-              const isExpired = new Date(key.expiresAt) <= new Date();
-              const used = Number(key.tokenUsed);
-              const quota = Number(key.tokenQuota);
-              const remaining = Math.max(0, quota - used);
-              const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
+              const isExpired = key.expiresAt ? new Date(key.expiresAt) <= new Date() : false;
+              const rawKey = key.key ?? "";
               return (
                 <div key={key.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <RevealKey rawKey={key.key} isExpired={isExpired} />
+                    <RevealKey rawKey={rawKey} isExpired={isExpired} />
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
                       isExpired ? "bg-red-500/15 text-red-400" : "bg-green-500/15 text-green-400"
                     }`}>
                       {isExpired ? "Expired" : "Active"}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground block">Terpakai</span>
-                      <span className="font-bold">{(used / 1_000_000).toFixed(2)}Jt</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block">Sisa</span>
-                      <span className="font-bold text-green-500">{(remaining / 1_000_000).toFixed(2)}Jt</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block">Request</span>
-                      <span className="font-bold">{key.requestCount.toLocaleString("id-ID")}</span>
-                    </div>
-                  </div>
-                  <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${pct > 80 ? "bg-red-500" : "bg-foreground"}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
                   <div className="text-[10px] text-muted-foreground mt-1.5">
-                    Berlaku s/d {key.expiresAt.toLocaleDateString("id-ID")}
+                    Berlaku s/d {key.expiresAt ? key.expiresAt.toLocaleDateString("id-ID") : "no expiry"} · {key.requestCount.toLocaleString("id-ID")} request
                   </div>
                 </div>
               );
@@ -157,12 +160,15 @@ export default async function DashboardPage() {
 
             {/* Usage Instructions */}
             <div className="border rounded-lg p-4 bg-muted/20 mt-3">
-              <h3 className="text-sm font-medium mb-3">📖 Cara Pakai API</h3>
+              <h3 className="text-sm font-medium mb-3">Cara Pakai API</h3>
               <ol className="space-y-2 text-xs text-muted-foreground list-decimal list-inside">
                 <li>Dapatkan API key di atas (klik <span className="font-medium text-foreground">Show</span> lalu <span className="font-medium text-foreground">Copy</span>)</li>
+                <li>Pastikan <Link href="/dashboard/wallet" className="font-medium text-foreground hover:underline">wallet balance</Link> cukup</li>
                 <li>Set base URL ke <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">https://www.onerouter.my.id/v1</code></li>
                 <li>Set Authorization header: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">Bearer sk_live_xxx</code></li>
-                <li>Pilih model: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">glm-5.2</code>, <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">deepseek-v4-pro</code></li>
+                <li>Pilih model: {enabledModels.map((m) => (
+                  <code key={m.id} className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground mr-1">{m.modelId}</code>
+                ))}</li>
               </ol>
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground mb-1">Contoh cURL:</p>
@@ -171,55 +177,61 @@ export default async function DashboardPage() {
   -H "Authorization: Bearer sk_live_xxx" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "model": "glm-5.2",
+    "model": "${enabledModels[0]?.modelId ?? "glm-5.2"}",
     "messages": [
       {"role": "user", "content": "Halo!"}
     ]
   }'`}
                 </pre>
               </div>
-              <div className="mt-3">
-                <p className="text-xs text-muted-foreground mb-1">Python (OpenAI SDK):</p>
-                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
-{`from openai import OpenAI
-
-client = OpenAI(
-    base_url="https://www.onerouter.my.id/v1",
-    api_key="sk_live_xxx"
-)
-
-resp = client.chat.completions.create(
-    model="glm-5.2",
-    messages=[{"role": "user", "content": "Halo!"}]
-)
-print(resp.choices[0].message.content)`}
-                </pre>
-              </div>
-              <div className="mt-3">
-                <p className="text-xs text-muted-foreground mb-1">JavaScript (OpenAI SDK):</p>
-                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
-{`import OpenAI from "openai";
-
-const client = new OpenAI({
-  baseURL: "https://www.onerouter.my.id/v1",
-  apiKey: "sk_live_xxx"
-});
-
-const resp = await client.chat.completions.create({
-  model: "glm-5.2",
-  messages: [{ role: "user", content: "Halo!" }]
-});
-console.log(resp.choices[0].message.content);`}
-                </pre>
-              </div>
               <div className="mt-3 pt-3 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Cek sisa token via API:</p>
+                <p className="text-xs text-muted-foreground mb-1">Billing per request (dari response <code className="font-mono">x_billing</code>):</p>
                 <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto">
-{`GET https://www.onerouter.my.id/v1/models
-Authorization: Bearer sk_live_xxx`}
+{`"x_billing": {
+  "inputTokens": 10,
+  "outputTokens": 25,
+  "totalTokens": 35,
+  "inputCost": 0.01,
+  "outputCost": 0.075,
+  "totalCost": 0.085,
+  "remainingBalance": 9999.92
+}`}
                 </pre>
               </div>
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* Recent Transactions */}
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Transaksi Terbaru</h2>
+          <Link href="/dashboard/wallet" className="text-xs text-muted-foreground hover:text-foreground transition">
+            Semua →
+          </Link>
+        </div>
+        {recentTransactions.length === 0 ? (
+          <div className="border rounded-lg p-6 text-center">
+            <p className="text-sm text-muted-foreground">Belum ada transaksi</p>
+          </div>
+        ) : (
+          <div className="border rounded-lg divide-y">
+            {recentTransactions.map((t) => {
+              const amt = Number(t.amount);
+              const isPositive = amt > 0;
+              return (
+                <div key={t.id} className="p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{t.type}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>
+                  </div>
+                  <div className={`text-sm font-mono shrink-0 ${isPositive ? "text-green-600" : "text-red-600"}`}>
+                    {isPositive ? "+" : "-"}{idrToToks(Math.abs(amt)).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -230,8 +242,8 @@ Authorization: Bearer sk_live_xxx`}
         {orders.length === 0 ? (
           <div className="border rounded-lg p-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Belum ada order.{" "}
-              <Link href="/pricing" className="font-medium hover:underline">Lihat paket</Link>
+              Belum ada transaksi.{" "}
+              <Link href="/dashboard/wallet" className="font-medium hover:underline">Top up kredit</Link>
             </p>
           </div>
         ) : (
@@ -251,7 +263,7 @@ Authorization: Bearer sk_live_xxx`}
                   {o.status === "PENDING" && o.paymentMethod === "MANUAL" && (
                     <UploadProof orderId={o.id} />
                   )}
-                  {o.status === "PENDING" && o.paymentMethod === "CRYPTO" && (
+                  {o.status === "PENDING" && (o.paymentMethod === "CRYPTO" || o.paymentMethod === "PAKASIR") && (
                     <Link
                       href={`/checkout/${o.packageId}`}
                       className="border px-2 py-1 rounded text-xs hover:bg-muted transition"

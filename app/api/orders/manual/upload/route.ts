@@ -1,32 +1,46 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/app/lib/auth";
+import { prisma } from "@/app/lib/prisma";
+
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const orderId = formData.get("orderId") as string;
     const file = formData.get("proof") as File | null;
 
     if (!orderId || !file) {
-      return Response.json({ success: false, error: "Order ID dan file diperlukan" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Order ID dan file diperlukan" }, { status: 400 });
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return Response.json({ success: false, error: "File terlalu besar (max 5MB)" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "File terlalu besar (max 5MB)" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
 
-    const { prisma } = await import("@prisma/client").then(() =>
-      import("@/app/lib/prisma"),
-    );
-
+    // Verify the order belongs to the authenticated user (ownership check).
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     if (!order) {
-      return Response.json({ success: false, error: "Order tidak ditemukan" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Order tidak ditemukan" }, { status: 404 });
+    }
+
+    if (order.userId !== userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
     if (order.status !== "PENDING") {
-      return Response.json({ success: false, error: "Order sudah diproses" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Order sudah diproses" }, { status: 400 });
     }
 
     await prisma.order.update({
@@ -36,9 +50,9 @@ export async function POST(request: Request) {
       },
     });
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (e) {
     console.error("[manual/upload] exception:", e);
-    return Response.json({ success: false, error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
   }
 }

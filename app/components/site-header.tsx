@@ -16,16 +16,31 @@ export async function SiteHeader() {
           <span className="gradient-text">{APP_NAME}</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <Link href="/#models" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
+            Models
+          </Link>
           <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition">
-            Harga
+            Pricing
           </Link>
           {isAuthed ? (
             <>
               <Link
-                href="/dashboard"
+                href="/dashboard/wallet"
                 className="text-muted-foreground hover:text-foreground transition"
               >
+                Wallet
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-muted-foreground hover:text-foreground transition hidden sm:inline"
+              >
                 Dashboard
+              </Link>
+              <Link
+                href="/dashboard/wallet"
+                className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
+              >
+                Top Up Credits
               </Link>
               <form
                 action={async () => {
@@ -35,7 +50,7 @@ export async function SiteHeader() {
               >
                 <button
                   type="submit"
-                  className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 transition"
+                  className="text-muted-foreground hover:text-foreground transition text-xs"
                 >
                   Keluar
                 </button>
@@ -50,7 +65,7 @@ export async function SiteHeader() {
                 href="/register"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Daftar
+                Get Started
               </Link>
             </>
           )}

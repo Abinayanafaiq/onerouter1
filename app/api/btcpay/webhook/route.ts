@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { generateApiKey, hashKey } from "@/app/lib/apikey";
 import { verifyWebhookSignature } from "@/app/lib/btcpay";
+import { approvePaidOrder } from "@/app/lib/order-approval";
 
 export async function POST(request: Request) {
   try {
@@ -36,43 +36,22 @@ export async function POST(request: Request) {
       where: { btcpayInvoiceId: event.invoiceId },
     });
 
-    if (!order || order.status !== "PENDING") {
+    if (!order) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+    if (order.status === "APPROVED") {
+      return NextResponse.json({ ok: true, alreadyApproved: true });
+    }
+    if (order.status !== "PENDING") {
       return NextResponse.json({ ok: true, ignored: true });
     }
 
-    const pkg = await prisma.package.findUnique({ where: { id: order.packageId } });
-    if (!pkg) {
-      return NextResponse.json({ error: "Package not found" }, { status: 500 });
+    // Credit atomically & idempotently (single source of truth).
+    const approved = await approvePaidOrder(order.id, "BTCPay");
+    if (!approved.ok) {
+      // Do NOT report success — let BTCPay retry the webhook.
+      return NextResponse.json({ error: approved.error }, { status: 500 });
     }
-
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + pkg.durationDays * 24 * 60 * 60 * 1000);
-
-    const { key, keyHash: keyHashValue } = generateApiKey();
-
-    const apiKey = await prisma.apiKey.create({
-      data: {
-        userId: order.userId,
-        key,
-        keyHash: keyHashValue,
-        label: `${pkg.name} - ${order.paymentMethod}`,
-        tokenQuota: pkg.tokenQuota,
-        expiresAt,
-        isActive: true,
-        lastResetDay: now,
-      },
-    });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: "APPROVED",
-        activatedAt: now,
-        expiresAt,
-        apiKeyId: apiKey.id,
-        adminNote: "Auto-approved via BTCPay webhook",
-      },
-    });
 
     return NextResponse.json({ ok: true, approved: true, orderId: order.id });
   } catch (e) {

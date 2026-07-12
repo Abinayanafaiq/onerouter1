@@ -21,6 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Nomor WhatsApp wajib diisi" }, { status: 400 });
     }
 
+    const whatsapp = body.whatsapp.trim();
+
     const pkg = await findPackage(body.packageId);
     if (!pkg) {
       return NextResponse.json({ success: false, error: "Paket tidak ditemukan" }, { status: 404 });
@@ -30,23 +32,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Stok habis" }, { status: 400 });
     }
 
-    await prisma.order.create({
-      data: {
-        userId,
-        packageId: body.packageId,
-        amount: pkg.price,
-        whatsapp: body.whatsapp.trim(),
-        paymentMethod: "MANUAL",
-        status: "PENDING",
-      },
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          userId,
+          packageId: body.packageId,
+          amount: pkg.price,
+          whatsapp,
+          paymentMethod: "MANUAL",
+          status: "PENDING",
+        },
+      });
+
+      await tx.package.update({
+        where: { id: body.packageId },
+        data: { stock: { decrement: 1 } },
+      });
+
+      return created;
     });
 
-    await prisma.package.update({
-      where: { id: body.packageId },
-      data: { stock: { decrement: 1 } },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, orderId: order.id });
   } catch (e) {
     console.error("[manual/create] exception:", e);
     return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });

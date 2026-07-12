@@ -36,20 +36,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        packageId,
-        amount: pkg.price,
-        paymentMethod: "CRYPTO",
-        cryptoChain: chainDef.chain,
-        status: "PENDING",
-      },
-    });
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          userId,
+          packageId,
+          amount: pkg.price,
+          paymentMethod: "CRYPTO",
+          cryptoChain: chainDef.chain,
+          status: "PENDING",
+        },
+      });
 
-    await prisma.package.update({
-      where: { id: packageId },
-      data: { stock: { decrement: 1 } },
+      await tx.package.update({
+        where: { id: packageId },
+        data: { stock: { decrement: 1 } },
+      });
+
+      return created;
     });
 
     const invoice = await createInvoice({
@@ -60,9 +64,15 @@ export async function POST(request: Request) {
     });
 
     if ("error" in invoice) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { status: "CANCELLED", adminNote: invoice.error },
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: "CANCELLED", adminNote: invoice.error },
+        });
+        await tx.package.update({
+          where: { id: packageId },
+          data: { stock: { increment: 1 } },
+        });
       });
       return NextResponse.json({ success: false, error: invoice.error }, { status: 502 });
     }

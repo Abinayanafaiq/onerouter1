@@ -14,7 +14,11 @@ export default async function AdminLayout({
   const navItems = [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/orders", label: "Orders" },
-    { href: "/admin/packages", label: "Paket & Stok" },
+    { href: "/admin/wallets", label: "Wallets" },
+    { href: "/admin/models", label: "Models" },
+    { href: "/admin/api-keys", label: "API Keys" },
+    { href: "/admin/analytics", label: "Analytics" },
+    { href: "/admin/packages", label: "Paket" },
     { href: "/admin/settings", label: "Pengaturan" },
   ];
 

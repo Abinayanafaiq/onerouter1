@@ -1,16 +1,10 @@
 import Link from "next/link";
-import { getAllPackages } from "@/app/lib/packages";
-import { SUPPORTED_MODELS, APP_NAME, APP_TAGLINE } from "@/app/lib/constants";
+import { APP_NAME, APP_TAGLINE } from "@/app/lib/constants";
+import { getEnabledModels } from "@/app/lib/models";
 import { SiteHeader } from "@/app/components/site-header";
+import { ModelPricingTable } from "@/app/components/model-pricing-table";
 
-function formatRupiah(n: number): string {
-  return "Rp" + n.toLocaleString("id-ID");
-}
-
-function formatToken(n: bigint): string {
-  const jt = Number(n) / 1_000_000;
-  return `${jt} Jt`;
-}
+export const dynamic = "force-dynamic";
 
 /* ===== Line icons (stroke 1.5, Lucide-style) ===== */
 function Icon({ name, className = "w-6 h-6" }: { name: string; className?: string }) {
@@ -45,11 +39,19 @@ function Icon({ name, className = "w-6 h-6" }: { name: string; className?: strin
 const modelLetter: Record<string, string> = {
   "glm-5.2": "G",
   "deepseek-v4-pro": "D",
+  "qwen-7-plus": "Q",
+  "deepseek-v4-flash": "D",
+  "glm-5.1": "G",
+  "glm-5.2-fast": "G",
+  "qwen3-coder-next": "Q",
+  "minimax-m3": "M",
+  "kimi-k2.7-code": "K",
+  "kimi-k2.7-code-fast": "K",
 };
 
 export default async function Home() {
-  const packages = await getAllPackages();
-
+  const enabledModels = await getEnabledModels();
+  const modelCount = enabledModels.length;
   return (
     <div className="min-h-screen relative overflow-hidden">
       <SiteHeader />
@@ -81,31 +83,31 @@ export default async function Home() {
         </h1>
 
         <p className="animate-fade-up-delay-2 mt-7 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Akses <strong className="text-foreground">2 model AI premium</strong> dengan 1 API key.
+          Akses <strong className="text-foreground">{modelCount} model AI premium</strong> dengan 1 API key.
           Bayar sesuai paket, pakai sampai token habis. Endpoint kompatibel penuh dengan SDK OpenAI.
         </p>
 
         {/* CTAs */}
         <div className="animate-fade-up-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/pricing"
+            href="/register"
             className="group bg-white text-black px-8 py-3.5 rounded-xl font-semibold hover:bg-foreground/90 transition shadow-lg shadow-white/10 flex items-center gap-2 hover:-translate-y-0.5"
           >
-            Lihat Paket
+            Get Started
             <Icon name="arrow" className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            href="/register"
+            href="/dashboard/wallet"
             className="border px-8 py-3.5 rounded-xl font-semibold hover:bg-muted transition hover:-translate-y-0.5"
           >
-            Daftar Gratis
+            Top Up Credits
           </Link>
         </div>
 
         {/* Stats strip */}
         <div className="animate-fade-up-delay-4 mt-20 grid grid-cols-3 gap-4 max-w-lg mx-auto">
           {[
-            { v: "2", l: "Model AI" },
+            { v: String(modelCount), l: "Model AI" },
             { v: "1M", l: "Context Window" },
             { v: "14hr", l: "Berlaku" },
           ].map((s) => (
@@ -171,18 +173,18 @@ export default async function Home() {
       </section>
 
       {/* ===== MODELS ===== */}
-      <section className="container mx-auto px-4 py-20">
+      <section id="models" className="container mx-auto px-4 py-20 scroll-mt-20">
         <div className="text-center mb-14">
           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Model</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-2">
-            2 Model AI <span className="gradient-text">Premium</span>
+            {modelCount} Model AI <span className="gradient-text">Premium</span>
           </h2>
           <p className="text-muted-foreground mt-3">
             Semua model bisa dipakai dengan API key yang sama
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          {SUPPORTED_MODELS.map((m) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {enabledModels.map((m) => (
             <div
               key={m.id}
               className="group relative border border-foreground/10 rounded-2xl p-8 hover:-translate-y-1 transition-all duration-300 overflow-hidden bg-muted/30 hover:shadow-2xl hover:shadow-white/5"
@@ -192,97 +194,98 @@ export default async function Home() {
                 aria-hidden
               />
               <div className="inline-flex w-14 h-14 items-center justify-center rounded-2xl border border-foreground/20 text-foreground font-bold text-xl mb-5">
-                {modelLetter[m.id] ?? m.name.charAt(0)}
+                {modelLetter[m.modelId] ?? m.name.charAt(0)}
               </div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-xl">{m.name}</h3>
                 <span className="text-xs px-2.5 py-1 rounded-full border border-foreground/15 text-muted-foreground font-mono">
-                  {m.contextWindow} ctx
+                  {m.contextWindow || "—"} ctx
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{m.description}</p>
+              {m.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed">{m.description}</p>
+              )}
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground capitalize">
+                  {m.provider}
+                </span>
+                {m.maintenanceMode ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500 font-medium">
+                    Maintenance
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/15 text-green-500 font-medium">
+                    Live
+                  </span>
+                )}
+              </div>
               <code className="text-xs block mt-5 px-3 py-2 rounded-lg bg-background/50 border border-foreground/10 font-mono text-foreground">
-                {m.id}
+                {m.modelId}
               </code>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ===== PRICING ===== */}
+      {/* ===== PAY AS YOU GO ===== */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center mb-14">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Billing</span>
+          <h2 className="text-3xl sm:text-4xl font-bold mt-2">
+            Pay As You <span className="gradient-text">Go</span>
+          </h2>
+          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+            Tanpa langganan, tanpa komitmen bulanan. Top up sesuai kebutuhan dan bayar hanya untuk token yang benar-benar kamu pakai.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          {[
+            { icon: "wallet", t: "Tanpa Langganan", d: "Tidak ada tagihan berulang. Bayar sekali top up, pakai kapan saja." },
+            { icon: "card", t: "Tanpa Komitmen Bulanan", d: "Bebas dari paket bulanan yang mengikat dan mubazir." },
+            { icon: "bolt", t: "Top Up Sesukamu", d: "Isi kredit hanya sebanyak yang kamu butuhkan." },
+            { icon: "check", t: "Bayar Sesuai Pemakaian", d: "Biaya dihitung dari token aktual tiap request." },
+            { icon: "shield", t: "Harga Transparan", d: "Tarif per model jelas di depan. Tanpa biaya tersembunyi." },
+            { icon: "key", t: "Banyak Model, 1 Platform", d: "Akses beragam model AI premium dengan satu API key." },
+          ].map((b) => (
+            <div
+              key={b.t}
+              className="group border border-foreground/10 rounded-2xl p-6 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-xl hover:shadow-white/5 transition-all duration-300 bg-muted/30"
+            >
+              <div className="text-foreground mb-3 group-hover:scale-110 transition-transform">
+                <Icon name={b.icon} />
+              </div>
+              <h3 className="font-semibold mb-1.5">{b.t}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{b.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== MODEL PRICING ===== */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-14">
           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Harga</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">Paket Langganan</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mt-2">Model Pricing</h2>
           <p className="text-muted-foreground mt-3">
-            Pilih sesuai kebutuhan, semua aktif 14 hari
+            Harga per 1 juta token untuk tiap model. Selalu update otomatis.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
-          {packages.map((p) => (
-            <div
-              key={p.id}
-              className={`relative rounded-2xl p-7 pt-8 flex flex-col transition-all duration-300 overflow-visible ${
-                p.highlight
-                  ? "glow-card shadow-2xl shadow-white/10 scale-[1.03] bg-muted/40"
-                  : "border border-foreground/10 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-xl hover:shadow-white/5 bg-muted/30"
-              }`}
+        <div className="max-w-4xl mx-auto">
+          <ModelPricingTable />
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/register"
+              className="bg-white text-black px-8 py-3.5 rounded-xl font-semibold hover:bg-foreground/90 transition shadow-lg shadow-white/10"
             >
-              {p.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-xs px-3 py-1 rounded-full font-semibold shadow-lg">
-                  Populer
-                </span>
-              )}
-              <h3 className="text-xl font-bold">{p.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{p.description}</p>
-              <div className="mt-5">
-                <span className="text-4xl font-bold">{formatRupiah(p.price)}</span>
-                <span className="text-muted-foreground text-sm"> / 14 hari</span>
-              </div>
-              <div className="mt-1 text-sm font-semibold gradient-text">
-                {formatToken(p.tokenQuota)} token
-              </div>
-              <ul className="mt-6 space-y-3 text-sm flex-1">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border border-foreground/20 text-foreground flex items-center justify-center">
-                      <Icon name="check" className="w-2.5 h-2.5" />
-                    </span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-5 text-xs text-muted-foreground">
-                {p.stock > 0 ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                    Stok: {p.stock} tersedia
-                  </span>
-                ) : (
-                  <span className="text-foreground font-medium">Stok habis</span>
-                )}
-              </div>
-              {p.stock > 0 ? (
-                <Link
-                  href={`/checkout/${p.id}`}
-                  className={`mt-5 block text-center py-3 rounded-xl font-semibold transition ${
-                    p.highlight
-                      ? "bg-white text-black hover:bg-foreground/90 shadow-lg shadow-white/10"
-                      : "border hover:bg-muted"
-                  }`}
-                >
-                  Beli {p.name}
-                </Link>
-              ) : (
-                <button
-                  disabled
-                  className="mt-5 block w-full text-center py-3 rounded-xl font-semibold border opacity-50 cursor-not-allowed"
-                >
-                  Habis
-                </button>
-              )}
-            </div>
-          ))}
+              Get Started
+            </Link>
+            <Link
+              href="/dashboard/wallet"
+              className="border px-8 py-3.5 rounded-xl font-semibold hover:bg-muted transition"
+            >
+              Top Up Credits
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -354,10 +357,10 @@ export default async function Home() {
               <span className="gradient-text">{APP_NAME}</span>
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              {APP_TAGLINE} · {new Date().getFullYear()}
+              Pay only for what you use. No subscriptions. No hidden fees.
             </p>
             <p className="text-xs text-muted-foreground">
-              Powered by OpenAI-compatible API
+              © {new Date().getFullYear()} {APP_NAME} · Powered by OpenAI-compatible API
             </p>
           </div>
         </div>

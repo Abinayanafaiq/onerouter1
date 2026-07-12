@@ -5,8 +5,11 @@ import { prisma } from "@/app/lib/prisma";
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user || session.user?.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.user?.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
     const setting = await prisma.setting.findUnique({
       where: { key: "qris_image" },
@@ -21,8 +24,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user || session.user?.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.user?.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -55,8 +61,11 @@ export async function POST(request: Request) {
 export async function DELETE() {
   try {
     const session = await auth();
-    if (!session?.user || session.user?.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.user?.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.setting.deleteMany({ where: { key: "qris_image" } });
