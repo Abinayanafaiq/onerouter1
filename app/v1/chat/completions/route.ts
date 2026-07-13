@@ -1,11 +1,14 @@
 import {
   authenticateRequest,
   resolveMasterModel,
-  recordUsageWithBilling,
+  settleReservation,
   ensureWallet,
   estimatePromptTokens,
+  estimateMaxCost,
   estimateMinimumCost,
   logNonBilledUsage,
+  reserveCredits,
+  releaseReservation,
   isModelAllowed,
   getClientIp,
   errorResponse,
@@ -48,6 +51,7 @@ export async function POST(request: Request) {
 
   console.log("[v1/chat] request received");
 
+  // 1. Authenticate API Key
   const apiKey = await authenticateRequest(request.headers.get("authorization"), { clientIp });
   if (!apiKey) {
     console.log("[v1/chat] auth failed - invalid key");
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
   }
   console.log("[v1/chat] auth ok, keyId:", apiKey.id);
 
+  // 2. Rate limit
   const rateLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);
   if (!rateLimit.allowed) {
     console.log("[v1/chat] rate limited");
@@ -72,6 +77,7 @@ export async function POST(request: Request) {
     );
   }
 
+  // 3. Parse body
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -87,6 +93,7 @@ export async function POST(request: Request) {
   }
   console.log("[v1/chat] model:", model);
 
+  // 4. Resolve & validate model
   const resolvedModel = await resolveMasterModel(model);
   if (!resolvedModel) {
     console.log("[v1/chat] model not supported:", model);
@@ -108,7 +115,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Enforce per-key allowed-models restriction.
+  // 5. Enforce per-key allowed-models restriction
   if (!isModelAllowed(apiKey, resolvedModel)) {
     console.log("[v1/chat] model not allowed for key:", model);
     await logNonBilledUsage({
@@ -128,9 +135,11 @@ export async function POST(request: Request) {
     return errorResponse("API key not fully activated (no master key bound)", 403, "configuration_error");
   }
 
-  // Ensure wallet exists and check balance (server-side enforcement).
+  // 6. Load wallet
   const wallet = await ensureWallet(apiKey.userId);
   const balance = Number(wallet.balance);
+  console.log(`[v1/chat] wallet loaded, balance: ${balance} IDR`);
+
   if (balance <= 0) {
     console.log("[v1/chat] insufficient balance (zero):", balance);
     await logNonBilledUsage({
@@ -143,14 +152,14 @@ export async function POST(request: Request) {
       requestMeta: buildMeta(402),
     });
     return errorResponse(
-      "Insufficient credits. Please top up your wallet balance to continue using AI services.",
+      "Insufficient credit balance.",
       402,
+      "billing_error",
       "insufficient_balance",
     );
   }
 
-  // Pre-flight minimum-credit estimate. Reject before hitting the provider if
-  // the wallet cannot even cover the input plus a small output floor.
+  // 7. Estimate costs
   const promptTokens = estimatePromptTokens(body.messages);
   const maxOutputTokens =
     typeof body.max_tokens === "number"
@@ -158,9 +167,11 @@ export async function POST(request: Request) {
       : typeof body.max_completion_tokens === "number"
         ? (body.max_completion_tokens as number)
         : 256;
+
+  // Quick reject if balance can't even cover the minimum estimate
   const minCost = estimateMinimumCost({ resolvedModel, promptTokens, maxOutputTokens });
   if (balance < minCost) {
-    console.log(`[v1/chat] insufficient balance for estimate: bal=${balance} min=${minCost}`);
+    console.log(`[v1/chat] insufficient balance for minimum estimate: bal=${balance} min=${minCost}`);
     await logNonBilledUsage({
       userId: apiKey.userId,
       apiKeyId: apiKey.id,
@@ -171,15 +182,49 @@ export async function POST(request: Request) {
       requestMeta: buildMeta(402),
     });
     return errorResponse(
-      "Insufficient credits. Please top up your wallet balance to continue using AI services.",
+      "Insufficient credit balance.",
       402,
+      "billing_error",
       "insufficient_balance",
     );
   }
 
+  // 8. Reserve credits (atomic deduction before contacting provider)
+  const maxCost = estimateMaxCost({ resolvedModel, promptTokens, maxOutputTokens });
+  console.log(`[v1/chat] estimated required balance: ${maxCost} IDR (current: ${balance} IDR)`);
+
+  const reservation = await reserveCredits({
+    userId: apiKey.userId,
+    amount: maxCost,
+    description: `Reservation: ${resolvedModel.modelId}`,
+  });
+
+  if (!reservation.ok) {
+    console.log(`[v1/chat] reservation failed: ${reservation.error}, current balance: ${reservation.currentBalance} IDR`);
+    console.log("[v1/chat] provider request BLOCKED — insufficient balance for reservation");
+    await logNonBilledUsage({
+      userId: apiKey.userId,
+      apiKeyId: apiKey.id,
+      aiModelId: resolvedModel.id,
+      modelLabel: resolvedModel.modelId,
+      provider: resolvedModel.provider,
+      status: "rejected",
+      requestMeta: buildMeta(402),
+    });
+    return errorResponse(
+      "Insufficient credit balance.",
+      402,
+      "billing_error",
+      "insufficient_balance",
+    );
+  }
+
+  console.log(`[v1/chat] reservation successful: reserved ${reservation.reservedAmount} IDR, new balance: ${reservation.newBalance} IDR`);
+  console.log("[v1/chat] provider request ALLOWED");
+
+  // 9. Forward to upstream provider
   body.model = resolvedModel.masterId;
   const isStream = body.stream === true;
-
   const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
   console.log("[v1/chat] forwarding to:", upstreamUrl, "stream:", isStream);
 
@@ -198,6 +243,15 @@ export async function POST(request: Request) {
     if (!upstream.ok) {
       const text = await upstream.text();
       console.error("[v1/chat] upstream error:", upstream.status, text.slice(0, 500));
+
+      // Release the full reservation — provider didn't produce a usable response
+      await releaseReservation({
+        walletId: reservation.walletId,
+        reservedAmount: reservation.reservedAmount,
+        description: resolvedModel.modelId,
+      });
+      console.log("[v1/chat] reservation released (upstream error)");
+
       await logNonBilledUsage({
         userId: apiKey.userId,
         apiKeyId: apiKey.id,
@@ -214,12 +268,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Streaming response ---
     if (isStream && upstream.body) {
       const encoder = new TextEncoder();
       const decoder = new TextDecoder();
       const reader = upstream.body.getReader();
-      let promptTokens = 0;
-      let completionTokens = 0;
+      let streamPromptTokens = 0;
+      let streamCompletionTokens = 0;
       let buffer = "";
 
       const stream = new ReadableStream({
@@ -242,8 +297,8 @@ export async function POST(request: Request) {
                       usage?: { prompt_tokens?: number; completion_tokens?: number };
                     };
                     if (parsed.usage) {
-                      promptTokens = parsed.usage.prompt_tokens || 0;
-                      completionTokens = parsed.usage.completion_tokens || 0;
+                      streamPromptTokens = parsed.usage.prompt_tokens || 0;
+                      streamCompletionTokens = parsed.usage.completion_tokens || 0;
                     }
                   } catch {
                     // skip non-JSON chunks
@@ -254,52 +309,24 @@ export async function POST(request: Request) {
             }
             if (buffer) controller.enqueue(encoder.encode(buffer));
           } finally {
-            // Charge wallet based on actual usage
-            if (promptTokens > 0 || completionTokens > 0) {
-              const chargeResult = await recordUsageWithBilling({
-                userId: apiKey.userId,
-                apiKeyId: apiKey.id,
-                resolvedModel,
-                inputTokens: promptTokens,
-                outputTokens: completionTokens,
-                requestMeta: buildMeta(200),
-              });
+            // Settle the reservation against actual usage
+            const settleResult = await settleReservation({
+              userId: apiKey.userId,
+              apiKeyId: apiKey.id,
+              walletId: reservation.walletId,
+              reservedAmount: reservation.reservedAmount,
+              resolvedModel,
+              inputTokens: streamPromptTokens,
+              outputTokens: streamCompletionTokens,
+              requestMeta: buildMeta(200),
+            });
 
-              if (chargeResult.ok) {
-                // Emit billing as an SSE comment line (starts with ":").
-                // Per the SSE spec, comment lines are silently ignored by
-                // all SSE parsers — including the OpenAI SDK, Chatbox AI,
-                // LibreChat, and Open WebUI. This keeps the stream fully
-                // OpenAI-compatible (every `data:` line remains a valid
-                // ChatCompletionChunk with `choices`) while still exposing
-                // billing to custom clients that parse comments.
-                const billingComment = `: x_billing ${JSON.stringify(chargeResult.billing)}\n`;
-                controller.enqueue(encoder.encode(billingComment));
-              } else {
-                // Charge failed after the completion was already streamed.
-                // Record the real usage as an error so the leakage is
-                // visible in audit logs.
-                console.error("[v1/chat] billing failed after streaming:", chargeResult.error);
-                await logNonBilledUsage({
-                  userId: apiKey.userId,
-                  apiKeyId: apiKey.id,
-                  aiModelId: resolvedModel.id,
-                  modelLabel: resolvedModel.modelId,
-                  provider: resolvedModel.provider,
-                  status: "error",
-                  requestMeta: buildMeta(200),
-                });
-              }
+            if (settleResult.ok) {
+              console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
+              const billingComment = `: x_billing ${JSON.stringify(settleResult.billing)}\n`;
+              controller.enqueue(encoder.encode(billingComment));
             } else {
-              // Zero-usage — still log a zero-cost audit row.
-              await recordUsageWithBilling({
-                userId: apiKey.userId,
-                apiKeyId: apiKey.id,
-                resolvedModel,
-                inputTokens: 0,
-                outputTokens: 0,
-                requestMeta: buildMeta(200),
-              });
+              console.error("[v1/chat] settlement failed:", settleResult.error);
             }
 
             try {
@@ -322,12 +349,22 @@ export async function POST(request: Request) {
       });
     }
 
+    // --- Non-streaming response ---
     const rawText = await upstream.text();
     let data: { usage?: { prompt_tokens?: number; completion_tokens?: number } };
     try {
       data = JSON.parse(rawText);
     } catch {
       console.error("[v1/chat] JSON parse failed. Raw (first 500):", rawText.slice(0, 500));
+
+      // Release reservation — no valid response to bill
+      await releaseReservation({
+        walletId: reservation.walletId,
+        reservedAmount: reservation.reservedAmount,
+        description: resolvedModel.modelId,
+      });
+      console.log("[v1/chat] reservation released (non-JSON response)");
+
       await logNonBilledUsage({
         userId: apiKey.userId,
         apiKeyId: apiKey.id,
@@ -339,24 +376,27 @@ export async function POST(request: Request) {
       });
       return errorResponse("Upstream returned a non-JSON response", 502, "api_error");
     }
-    const promptTokens = data.usage?.prompt_tokens || 0;
-    const completionTokens = data.usage?.completion_tokens || 0;
 
-    // Charge wallet and get billing info
-    const chargeResult = await recordUsageWithBilling({
+    const promptTokensResp = data.usage?.prompt_tokens || 0;
+    const completionTokensResp = data.usage?.completion_tokens || 0;
+
+    // Settle the reservation against actual usage
+    const settleResult = await settleReservation({
       userId: apiKey.userId,
       apiKeyId: apiKey.id,
+      walletId: reservation.walletId,
+      reservedAmount: reservation.reservedAmount,
       resolvedModel,
-      inputTokens: promptTokens,
-      outputTokens: completionTokens,
+      inputTokens: promptTokensResp,
+      outputTokens: completionTokensResp,
       requestMeta: buildMeta(200),
     });
 
-    if (!chargeResult.ok) {
-      // Billing failed (e.g. balance dropped between pre-check and charge).
-      // Do not return the completion for free — record the real usage as an
-      // error and return a 402 so the client knows to top up.
-      console.error("[v1/chat] billing failed:", chargeResult.error);
+    if (!settleResult.ok) {
+      console.error("[v1/chat] settlement failed:", settleResult.error);
+      // The response was already generated; we still return it but log the
+      // settlement failure. The reservation was already deducted, so the
+      // credits are held — an admin can reconcile.
       await logNonBilledUsage({
         userId: apiKey.userId,
         apiKeyId: apiKey.id,
@@ -364,21 +404,29 @@ export async function POST(request: Request) {
         modelLabel: resolvedModel.modelId,
         provider: resolvedModel.provider,
         status: "error",
-        requestMeta: buildMeta(402),
+        requestMeta: buildMeta(200),
       });
-      return errorResponse(
-        "Insufficient credits. Please top up your wallet balance to continue using AI services.",
-        402,
-        "insufficient_balance",
-      );
+    } else {
+      console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
     }
 
     // Attach billing info to response (custom field, OpenAI SDK ignores unknown fields)
-    (data as Record<string, unknown>).x_billing = chargeResult.billing;
+    if (settleResult.ok) {
+      (data as Record<string, unknown>).x_billing = settleResult.billing;
+    }
 
     return Response.json(data, { headers: corsHeaders() });
   } catch (e) {
     console.error("[v1/chat/completions] proxy error:", e);
+
+    // Release reservation on network/transport error
+    await releaseReservation({
+      walletId: reservation.walletId,
+      reservedAmount: reservation.reservedAmount,
+      description: resolvedModel.modelId,
+    });
+    console.log("[v1/chat] reservation released (proxy error)");
+
     await logNonBilledUsage({
       userId: apiKey.userId,
       apiKeyId: apiKey.id,

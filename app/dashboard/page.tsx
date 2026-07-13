@@ -1,298 +1,611 @@
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
+import { getWalletSummary } from "@/app/lib/usage-stats";
 import { getAvailableModels } from "@/app/lib/models";
 import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
 import Link from "next/link";
-import { UploadProof } from "./upload-proof";
+import { AnimatedCounter } from "@/app/components/animated-counter";
+import { ModelCard } from "@/app/components/model-card";
+import { toModelCardData } from "@/app/lib/model-card-data";
 import { RevealKey } from "./reveal-key";
+
+export const dynamic = "force-dynamic";
+
+const API_BASE_URL = "https://www.onerouter.my.id/v1";
+
+function greeting(d: Date): string {
+  const h = d.getHours();
+  if (h < 11) return "Good morning";
+  if (h < 15) return "Good afternoon";
+  if (h < 19) return "Good evening";
+  return "Good night";
+}
+
+type MetricProps = {
+  label: string;
+  value: number;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  sub: string;
+  icon: React.ReactNode;
+  delay?: string;
+};
+
+function MetricCard({ label, value, decimals = 0, prefix, suffix, sub, icon, delay }: MetricProps) {
+  return (
+    <div className={`glass card-hover rounded-2xl p-5 ${delay ?? ""}`}>
+      <div className="flex items-center justify-between">
+        <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-accent">
+          {icon}
+        </span>
+      </div>
+      <div className="mt-4 text-[12px] font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+        <AnimatedCounter value={value} decimals={decimals} prefix={prefix} suffix={suffix} />
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">{sub}</div>
+    </div>
+  );
+}
+
+function Sparkline({ data }: { data: { label: string; cost: number }[] }) {
+  const max = Math.max(...data.map((d) => d.cost), 0.0001);
+  const w = 100;
+  const h = 32;
+  const step = data.length > 1 ? w / (data.length - 1) : w;
+  const points = data.map((d, i) => {
+    const x = i * step;
+    const y = h - (d.cost / max) * (h - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const path = `M ${points.join(" L ")}`;
+  const area = `${path} L ${w},${h} L 0,${h} Z`;
+  const hasData = data.some((d) => d.cost > 0);
+
+  return (
+    <div className="flex items-end gap-2">
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-10 flex-1">
+        <defs>
+          <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(0,255,136,0.35)" />
+            <stop offset="100%" stopColor="rgba(0,255,136,0)" />
+          </linearGradient>
+        </defs>
+        {hasData && (
+          <>
+            <path d={area} fill="url(#spark)" />
+            <path
+              d={path}
+              fill="none"
+              stroke="var(--accent)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
+        )}
+        {!hasData && (
+          <line x1="0" y1={h - 2} x2={w} y2={h - 2} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 3" />
+        )}
+      </svg>
+    </div>
+  );
+}
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
   const wallet = await getOrCreateWallet(userId);
-  const recentTransactions = await getTransactions(wallet.id, 10);
-  const enabledModels = await getAvailableModels();
-
-  const orders = await prisma.order.findMany({
-    where: { userId },
-    include: { package: true },
-    orderBy: { createdAt: "desc" },
-  });
-  const apiKeys = await prisma.apiKey.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const totalUsageCost = await prisma.usageLog.aggregate({
-    where: { userId },
-    _sum: { totalCost: true },
-  });
-  const totalRequests = await prisma.usageLog.count({ where: { userId } });
-
+  const walletId = wallet.id;
   const balance = Number(wallet.balance);
-  const totalSpent = Number(totalUsageCost._sum.totalCost || 0);
+
+  const [
+    summary,
+    recentTransactions,
+    availableModels,
+    apiKeys,
+    tokensAgg,
+    totalRequests,
+    monthlySpendAgg,
+    avgLatencyAgg,
+    sevenDayLogs,
+  ] = await Promise.all([
+    getWalletSummary(userId),
+    getTransactions(walletId, 7),
+    getAvailableModels(),
+    prisma.apiKey.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+    prisma.usageLog.aggregate({
+      where: { userId, status: "success" },
+      _sum: { totalTokens: true },
+    }),
+    prisma.usageLog.count({ where: { userId } }),
+    prisma.usageLog.aggregate({
+      where: { userId, status: "success", createdAt: { gte: startOfMonth } },
+      _sum: { totalCost: true },
+    }),
+    prisma.apiRequestLog.aggregate({
+      where: { userId },
+      _avg: { responseTime: true },
+      _count: true,
+    }),
+    prisma.usageLog.findMany({
+      where: { userId, status: "success", createdAt: { gte: sevenDaysAgo } },
+      select: { totalCost: true, createdAt: true },
+    }),
+  ]);
+
+  const balanceToks = idrToToks(balance);
+  const totalTokens = Number(tokensAgg._sum.totalTokens ?? 0);
+  const monthlySpend = Number(monthlySpendAgg._sum.totalCost ?? 0);
+  const monthlySpendToks = idrToToks(monthlySpend);
+  const avgLatency = Math.round(Number(avgLatencyAgg._avg.responseTime ?? 0));
+  const latencySamples = Number(avgLatencyAgg._count ?? 0);
+
+  const totalPurchased = summary.totalPurchased;
+  const totalUsed = summary.totalUsed;
+  const usagePct =
+    totalPurchased > 0 ? Math.min(100, (totalUsed / totalPurchased) * 100) : 0;
+
+  const trend: { label: string; cost: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const next = new Date(d);
+    next.setDate(d.getDate() + 1);
+    const cost = sevenDayLogs
+      .filter((l) => l.createdAt >= d && l.createdAt < next)
+      .reduce((s, l) => s + Number(l.totalCost), 0);
+    trend.push({
+      label: d.toLocaleDateString("en-US", { weekday: "short" }),
+      cost: idrToToks(cost),
+    });
+  }
+
+  const firstName = (session?.user?.name || session?.user?.email || "Developer").split(/[\s@.]+/)[0];
+  const dateString = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const isEmpty = balance <= 0;
+  const isLow = !isEmpty && usagePct >= 85;
+  const statusLabel = isEmpty ? "No balance" : isLow ? "Low credits" : "Active";
+  const statusColor = isEmpty
+    ? "text-red-400 border-red-500/30 bg-red-500/10"
+    : isLow
+      ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
+      : "text-accent border-accent/30 bg-accent/10";
+
+  const featuredModels = availableModels.slice(0, 3).map(toModelCardData);
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">Dashboard</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {session?.user?.email}
+    <div className="mx-auto max-w-6xl space-y-8">
+      {/* Hero */}
+      <section className="animate-fade-up">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-[12px] font-medium text-muted-foreground">{dateString}</div>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
+              {greeting(now)}, <span className="gradient-text-accent">{firstName}</span>
+            </h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Your AI infrastructure usage at a glance.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/chat"
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              Open Playground
+            </Link>
+            <Link
+              href="/dashboard/wallet"
+              className="btn-accent rounded-lg px-3.5 py-2 text-xs"
+            >
+              + Add Credits
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Metric cards */}
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+        <MetricCard
+          label="Credit Balance"
+          value={balanceToks}
+          decimals={2}
+          suffix={` ${TOKS_LABEL}`}
+          sub={`≈ Rp${balance.toLocaleString("id-ID", { maximumFractionDigits: 0 })}`}
+          delay="animate-fade-up"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M2 10h20M6 15h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="Total Requests"
+          value={totalRequests}
+          sub="API calls"
+          delay="animate-fade-up-delay-1"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="Tokens Consumed"
+          value={totalTokens}
+          sub="prompt + completion"
+          delay="animate-fade-up-delay-2"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <path d="M4 7h16M4 12h10M4 17h7M17 17l4 4M21 17l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="Avg Latency"
+          value={avgLatency}
+          suffix=" ms"
+          sub={`${latencySamples.toLocaleString("en-US")} samples`}
+          delay="animate-fade-up-delay-3"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="Monthly Spend"
+          value={monthlySpendToks}
+          decimals={2}
+          suffix={` ${TOKS_LABEL}`}
+          sub="this month"
+          delay="animate-fade-up-delay-4"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
+        />
+      </section>
+
+      {/* Wallet widget + Quickstart */}
+      <section className="grid gap-4 lg:grid-cols-3">
+        {/* Fintech wallet widget */}
+        <div className="glass card-hover relative overflow-hidden rounded-2xl p-6 lg:col-span-2 animate-fade-up-delay-2">
+          <div
+            className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-60"
+            style={{ background: "radial-gradient(circle, rgba(0,255,136,0.12) 0%, transparent 70%)" }}
+          />
+          <div className="relative flex items-start justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                AI Credits Balance
+              </div>
+              <div className="mt-3 flex items-end gap-2">
+                <span className="text-4xl font-bold tracking-tight text-foreground">
+                  <AnimatedCounter value={balanceToks} decimals={2} />
+                </span>
+                <span className="mb-1 text-sm font-semibold text-muted-foreground">{TOKS_LABEL}</span>
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                ≈ Rp{balance.toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+              </div>
+            </div>
+            <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusColor}`}>
+              ● {statusLabel}
+            </span>
+          </div>
+
+          {/* Usage progress */}
+          <div className="relative mt-6">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">Credit utilization</span>
+              <span className="font-medium text-foreground">
+                {idrToToks(totalUsed).toLocaleString("id-ID", { maximumFractionDigits: 2 })} /{" "}
+                {idrToToks(totalPurchased).toLocaleString("id-ID", { maximumFractionDigits: 0 })}{" "}
+                {TOKS_LABEL}
+              </span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${usagePct}%`,
+                  background:
+                    isLow || isEmpty
+                      ? "linear-gradient(90deg, #f59e0b, #ef4444)"
+                      : "linear-gradient(90deg, var(--accent), #16d97a)",
+                  boxShadow: isLow || isEmpty ? "none" : "0 0 12px var(--accent-glow)",
+                }}
+              />
+            </div>
+            <div className="mt-1.5 text-[10px] text-muted-foreground">
+              {usagePct.toFixed(1)}% of purchased credits used
+            </div>
+          </div>
+
+          {/* 7-day trend */}
+          <div className="relative mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">Spending · last 7 days</span>
+              <span className="text-[11px] font-semibold text-foreground">
+                {trend.reduce((s, d) => s + d.cost, 0).toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
+                {TOKS_LABEL}
+              </span>
+            </div>
+            <div className="mt-3">
+              <Sparkline data={trend} />
+            </div>
+            <div className="mt-1 flex justify-between text-[9px] text-muted-foreground/70">
+              {trend.map((d) => (
+                <span key={d.label}>{d.label[0]}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="relative mt-5 flex flex-wrap gap-2">
+            <Link href="/dashboard/wallet" className="btn-accent rounded-lg px-4 py-2.5 text-xs">
+              + Add Credits
+            </Link>
+            <Link
+              href="/dashboard/wallet"
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              View Transactions
+            </Link>
+          </div>
+
+          {isEmpty && (
+            <div className="relative mt-4 rounded-lg border border-amber-500/25 bg-amber-500/[0.07] p-3 text-[11px] text-amber-400">
+              Credits depleted — AI services are paused until you top up.{" "}
+              <Link href="/dashboard/wallet" className="font-semibold underline">
+                Add credits →
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Quickstart card */}
+        <div className="glass card-hover rounded-2xl p-6 animate-fade-up-delay-3">
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-accent-2">
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="m8 16-4-4 4-4M16 8l4 4-4 4M14 4l-4 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <h3 className="text-sm font-semibold tracking-tight">Start building</h3>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            OpenAI-compatible endpoint. Drop your API key and start shipping.
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/chat"
-            className="border px-3 py-1.5 rounded-md text-xs font-medium hover:bg-muted transition"
-          >
-            Chat Playground
-          </Link>
-          <Link
-            href="/dashboard/wallet"
-            className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 transition"
-          >
-            + Top Up
-          </Link>
-        </div>
-      </div>
 
-      {/* Wallet Balance - prominent */}
-      <div className="border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Wallet Balance</h2>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-            balance > 0 ? "bg-green-500/15 text-green-500" : "bg-gray-500/15 text-gray-500"
-          }`}>
-            {balance > 0 ? "● Active" : "● No Balance"}
-          </span>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Saldo Kredit</div>
-            <div className="text-2xl font-bold mt-0.5 text-green-500">
-              {idrToToks(balance).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+          <div className="mt-4">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Base URL
             </div>
-            <div className="text-[10px] text-muted-foreground">
-              {TOKS_LABEL} · ≈ Rp{balance.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-2">
+              <code className="flex-1 truncate font-mono text-[11px] text-foreground">{API_BASE_URL}</code>
             </div>
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Total Terpakai</div>
-            <div className="text-2xl font-bold mt-0.5">
-              {idrToToks(totalSpent).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
-            </div>
-            <div className="text-[10px] text-muted-foreground">{TOKS_LABEL} biaya AI</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Total Request</div>
-            <div className="text-2xl font-bold mt-0.5">{totalRequests.toLocaleString("id-ID")}</div>
-            <div className="text-[10px] text-muted-foreground">API calls</div>
-          </div>
-        </div>
-        {balance <= 0 && (
-          <div className="mt-4 border border-yellow-500/30 bg-yellow-500/10 rounded-md p-3 text-xs text-yellow-600">
-            Kredit {TOKS_LABEL} habis. <Link href="/dashboard/wallet" className="font-medium underline">Top up sekarang</Link> untuk mulai pakai AI.
-          </div>
-        )}
-      </div>
 
-      {/* Available Models */}
-      <div className="border rounded-xl p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Model Tersedia</h2>
-        <div className="space-y-2">
-          {enabledModels.map((m) => (
-            <div key={m.id} className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium">{m.name}</span>
-                <code className="ml-2 text-xs text-muted-foreground">{m.modelId}</code>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                In: Rp{Number(m.inputPricePerMillion).toLocaleString("id-ID")}/Jt ·
-                Out: Rp{Number(m.outputPricePerMillion).toLocaleString("id-ID")}/Jt
-              </div>
+          <div className="mt-4">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Auth header
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* API Keys */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">API Keys</h2>
-          <Link href="/dashboard/api-keys" className="text-xs text-muted-foreground hover:text-foreground transition">
-            Manage all →
-          </Link>
-        </div>
-        {apiKeys.length === 0 ? (
-          <div className="border rounded-lg p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              No API keys yet.{" "}
-              <Link href="/dashboard/api-keys" className="font-medium hover:underline">Generate one</Link>{" "}
-              to start using the API.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {apiKeys.map((key) => {
-              const isExpired = key.expiresAt ? new Date(key.expiresAt) <= new Date() : false;
-              const rawKey = key.key ?? "";
-              return (
-                <div key={key.id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <RevealKey rawKey={rawKey} isExpired={isExpired} />
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
-                      isExpired ? "bg-red-500/15 text-red-400" : "bg-green-500/15 text-green-400"
-                    }`}>
-                      {isExpired ? "Expired" : "Active"}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground mt-1.5">
-                    Berlaku s/d {key.expiresAt ? key.expiresAt.toLocaleDateString("id-ID") : "no expiry"} · {key.requestCount.toLocaleString("id-ID")} request
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Usage Instructions */}
-            <div className="border rounded-lg p-4 bg-muted/20 mt-3">
-              <h3 className="text-sm font-medium mb-3">Cara Pakai API</h3>
-              <ol className="space-y-2 text-xs text-muted-foreground list-decimal list-inside">
-                <li>Dapatkan API key di atas (klik <span className="font-medium text-foreground">Show</span> lalu <span className="font-medium text-foreground">Copy</span>)</li>
-                <li>Pastikan <Link href="/dashboard/wallet" className="font-medium text-foreground hover:underline">wallet balance</Link> cukup</li>
-                <li>Set base URL ke <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">https://www.onerouter.my.id/v1</code></li>
-                <li>Set Authorization header: <code className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground">Bearer sk_live_xxx</code></li>
-                <li>Pilih model: {enabledModels.map((m) => (
-                  <code key={m.id} className="bg-background border rounded px-1.5 py-0.5 font-mono text-foreground mr-1">{m.modelId}</code>
-                ))}</li>
-              </ol>
-              <div className="mt-3">
-                <p className="text-xs text-muted-foreground mb-1">Contoh cURL:</p>
-                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto leading-relaxed">
-{`curl https://www.onerouter.my.id/v1/chat/completions \\
-  -H "Authorization: Bearer sk_live_xxx" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "model": "${enabledModels[0]?.modelId ?? "glm-5.2"}",
-    "messages": [
-      {"role": "user", "content": "Halo!"}
-    ]
-  }'`}
-                </pre>
-              </div>
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Billing per request (dari response <code className="font-mono">x_billing</code>):</p>
-                <pre className="text-[10px] font-mono bg-background border rounded px-2 py-2 overflow-x-auto">
-{`"x_billing": {
-  "inputTokens": 10,
-  "outputTokens": 25,
-  "totalTokens": 35,
-  "inputCost": 0.01,
-  "outputCost": 0.075,
-  "totalCost": 0.085,
-  "remainingBalance": 9999.92
-}`}
-                </pre>
-              </div>
+            <div className="mt-1.5 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-2">
+              <code className="font-mono text-[11px] text-foreground">Authorization: Bearer sk_live_…</code>
             </div>
           </div>
-        )}
+
+          <div className="mt-5 flex flex-col gap-2">
+            <Link
+              href="/dashboard/docs"
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              View documentation
+            </Link>
+            <Link
+              href="/dashboard/api-keys"
+              className="text-center text-[11px] text-muted-foreground transition hover:text-foreground"
+            >
+              Manage API keys →
+            </Link>
+          </div>
+        </div>
       </section>
 
-      {/* Recent Transactions */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Transaksi Terbaru</h2>
-          <Link href="/dashboard/wallet" className="text-xs text-muted-foreground hover:text-foreground transition">
-            Semua →
-          </Link>
-        </div>
-        {recentTransactions.length === 0 ? (
-          <div className="border rounded-lg p-6 text-center">
-            <p className="text-sm text-muted-foreground">Belum ada transaksi</p>
-          </div>
-        ) : (
-          <div className="border rounded-lg divide-y">
-            {recentTransactions.map((t) => {
-              const amt = Number(t.amount);
-              const isPositive = amt > 0;
-              return (
-                <div key={t.id} className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{t.type}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>
-                  </div>
-                  <div className={`text-sm font-mono shrink-0 ${isPositive ? "text-green-600" : "text-red-600"}`}>
-                    {isPositive ? "+" : "-"}{idrToToks(Math.abs(amt)).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Orders */}
-      <section>
-        <h2 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Orders</h2>
-        {orders.length === 0 ? (
-          <div className="border rounded-lg p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Belum ada transaksi.{" "}
-              <Link href="/dashboard/wallet" className="font-medium hover:underline">Top up kredit</Link>
+      {/* Model marketplace preview */}
+      <section className="animate-fade-up-delay-3">
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Models</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {availableModels.length} models available across providers
             </p>
           </div>
+          <Link
+            href="/dashboard/models"
+            className="text-xs font-medium text-muted-foreground transition hover:text-foreground"
+          >
+            Browse all →
+          </Link>
+        </div>
+        {featuredModels.length === 0 ? (
+          <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">
+            No models available right now.
+          </div>
         ) : (
-          <div className="border rounded-lg divide-y">
-            {orders.map((o) => (
-              <div key={o.id} className="p-3 flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{o.package.name}</span>
-                    <StatusDot status={o.status} />
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Rp{o.amount.toLocaleString("id-ID")} · {o.paymentMethod} · {o.createdAt.toLocaleDateString("id-ID")}
-                  </div>
-                </div>
-                <div className="shrink-0">
-                  {o.status === "PENDING" && o.paymentMethod === "MANUAL" && (
-                    <UploadProof orderId={o.id} />
-                  )}
-                  {o.status === "PENDING" && (o.paymentMethod === "CRYPTO" || o.paymentMethod === "PAKASIR") && (
-                    <Link
-                      href={`/checkout/${o.packageId}`}
-                      className="border px-2 py-1 rounded text-xs hover:bg-muted transition"
-                    >
-                      Bayar
-                    </Link>
-                  )}
-                </div>
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredModels.map((m) => (
+              <ModelCard key={m.id} model={m} />
             ))}
           </div>
         )}
       </section>
-    </div>
-  );
-}
 
-function StatusDot({ status }: { status: string }) {
-  const map: Record<string, { color: string; label: string }> = {
-    PENDING: { color: "bg-yellow-500", label: "Pending" },
-    APPROVED: { color: "bg-green-500", label: "Aktif" },
-    REJECTED: { color: "bg-red-500", label: "Ditolak" },
-    CANCELLED: { color: "bg-gray-400", label: "Batal" },
-  };
-  const s = map[status] || { color: "bg-gray-400", label: status };
-  return (
-    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-      <span className={`w-1.5 h-1.5 rounded-full ${s.color}`} />
-      {s.label}
-    </span>
+      {/* API Keys + Recent transactions */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        {/* API Keys */}
+        <div className="glass rounded-2xl p-6 animate-fade-up-delay-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold tracking-tight">API Keys</h2>
+            <Link
+              href="/dashboard/api-keys"
+              className="text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              Manage →
+            </Link>
+          </div>
+          {apiKeys.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
+              <p className="text-sm text-muted-foreground">No API keys yet.</p>
+              <Link
+                href="/dashboard/api-keys"
+                className="mt-3 inline-block rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium transition hover:border-white/20"
+              >
+                Generate a key
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {apiKeys.map((key) => {
+                const isExpired = key.expiresAt ? new Date(key.expiresAt) <= new Date() : false;
+                return (
+                  <div
+                    key={key.id}
+                    className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 transition hover:border-white/10"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-[10px] font-mono text-muted-foreground">
+                          {key.name?.[0]?.toUpperCase() ?? "K"}
+                        </span>
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {key.name || "Production Key"}
+                        </span>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                          isExpired
+                            ? "border-red-500/25 bg-red-500/10 text-red-400"
+                            : "border-accent/25 bg-accent/10 text-accent"
+                        }`}
+                      >
+                        {isExpired ? "Expired" : "Active"}
+                      </span>
+                    </div>
+                    <div className="mt-2.5">
+                      <RevealKey rawKey={key.key ?? ""} isExpired={isExpired} />
+                    </div>
+                    <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span>{key.requestCount.toLocaleString("id-ID")} requests</span>
+                      <span>·</span>
+                      <span>Created {key.createdAt.toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Recent transactions */}
+        <div className="glass rounded-2xl p-6 animate-fade-up-delay-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold tracking-tight">Recent Activity</h2>
+            <Link
+              href="/dashboard/wallet"
+              className="text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              View all →
+            </Link>
+          </div>
+          {recentTransactions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-muted-foreground">
+              No transactions yet.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {recentTransactions.map((t) => {
+                const amt = Number(t.amount);
+                const isPositive = amt > 0;
+                return (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 transition hover:bg-white/[0.02]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span
+                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${
+                          isPositive
+                            ? "border-accent/20 bg-accent/10 text-accent"
+                            : "border-white/10 bg-white/[0.03] text-muted-foreground"
+                        }`}
+                      >
+                        {isPositive ? (
+                          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                            <path d="M7 17 17 7M7 7h10v10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-medium text-foreground">
+                          {t.type === "USAGE" ? t.description?.replace(/^AI usage:\s*/, "") ?? "Usage" : t.type}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {t.createdAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`shrink-0 text-right font-mono text-xs font-semibold ${
+                        isPositive ? "text-accent" : "text-foreground"
+                      }`}
+                    >
+                      <div>
+                        {isPositive ? "+" : "−"}
+                        {idrToToks(Math.abs(amt)).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-[10px] font-normal text-muted-foreground">
+                        Rp{Math.abs(amt).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

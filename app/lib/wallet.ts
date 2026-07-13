@@ -22,6 +22,8 @@ export const WALLET_TX_TYPES = {
   REFUND: "REFUND",
   ADMIN_ADD: "ADMIN_ADD",
   ADMIN_DEDUCT: "ADMIN_DEDUCT",
+  RESERVE: "RESERVE",
+  RELEASE: "RELEASE",
 } as const;
 
 export type WalletTxType = (typeof WALLET_TX_TYPES)[keyof typeof WALLET_TX_TYPES];
@@ -438,4 +440,300 @@ export async function getTransactions(walletId: string, take = 50) {
     orderBy: { createdAt: "desc" },
     take,
   });
+}
+
+/* ============================================================
+   Credit Reservation System
+   ------------------------------------------------------------
+   Prevents the TOCTOU race where a balance check passes but
+   the actual charge (after the upstream provider responds)
+   fails because concurrent requests drained the wallet in
+   between.
+
+   Flow:
+     1. reserveCredits  — atomically deduct estimated max cost
+     2. call upstream provider
+     3a. settleUsage    — refund difference, log actual cost
+     3b. releaseReservation — full refund on upstream failure
+   ============================================================ */
+
+export type ReserveResult =
+  | {
+      ok: true;
+      walletId: string;
+      reservedAmount: number;
+      newBalance: number;
+    }
+  | { ok: false; error: string; currentBalance: number };
+
+/**
+ * Atomically deduct a reservation amount from the wallet. This holds the
+ * credits so concurrent requests cannot overspend. Uses a conditional
+ * `updateMany` (balance >= amount) which is concurrency-safe via
+ * PostgreSQL row-level locking.
+ *
+ * Returns the wallet ID and post-reservation balance on success, or the
+ * current balance on failure so the caller can log it.
+ */
+export async function reserveCredits(params: {
+  userId: string;
+  amount: number;
+  description: string;
+}): Promise<ReserveResult> {
+  const amount = Number(params.amount);
+  if (!Number.isFinite(amount) || amount < 0) {
+    const current = await getWalletBalance(params.userId);
+    return { ok: false, error: "Invalid reservation amount", currentBalance: current };
+  }
+
+  // A zero-cost reservation is a no-op (e.g. free-tier model). Still succeed
+  // so the caller can proceed without contacting the provider's billing.
+  if (amount === 0) {
+    const wallet = await getOrCreateWallet(params.userId);
+    return {
+      ok: true,
+      walletId: wallet.id,
+      reservedAmount: 0,
+      newBalance: Number(wallet.balance),
+    };
+  }
+
+  const wallet = await getOrCreateWallet(params.userId);
+  const reserveDecimal = new Prisma.Decimal(amount).toDecimalPlaces(6);
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Atomic conditional decrement — only succeeds if balance >= amount.
+    // PostgreSQL acquires a row-level lock for this UPDATE, making it
+    // safe against concurrent reservations.
+    const updateResult = await tx.wallet.updateMany({
+      where: { id: wallet.id, balance: { gte: reserveDecimal } },
+      data: { balance: { decrement: reserveDecimal } },
+    });
+
+    if (updateResult.count === 0) {
+      const current = await tx.wallet.findUnique({ where: { id: wallet.id } });
+      return {
+        error: "Insufficient balance" as const,
+        currentBalance: Number(current?.balance ?? 0),
+      };
+    }
+
+    const updated = await tx.wallet.findUnique({ where: { id: wallet.id } });
+
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: WALLET_TX_TYPES.RESERVE,
+        amount: reserveDecimal,
+        description: params.description,
+      },
+    });
+
+    return { updated };
+  });
+
+  if ("error" in result) {
+    return { ok: false, error: result.error as string, currentBalance: result.currentBalance as number };
+  }
+
+  return {
+    ok: true,
+    walletId: wallet.id,
+    reservedAmount: amount,
+    newBalance: Number(result.updated?.balance ?? 0),
+  };
+}
+
+export type SettleResult =
+  | {
+      ok: true;
+      finalBalance: number;
+      actualCost: number;
+      refunded: number;
+      inputCost: number;
+      outputCost: number;
+    }
+  | { ok: false; error: string };
+
+/**
+ * Settle a reservation against the actual usage from the upstream provider.
+ *
+ * - If actualCost < reservedAmount: refund the difference (REFUND tx).
+ * - If actualCost > reservedAmount: attempt to deduct the extra (best-effort;
+ *   if the remaining balance can't cover it, the cost is absorbed — the
+ *   reservation should be generous enough to make this rare).
+ * - Always creates a UsageLog and (if requestMeta provided) an ApiRequestLog
+ *   with the real token counts and costs.
+ *
+ * All operations are in a single transaction.
+ */
+export async function settleUsage(params: {
+  userId: string;
+  apiKeyId: string;
+  walletId: string;
+  reservedAmount: number;
+  aiModelId: string;
+  modelLabel: string;
+  provider: string;
+  inputTokens: number;
+  outputTokens: number;
+  inputPricePerMillion: number;
+  outputPricePerMillion: number;
+  requestMeta?: RequestMeta;
+}): Promise<SettleResult> {
+  const {
+    userId,
+    apiKeyId,
+    walletId,
+    reservedAmount,
+    aiModelId,
+    modelLabel,
+    provider,
+    inputTokens,
+    outputTokens,
+    inputPricePerMillion,
+    outputPricePerMillion,
+    requestMeta,
+  } = params;
+
+  const inputCost = (inputTokens / 1_000_000) * inputPricePerMillion;
+  const outputCost = (outputTokens / 1_000_000) * outputPricePerMillion;
+  const actualCost = inputCost + outputCost;
+
+  const actualCostDecimal = new Prisma.Decimal(actualCost).toDecimalPlaces(6);
+  const inputCostDecimal = new Prisma.Decimal(inputCost).toDecimalPlaces(6);
+  const outputCostDecimal = new Prisma.Decimal(outputCost).toDecimalPlaces(6);
+
+  const result = await prisma.$transaction(async (tx) => {
+    // --- Refund or top-up the difference ---
+    if (actualCost < reservedAmount) {
+      // Refund the unused portion of the reservation.
+      const refundAmount = reservedAmount - actualCost;
+      const refundDecimal = new Prisma.Decimal(refundAmount).toDecimalPlaces(6);
+      if (refundDecimal.toNumber() > 0) {
+        await tx.wallet.update({
+          where: { id: walletId },
+          data: { balance: { increment: refundDecimal } },
+        });
+        await tx.walletTransaction.create({
+          data: {
+            walletId,
+            type: WALLET_TX_TYPES.REFUND,
+            amount: refundDecimal,
+            description: `Reservation refund: ${modelLabel}`,
+          },
+        });
+      }
+    } else if (actualCost > reservedAmount) {
+      // Actual cost exceeded the reservation. Attempt to deduct the extra.
+      const extraCost = actualCost - reservedAmount;
+      const extraDecimal = new Prisma.Decimal(extraCost).toDecimalPlaces(6);
+      if (extraDecimal.toNumber() > 0) {
+        // Best-effort: only deduct if balance covers it. If not, the
+        // small overage is absorbed (provider already generated tokens).
+        await tx.wallet.updateMany({
+          where: { id: walletId, balance: { gte: extraDecimal } },
+          data: { balance: { decrement: extraDecimal } },
+        });
+      }
+    }
+
+    const updated = await tx.wallet.findUnique({ where: { id: walletId } });
+    const remaining = new Prisma.Decimal(updated?.balance ?? 0).toDecimalPlaces(4);
+
+    // --- UsageLog (actual cost) ---
+    await tx.usageLog.create({
+      data: {
+        apiKeyId,
+        userId,
+        modelId: aiModelId,
+        model: modelLabel,
+        provider,
+        status: "success",
+        promptTokens: inputTokens,
+        completionTokens: outputTokens,
+        totalTokens: inputTokens + outputTokens,
+        inputTokens,
+        outputTokens,
+        inputCost: inputCostDecimal,
+        outputCost: outputCostDecimal,
+        totalCost: actualCostDecimal,
+        remainingBalance: remaining,
+      },
+    });
+
+    // --- ApiRequestLog (audit) ---
+    if (requestMeta) {
+      await tx.apiRequestLog.create({
+        data: buildApiRequestLogData({
+          apiKeyId,
+          userId,
+          provider,
+          model: modelLabel,
+          inputTokens,
+          outputTokens,
+          totalTokens: inputTokens + outputTokens,
+          inputCost,
+          outputCost,
+          totalCost: actualCost,
+          remainingBalance: Number(remaining),
+          success: true,
+          ...requestMeta,
+        }),
+      });
+    }
+
+    return { updated };
+  }).catch((e: Error) => {
+    return { error: e.message } as { error: string };
+  });
+
+  if (result && "error" in result) {
+    return { ok: false, error: result.error };
+  }
+
+  const refunded = Math.max(0, reservedAmount - actualCost);
+  return {
+    ok: true,
+    finalBalance: Number(result?.updated?.balance ?? 0),
+    actualCost,
+    refunded,
+    inputCost,
+    outputCost,
+  };
+}
+
+/**
+ * Fully refund a reservation when the upstream request failed or was
+ * aborted. This is the "cancel" path — no usage was consumed, so all
+ * reserved credits are returned.
+ */
+export async function releaseReservation(params: {
+  walletId: string;
+  reservedAmount: number;
+  description: string;
+}): Promise<void> {
+  const { walletId, reservedAmount, description } = params;
+  if (reservedAmount <= 0) return;
+
+  const refundDecimal = new Prisma.Decimal(reservedAmount).toDecimalPlaces(6);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { id: walletId },
+        data: { balance: { increment: refundDecimal } },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId,
+          type: WALLET_TX_TYPES.REFUND,
+          amount: refundDecimal,
+          description: `Released reservation: ${description}`,
+        },
+      });
+    });
+  } catch (e) {
+    console.error("[releaseReservation] failed:", e);
+  }
 }

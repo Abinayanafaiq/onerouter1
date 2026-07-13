@@ -1,370 +1,705 @@
 import Link from "next/link";
-import { APP_NAME, APP_TAGLINE } from "@/app/lib/constants";
+import type { Metadata } from "next";
+import { auth } from "@/app/lib/auth";
 import { getEnabledModels } from "@/app/lib/models";
-import { SiteHeader } from "@/app/components/site-header";
-import { ModelPricingTable } from "@/app/components/model-pricing-table";
+import { toModelCardData, type ModelCardData } from "@/app/lib/model-card-data";
+import { LandingHeader } from "@/app/components/landing/landing-header";
+import { HeroTerminal } from "@/app/components/landing/hero-terminal";
+import { AnimatedStats } from "@/app/components/landing/animated-stats";
+import { CodeTabs } from "@/app/components/landing/code-tabs";
 
 export const dynamic = "force-dynamic";
 
-/* ===== Line icons (stroke 1.5, Lucide-style) ===== */
-function Icon({ name, className = "w-6 h-6" }: { name: string; className?: string }) {
-  const paths: Record<string, React.ReactNode> = {
-    key: <><circle cx="7.5" cy="15.5" r="3.5" /><path d="M10 13 20 3" /><path d="m16 5 3 3" /><path d="m19 2 3 3" /></>,
-    wallet: <><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M16 12h4" /><path d="M3 9h18" /></>,
-    bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
-    shield: <><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" /><path d="m9 12 2 2 4-4" /></>,
-    mapPin: <><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" /></>,
-    rocket: <><path d="M5 13c-1.5 1.5-2 5-2 5s3.5-.5 5-2" /><path d="M14 4c3 0 6 3 6 6 0 4-4 8-8 10l-4-4c2-4 6-8 10-8z" /><path d="m9 15-3 3" /><circle cx="14.5" cy="9.5" r="1.5" /></>,
-    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>,
-    card: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></>,
-    check: <path d="m4 12 5 5L20 6" />,
-    arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
-  };
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      {paths[name]}
-    </svg>
-  );
-}
-
-const modelLetter: Record<string, string> = {
-  "glm-5.2": "G",
-  "deepseek-v4-pro": "D",
-  "qwen-7-plus": "Q",
-  "deepseek-v4-flash": "D",
-  "glm-5.1": "G",
-  "glm-5.2-fast": "G",
-  "qwen3-coder-next": "Q",
-  "minimax-m3": "M",
-  "kimi-k2.7-code": "K",
-  "kimi-k2.7-code-fast": "K",
+export const metadata: Metadata = {
+  title: "OneRouter — One API. The World's Best AI Models.",
+  description:
+    "Access leading AI models through a unified OpenAI-compatible inference API. Fast, reliable, and built for developers. GLM, DeepSeek, Qwen, Kimi & more — one API key.",
+  keywords: [
+    "AI inference API",
+    "OpenAI compatible API",
+    "LLM gateway",
+    "GLM API",
+    "DeepSeek API",
+    "Qwen API",
+    "AI infrastructure",
+    "developer AI platform",
+  ],
+  openGraph: {
+    title: "OneRouter — One API. The World's Best AI Models.",
+    description:
+      "Access leading AI models through a unified OpenAI-compatible inference API. Fast, reliable, and built for developers.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OneRouter — One API. The World's Best AI Models.",
+    description:
+      "Access leading AI models through a unified OpenAI-compatible inference API.",
+  },
 };
 
-export default async function Home() {
-  const enabledModels = await getEnabledModels();
-  const modelCount = enabledModels.length;
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      <SiteHeader />
+const INFRA_FEATURES = [
+  {
+    title: "Unified API",
+    desc: "One endpoint to access multiple frontier AI models. Switch models with a single parameter — no SDK changes.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+        <path d="M4 7h16M4 12h10M4 17h7M17 17l4 4M21 17l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    title: "Fast Inference",
+    desc: "Optimized routing for low-latency responses. Smart failover keeps your requests fast and resilient.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+        <path d="M13 2 4 14h7l-1 8 9-12h-7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    title: "OpenAI Compatible",
+    desc: "Works instantly with existing SDKs. Change the base URL and ship — no rewrites, no lock-in.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+        <path d="m8 16-4-4 4-4M16 8l4 4-4 4M14 4l-4 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    title: "Secure & Reliable",
+    desc: "Enterprise-grade API key management, per-key rate limits, and encrypted credentials. Your data stays yours.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+        <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+];
 
-      {/* ===== HERO ===== */}
-      <section className="relative container mx-auto px-4 pt-28 pb-24 text-center">
-        {/* Grid background */}
-        <div className="absolute inset-0 -z-10 grid-bg" aria-hidden />
-        {/* Subtle white glow */}
+const TRUST_AUDIENCES = [
+  { name: "Startups", desc: "Ship AI features without managing multiple providers." },
+  { name: "Developers", desc: "A clean, documented API that just works." },
+  { name: "Researchers", desc: "Benchmark models side-by-side from one interface." },
+  { name: "AI Engineers", desc: "Production-grade routing, observability, and control." },
+];
+
+const PROVIDER_DOT: Record<string, string> = {
+  GLM: "bg-emerald-400",
+  DeepSeek: "bg-violet-400",
+  Alibaba: "bg-orange-400",
+  "Moonshot AI": "bg-sky-400",
+  MiniMax: "bg-pink-400",
+};
+
+function capabilityLabel(name: string, modelId: string): string {
+  const h = (name + " " + modelId).toLowerCase();
+  if (/code|coder/.test(h)) return "Coding";
+  if (/fast|flash/.test(h)) return "Low Latency";
+  if (/pro|reason/.test(h)) return "Reasoning";
+  return "General Intelligence";
+}
+
+export default async function Home() {
+  const [session, enabledModels] = await Promise.all([auth(), getEnabledModels()]);
+  const isAuthed = !!session?.user;
+  const models: ModelCardData[] = enabledModels.map(toModelCardData);
+  const modelCount = models.length;
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <LandingHeader isAuthed={isAuthed} />
+
+      {/* ============================================================
+          HERO
+          ============================================================ */}
+      <section className="relative px-4 pt-32 pb-20 sm:px-6 sm:pt-40 sm:pb-28">
+        {/* Background effects */}
+        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-60" aria-hidden />
         <div
-          className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[140px] -z-10 animate-pulse-soft"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }}
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(60% 50% at 15% 0%, rgba(0,255,136,0.08) 0%, transparent 60%), radial-gradient(50% 50% at 100% 0%, rgba(99,102,241,0.10) 0%, transparent 55%), radial-gradient(80% 60% at 50% 120%, rgba(99,102,241,0.05) 0%, transparent 60%)",
+          }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute left-1/2 top-[-6%] -z-10 h-[480px] w-[760px] -translate-x-1/2 rounded-full blur-[150px] animate-pulse-soft"
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%)" }}
           aria-hidden
         />
 
-        {/* Badge */}
-        <div className="animate-fade-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-foreground/15 bg-muted/50 backdrop-blur text-xs font-medium mb-8">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-          </span>
-          OpenAI-compatible API · Live
-        </div>
-
-        {/* Headline */}
-        <h1 className="animate-fade-up-delay-1 text-5xl sm:text-7xl font-bold tracking-tight max-w-4xl mx-auto leading-[1.05]">
-          {APP_TAGLINE.split("-")[0]}
-          <span className="block gradient-text mt-2">{APP_TAGLINE.split("-")[1]}</span>
-        </h1>
-
-        <p className="animate-fade-up-delay-2 mt-7 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Akses <strong className="text-foreground">{modelCount} model AI premium</strong> dengan 1 API key.
-          Bayar sesuai paket, pakai sampai token habis. Endpoint kompatibel penuh dengan SDK OpenAI.
-        </p>
-
-        {/* CTAs */}
-        <div className="animate-fade-up-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/register"
-            className="group bg-white text-black px-8 py-3.5 rounded-xl font-semibold hover:bg-foreground/90 transition shadow-lg shadow-white/10 flex items-center gap-2 hover:-translate-y-0.5"
-          >
-            Get Started
-            <Icon name="arrow" className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link
-            href="/dashboard/wallet"
-            className="border px-8 py-3.5 rounded-xl font-semibold hover:bg-muted transition hover:-translate-y-0.5"
-          >
-            Top Up Credits
-          </Link>
-        </div>
-
-        {/* Stats strip */}
-        <div className="animate-fade-up-delay-4 mt-20 grid grid-cols-3 gap-4 max-w-lg mx-auto">
-          {[
-            { v: String(modelCount), l: "Model AI" },
-            { v: "1M", l: "Context Window" },
-            { v: "14hr", l: "Berlaku" },
-          ].map((s) => (
-            <div key={s.l} className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold gradient-text">{s.v}</div>
-              <div className="text-xs text-muted-foreground mt-1">{s.l}</div>
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left: copy */}
+          <div className="animate-fade-up">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground backdrop-blur">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+              OpenAI-compatible inference · {modelCount} models live
             </div>
-          ))}
-        </div>
 
-        {/* Terminal mockup */}
-        <div className="animate-fade-up-delay-4 mt-14 max-w-2xl mx-auto">
-          <div className="glow-card rounded-xl border border-foreground/10 bg-muted/40 backdrop-blur shadow-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-foreground/5">
-              <span className="w-3 h-3 rounded-full bg-neutral-600" />
-              <span className="w-3 h-3 rounded-full bg-neutral-500" />
-              <span className="w-3 h-3 rounded-full bg-neutral-400" />
-              <span className="ml-3 text-xs text-muted-foreground font-mono">curl · one-router</span>
+            {/* Headline */}
+            <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+              One API.
+              <br />
+              <span className="gradient-text-accent">The World's Best</span>
+              <br />
+              AI Models.
+            </h1>
+
+            {/* Subheadline */}
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Access leading AI models through a unified OpenAI-compatible inference API.
+              Fast, reliable, and built for developers.
+            </p>
+
+            {/* CTAs */}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm"
+              >
+                Start Building
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+              <Link
+                href="/dashboard/docs"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path d="M4 4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9-2v5h5M8 13h8M8 17h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                View Documentation
+              </Link>
             </div>
-            <pre className="text-left text-xs sm:text-sm font-mono p-5 overflow-x-auto leading-relaxed">
-<span className="text-muted-foreground"># Buat request seperti OpenAI</span>{"\n"}
-<span className="text-foreground">curl</span> https://onerouter.id/v1/chat/completions \{"\n"}
-  -H <span className="text-foreground">"Authorization: Bearer or-xxxx"</span> \{"\n"}
-  -H <span className="text-foreground">"Content-Type: application/json"</span> \{"\n"}
-  -d <span className="text-foreground">{`'{ "model": "glm-5.2", ... }'`}</span>{"\n"}
-<span className="text-foreground">{"{"}</span> <span className="text-muted-foreground">"role"</span>: <span className="text-foreground">"assistant"</span>, <span className="text-muted-foreground">"content"</span>: <span className="text-foreground">"Halo!"</span> <span className="text-foreground">{"}"}</span>
-<span className="animate-blink text-foreground">▋</span>
-            </pre>
+
+            {/* Mini trust row */}
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                No credit card required
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Pay per token
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Drop-in OpenAI replacement
+              </span>
+            </div>
+          </div>
+
+          {/* Right: terminal */}
+          <div className="animate-fade-up-delay-2">
+            <HeroTerminal />
           </div>
         </div>
       </section>
 
-      {/* ===== FEATURES (Bento) ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Fitur</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">Kenapa pilih {APP_NAME}?</h2>
-          <p className="text-muted-foreground mt-3">
-            Sederhana, cepat, dan hemat untuk developer Indonesia
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {[
-            { icon: "key", t: "1 API Key, 2 Model", d: "Tak perlu daftar banyak layanan. Satu key akses semua model premium." },
-            { icon: "wallet", t: "Bayar Sesuai Pakai", d: "Beli token sesuai kebutuhan. Tak ada langganan bulanan yang mubazir." },
-            { icon: "bolt", t: "Endpoint Kompatibel", d: "Drop-in replacement SDK OpenAI. Ganti base URL, langsung jalan." },
-            { icon: "shield", t: "Aman & Privat", d: "Autentikasi NextAuth, API key terenkripsi. Data kamu milik kamu." },
-            { icon: "mapPin", t: "Pembayaran Lokal", d: "Transfer bank & upload bukti. Tanpa kartu kredit asing." },
-            { icon: "rocket", t: "Aktivasi Cepat", d: "Admin verifikasi lalu API key aktif instan di dashboard." },
-          ].map((f) => (
-            <div
-              key={f.t}
-              className="group border border-foreground/10 rounded-2xl p-6 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-xl hover:shadow-white/5 transition-all duration-300 bg-muted/30"
-            >
-              <div className="text-foreground mb-4 group-hover:scale-110 transition-transform">
-                <Icon name={f.icon} />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">{f.t}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.d}</p>
+      {/* ============================================================
+          LOGO STRIP / PROVIDERS
+          ============================================================ */}
+      <section className="border-y border-white/[0.05] bg-white/[0.015] py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Frontier models, one gateway
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              {["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"].map((p) => (
+                <span key={p} className="text-sm font-semibold tracking-tight text-muted-foreground transition hover:text-foreground">
+                  {p}
+                </span>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
-      {/* ===== MODELS ===== */}
-      <section id="models" className="container mx-auto px-4 py-20 scroll-mt-20">
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Model</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">
-            {modelCount} Model AI <span className="gradient-text">Premium</span>
-          </h2>
-          <p className="text-muted-foreground mt-3">
-            Semua model bisa dipakai dengan API key yang sama
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {enabledModels.map((m) => (
-            <div
-              key={m.id}
-              className="group relative border border-foreground/10 rounded-2xl p-8 hover:-translate-y-1 transition-all duration-300 overflow-hidden bg-muted/30 hover:shadow-2xl hover:shadow-white/5"
-            >
+      {/* ============================================================
+          DEVELOPER INFRASTRUCTURE
+          ============================================================ */}
+      <section id="platform" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              Developer Infrastructure
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Infrastructure for production AI
+            </h2>
+            <p className="mt-4 text-base text-muted-foreground">
+              Everything you need to ship reliable AI features — from routing to billing —
+              behind a single, predictable API.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {INFRA_FEATURES.map((f, i) => (
               <div
-                className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-white opacity-[0.03] group-hover:opacity-[0.08] blur-2xl transition duration-500"
-                aria-hidden
-              />
-              <div className="inline-flex w-14 h-14 items-center justify-center rounded-2xl border border-foreground/20 text-foreground font-bold text-xl mb-5">
-                {modelLetter[m.modelId] ?? m.name.charAt(0)}
-              </div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-xl">{m.name}</h3>
-                <span className="text-xs px-2.5 py-1 rounded-full border border-foreground/15 text-muted-foreground font-mono">
-                  {m.contextWindow || "—"} ctx
+                key={f.title}
+                className={`glass card-hover rounded-2xl p-6 ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
+                  {f.icon}
                 </span>
+                <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                  {f.desc}
+                </p>
               </div>
-              {m.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed">{m.description}</p>
-              )}
-              <div className="flex items-center gap-2 mt-4 flex-wrap">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground capitalize">
-                  {m.provider}
-                </span>
-                {m.maintenanceMode ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500 font-medium">
-                    Maintenance
-                  </span>
-                ) : (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/15 text-green-500 font-medium">
-                    Live
-                  </span>
-                )}
-              </div>
-              <code className="text-xs block mt-5 px-3 py-2 rounded-lg bg-background/50 border border-foreground/10 font-mono text-foreground">
-                {m.modelId}
-              </code>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ===== PAY AS YOU GO ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Billing</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">
-            Pay As You <span className="gradient-text">Go</span>
-          </h2>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-            Tanpa langganan, tanpa komitmen bulanan. Top up sesuai kebutuhan dan bayar hanya untuk token yang benar-benar kamu pakai.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          {[
-            { icon: "wallet", t: "Tanpa Langganan", d: "Tidak ada tagihan berulang. Bayar sekali top up, pakai kapan saja." },
-            { icon: "card", t: "Tanpa Komitmen Bulanan", d: "Bebas dari paket bulanan yang mengikat dan mubazir." },
-            { icon: "bolt", t: "Top Up Sesukamu", d: "Isi kredit hanya sebanyak yang kamu butuhkan." },
-            { icon: "check", t: "Bayar Sesuai Pemakaian", d: "Biaya dihitung dari token aktual tiap request." },
-            { icon: "shield", t: "Harga Transparan", d: "Tarif per model jelas di depan. Tanpa biaya tersembunyi." },
-            { icon: "key", t: "Banyak Model, 1 Platform", d: "Akses beragam model AI premium dengan satu API key." },
-          ].map((b) => (
-            <div
-              key={b.t}
-              className="group border border-foreground/10 rounded-2xl p-6 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-xl hover:shadow-white/5 transition-all duration-300 bg-muted/30"
+      {/* ============================================================
+          MODEL SHOWCASE
+          ============================================================ */}
+      <section id="models" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="max-w-2xl">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+                Model Catalog
+              </span>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                Frontier models, ready to call
+              </h2>
+              <p className="mt-4 text-base text-muted-foreground">
+                {modelCount} production-ready models from leading providers — all behind one
+                API key, billed per token.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/models"
+              className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
-              <div className="text-foreground mb-3 group-hover:scale-110 transition-transform">
-                <Icon name={b.icon} />
-              </div>
-              <h3 className="font-semibold mb-1.5">{b.t}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{b.d}</p>
+              Browse all models →
+            </Link>
+          </div>
+
+          {models.length === 0 ? (
+            <div className="glass mt-12 rounded-2xl p-16 text-center text-sm text-muted-foreground">
+              Model catalog is being updated.
             </div>
-          ))}
+          ) : (
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {models.slice(0, 6).map((m) => (
+                <ModelShowcaseCard key={m.id} model={m} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ===== MODEL PRICING ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Harga</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">Model Pricing</h2>
-          <p className="text-muted-foreground mt-3">
-            Harga per 1 juta token untuk tiap model. Selalu update otomatis.
-          </p>
+      {/* ============================================================
+          PERFORMANCE METRICS
+          ============================================================ */}
+      <section className="relative px-4 py-24 sm:px-6 sm:py-28">
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{ background: "radial-gradient(60% 80% at 50% 50%, rgba(99,102,241,0.05), transparent 70%)" }}
+          aria-hidden
+        />
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              Performance
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Built for scale and speed
+            </h2>
+          </div>
+          <div className="mt-14">
+            <AnimatedStats />
+          </div>
         </div>
-        <div className="max-w-4xl mx-auto">
-          <ModelPricingTable />
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+      </section>
+
+      {/* ============================================================
+          DEVELOPER EXPERIENCE
+          ============================================================ */}
+      <section className="px-4 py-24 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              Developer Experience
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              From zero to inference in minutes
+            </h2>
+            <p className="mt-4 text-base text-muted-foreground">
+              If you've used the OpenAI SDK, you already know OneRouter. Point your client at
+              our base URL and you're done.
+            </p>
+          </div>
+          <div className="mt-12">
+            <CodeTabs />
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          PRICING
+          ============================================================ */}
+      <section id="pricing" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              Pricing
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Simple usage-based pricing
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
+              Pay only for the tokens you use. No subscriptions. No hidden fees.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 max-w-5xl">
+            <PremiumPricingTable models={models} />
+          </div>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/register"
-              className="bg-white text-black px-8 py-3.5 rounded-xl font-semibold hover:bg-foreground/90 transition shadow-lg shadow-white/10"
+              className="btn-accent inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
             >
-              Get Started
+              Start Building
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </Link>
             <Link
-              href="/dashboard/wallet"
-              className="border px-8 py-3.5 rounded-xl font-semibold hover:bg-muted transition"
+              href="/pricing"
+              className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
-              Top Up Credits
+              View full pricing
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ===== CARA KERJA ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Alur</span>
-          <h2 className="text-3xl sm:text-4xl font-bold mt-2">Cara Kerja</h2>
-          <p className="text-muted-foreground mt-3">Mulai dalam 4 langkah mudah</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-          {[
-            { n: 1, t: "Daftar & Pilih Paket", d: "Buat akun, pilih paket sesuai kebutuhan", icon: "user" },
-            { n: 2, t: "Transfer & Konfirmasi", d: "Bayar via transfer, upload bukti", icon: "card" },
-            { n: 3, t: "Dapat API Key", d: "Admin aktivasi, dapat API key instan", icon: "key" },
-            { n: 4, t: "Pakai Endpoint", d: "Pakai endpoint OpenAI-compatible", icon: "rocket" },
-          ].map((s, i) => (
-            <div key={s.n} className="text-center relative">
-              {i < 3 && (
-                <div className="hidden md:block absolute top-7 left-[60%] w-full h-px border-t border-dashed border-foreground/20" aria-hidden />
-              )}
-              <div className="relative inline-flex">
-                <div className="w-14 h-14 mx-auto rounded-2xl border border-foreground/20 text-foreground flex items-center justify-center mb-4">
-                  <Icon name={s.icon} />
+      {/* ============================================================
+          TRUST SECTION
+          ============================================================ */}
+      <section className="relative px-4 py-24 sm:px-6 sm:py-32">
+        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-40" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{ background: "radial-gradient(50% 50% at 50% 50%, rgba(0,255,136,0.04), transparent 70%)" }}
+          aria-hidden
+        />
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              Trusted by builders
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Built for developers building the future
+              <br className="hidden sm:block" /> of AI applications
+            </h2>
+          </div>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST_AUDIENCES.map((a, i) => (
+              <div
+                key={a.name}
+                className={`glass card-hover rounded-2xl p-6 text-center ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
+              >
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  </svg>
                 </div>
-                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-background border border-foreground/30 text-foreground flex items-center justify-center text-xs font-bold">
-                  {s.n}
-                </span>
+                <h3 className="mt-4 text-sm font-semibold tracking-tight text-foreground">
+                  {a.name}
+                </h3>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+                  {a.desc}
+                </p>
               </div>
-              <h3 className="font-semibold mb-1">{s.t}</h3>
-              <p className="text-sm text-muted-foreground">{s.d}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ===== CTA BAND ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="relative rounded-3xl overflow-hidden border border-foreground/15 p-12 sm:p-16 text-center bg-muted/40">
-          <div className="absolute inset-0 -z-10 grid-bg opacity-50" aria-hidden />
-          <div
-            className="absolute inset-0 -z-10"
-            style={{ background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04), transparent 70%)" }}
-            aria-hidden
-          />
-          <h2 className="text-3xl sm:text-4xl font-bold">
-            Siap mulai pakai AI premium?
-          </h2>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-            Daftar sekarang, dapat API key dalam hitungan menit setelah pembayaran.
-          </p>
-          <Link
-            href="/register"
-            className="inline-block mt-8 bg-white text-black px-8 py-3.5 rounded-xl font-semibold hover:scale-105 transition shadow-xl shadow-white/10"
-          >
-            Daftar Sekarang →
-          </Link>
-        </div>
-      </section>
-
-      {/* ===== FOOTER ===== */}
-      <footer className="border-t border-foreground/5 mt-8">
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 font-bold">
-              <span className="bg-white text-black px-2 py-0.5 rounded text-xs font-mono font-bold">
-                1R
-              </span>
-              <span className="gradient-text">{APP_NAME}</span>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Pay only for what you use. No subscriptions. No hidden fees.
+      {/* ============================================================
+          FINAL CTA
+          ============================================================ */}
+      <section className="px-4 py-24 sm:px-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="glass relative overflow-hidden rounded-3xl p-12 text-center sm:p-20">
+            <div
+              className="pointer-events-none absolute inset-0 -z-10"
+              style={{
+                background:
+                  "radial-gradient(50% 60% at 50% 0%, rgba(0,255,136,0.10), transparent 70%), radial-gradient(50% 60% at 50% 100%, rgba(99,102,241,0.10), transparent 70%)",
+              }}
+              aria-hidden
+            />
+            <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-30" aria-hidden />
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Ship AI features faster
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
+              Get an API key in minutes. One endpoint, every model, billed per token.
             </p>
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} {APP_NAME} · Powered by OpenAI-compatible API
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="btn-accent inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+              >
+                Start Building
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+              <Link
+                href="/dashboard/docs"
+                className="rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
+              >
+                Read the docs
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          FOOTER
+          ============================================================ */}
+      <footer className="border-t border-white/[0.06] px-4 py-12 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <Link href="/" className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
+                  1R
+                </span>
+                <span className="text-[15px] font-semibold tracking-tight">OneRouter</span>
+              </Link>
+              <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
+                One API. The world's best AI models. Built for developers.
+              </p>
+            </div>
+
+            <FooterCol
+              title="Platform"
+              links={[
+                { label: "Models", href: "/#models" },
+                { label: "Pricing", href: "/#pricing" },
+                { label: "Playground", href: "/dashboard/chat" },
+                { label: "Dashboard", href: "/dashboard" },
+              ]}
+            />
+            <FooterCol
+              title="Developers"
+              links={[
+                { label: "Documentation", href: "/dashboard/docs" },
+                { label: "API Keys", href: "/dashboard/api-keys" },
+                { label: "Usage", href: "/dashboard/usage" },
+                { label: "Settings", href: "/dashboard/settings" },
+              ]}
+            />
+            <FooterCol
+              title="Account"
+              links={[
+                { label: "Sign in", href: "/login" },
+                { label: "Start Building", href: "/register" },
+                { label: "Billing", href: "/dashboard/wallet" },
+              ]}
+            />
+          </div>
+
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
+            <p className="text-[12px] text-muted-foreground">
+              © {new Date().getFullYear()} OneRouter. All rights reserved.
+            </p>
+            <p className="text-[12px] text-muted-foreground">
+              Pay only for what you use. No subscriptions. No hidden fees.
             </p>
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ===== Helpers ===== */
+
+function FooterCol({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+}) {
+  return (
+    <div>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </div>
+      <ul className="mt-4 space-y-2.5">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className="text-[13px] text-muted-foreground transition hover:text-foreground"
+            >
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ModelShowcaseCard({ model }: { model: ModelCardData }) {
+  const cap = capabilityLabel(model.name, model.modelId);
+  const dot = PROVIDER_DOT[model.provider] ?? "bg-white/40";
+  const isLive = !model.maintenanceMode;
+
+  return (
+    <div className="glass card-glow group relative flex flex-col rounded-2xl p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight text-foreground">
+            {model.name}
+          </h3>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+            <span className="text-[12px] text-muted-foreground">{model.provider}</span>
+          </div>
+        </div>
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium ${
+            isLive
+              ? "border-accent/25 bg-accent/10 text-accent"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-400"
+          }`}
+        >
+          {isLive ? "Live" : "Maintenance"}
+        </span>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-[12px]">
+        <div>
+          <div className="text-[10px] text-muted-foreground">Context</div>
+          <div className="mt-0.5 font-semibold text-foreground">
+            {model.contextWindow ?? "—"}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-muted-foreground">Capability</div>
+          <div className="mt-0.5 font-semibold text-foreground">{cap}</div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center gap-2 border-t border-white/[0.06] pt-4">
+        <code className="flex-1 truncate rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 font-mono text-[11px] text-foreground/80">
+          {model.modelId}
+        </code>
+        <Link
+          href="/dashboard/chat"
+          className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
+        >
+          Try
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
+  if (models.length === 0) {
+    return (
+      <div className="glass rounded-2xl p-12 text-center text-sm text-muted-foreground">
+        Pricing is being updated.
+      </div>
+    );
+  }
+  return (
+    <div className="glass overflow-hidden rounded-2xl">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/[0.08] text-left">
+              {["Model", "Provider", "Context", "Input / 1M", "Output / 1M", "Status"].map((h) => (
+                <th
+                  key={h}
+                  className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${
+                    h === "Input / 1M" || h === "Output / 1M" ? "text-right" : ""
+                  } ${h === "Status" ? "text-center" : ""}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.04]">
+            {models.map((m) => (
+              <tr key={m.id} className="transition hover:bg-white/[0.02]">
+                <td className="px-5 py-4">
+                  <div className="font-semibold text-foreground">{m.name}</div>
+                  <code className="text-[11px] text-muted-foreground">{m.modelId}</code>
+                </td>
+                <td className="px-5 py-4">
+                  <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                    <span className={`h-1.5 w-1.5 rounded-full ${PROVIDER_DOT[m.provider] ?? "bg-white/40"}`} />
+                    {m.provider}
+                  </span>
+                </td>
+                <td className="px-5 py-4">
+                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                    {m.contextWindow || "—"}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-right font-mono text-foreground">
+                  Rp{m.inputPricePerMillion.toLocaleString("id-ID")}
+                </td>
+                <td className="px-5 py-4 text-right font-mono text-foreground">
+                  Rp{m.outputPricePerMillion.toLocaleString("id-ID")}
+                </td>
+                <td className="px-5 py-4 text-center">
+                  {m.maintenanceMode ? (
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      Maintenance
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                      Live
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-white/[0.08] px-5 py-3.5 text-[11px] text-muted-foreground">
+        Prices per 1 million tokens. You only pay for tokens consumed — no subscriptions, no hidden fees.
+      </div>
     </div>
   );
 }

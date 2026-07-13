@@ -2,12 +2,22 @@ import { prisma } from "./prisma";
 import { hashKey, safeHashEqual } from "./apikey";
 import { MASTER_API_KEY } from "./constants";
 import { resolveModel, type ResolvedModel } from "./models";
-import { getWalletBalance, chargeUsage, getOrCreateWallet, logNonBilledUsage, type RequestMeta } from "./wallet";
+import {
+  getWalletBalance,
+  chargeUsage,
+  getOrCreateWallet,
+  logNonBilledUsage,
+  reserveCredits,
+  settleUsage,
+  releaseReservation,
+  type RequestMeta,
+  type ReserveResult,
+  type SettleResult,
+} from "./wallet";
 import { createApiRequestLog } from "./api-request-log";
 
-export type { RequestMeta };
-
-export { logNonBilledUsage };
+export type { RequestMeta, ReserveResult, SettleResult };
+export { logNonBilledUsage, reserveCredits, settleUsage, releaseReservation };
 
 export type AuthenticatedApiKey = Awaited<ReturnType<typeof authenticateRequest>>;
 
@@ -147,6 +157,66 @@ export async function recordUsageWithBilling(params: {
   return { ok: true, billing };
 }
 
+/**
+ * Settle a credit reservation against the actual upstream usage. Wraps
+ * {@link settleUsage} with the resolved model's pricing and returns a
+ * {@link BillingInfo} object suitable for attaching to the API response.
+ *
+ * This is the post-response step in the reserve → forward → settle flow.
+ */
+export async function settleReservation(params: {
+  userId: string;
+  apiKeyId: string;
+  walletId: string;
+  reservedAmount: number;
+  resolvedModel: ResolvedModel;
+  inputTokens: number;
+  outputTokens: number;
+  requestMeta?: RequestMeta;
+}): Promise<RecordUsageResult & { refunded?: number }> {
+  const {
+    userId,
+    apiKeyId,
+    walletId,
+    reservedAmount,
+    resolvedModel,
+    inputTokens,
+    outputTokens,
+    requestMeta,
+  } = params;
+
+  const result = await settleUsage({
+    userId,
+    apiKeyId,
+    walletId,
+    reservedAmount,
+    aiModelId: resolvedModel.id,
+    modelLabel: resolvedModel.modelId,
+    provider: resolvedModel.provider,
+    inputTokens,
+    outputTokens,
+    inputPricePerMillion: resolvedModel.inputPricePerMillion,
+    outputPricePerMillion: resolvedModel.outputPricePerMillion,
+    requestMeta,
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  const billing: BillingInfo = {
+    inputTokens,
+    outputTokens,
+    totalTokens: inputTokens + outputTokens,
+    inputCost: result.inputCost,
+    outputCost: result.outputCost,
+    totalCost: result.actualCost,
+    remainingBalance: result.finalBalance,
+  };
+
+  return { ok: true, billing, refunded: result.refunded };
+}
+
 export async function checkSufficientBalance(
   userId: string,
   estimatedCost: number,
@@ -198,6 +268,41 @@ export function estimateMinimumCost(params: {
   return inputCost + outputCost;
 }
 
+/**
+ * Minimum balance that must remain after a reservation for the request to
+ * proceed. Acts as a safety buffer against zero-balance edge cases. In IDR.
+ */
+export const MINIMUM_RESERVE_BALANCE = 100; // Rp100
+
+/**
+ * Estimate the MAXIMUM possible cost of a request for credit reservation.
+ *
+ * Unlike {@link estimateMinimumCost} (which caps output at 512 tokens for a
+ * quick reject), this uses the full `max_output_tokens` (or a generous
+ * default of 4096 when unspecified) so the reservation holds enough credit
+ * to cover the realistic worst case. This prevents the scenario where the
+ * pre-flight check passes but the actual charge fails after the provider
+ * has already generated tokens.
+ *
+ * Returns cost in IDR.
+ */
+export function estimateMaxCost(params: {
+  resolvedModel: ResolvedModel;
+  promptTokens: number;
+  maxOutputTokens: number;
+}): number {
+  const { resolvedModel, promptTokens, maxOutputTokens } = params;
+  // When the client doesn't specify max_tokens, the model could generate a
+  // lot. Default to 4096 (covers the vast majority of chat completions)
+  // and cap at 8192 to avoid blocking users with healthy balances.
+  const effectiveMaxOutput = Math.min(Math.max(maxOutputTokens, 256), 8192);
+  const inputCost = (promptTokens / 1_000_000) * resolvedModel.inputPricePerMillion;
+  const outputCost = (effectiveMaxOutput / 1_000_000) * resolvedModel.outputPricePerMillion;
+  const total = inputCost + outputCost;
+  // Enforce a minimum reservation so near-zero estimates still hold credits.
+  return Math.max(total, MINIMUM_RESERVE_BALANCE);
+}
+
 export async function ensureWallet(userId: string) {
   return getOrCreateWallet(userId);
 }
@@ -206,6 +311,7 @@ export function errorResponse(
   message: string,
   status: number,
   type = "invalid_request_error",
+  code: string | null = null,
 ) {
   return Response.json(
     {
@@ -213,7 +319,7 @@ export function errorResponse(
         message,
         type,
         param: null,
-        code: null,
+        code,
       },
     },
     { status },
