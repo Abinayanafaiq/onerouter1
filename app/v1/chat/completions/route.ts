@@ -15,8 +15,15 @@ import {
   type BillingInfo,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
-import { checkRateLimit } from "@/app/lib/rate-limit";
-import { MASTER_API_URL } from "@/app/lib/constants";
+import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
+import { MASTER_API_URL, MASTER_API_KEY } from "@/app/lib/constants";
+import {
+  getActiveMasterKeyForRequest,
+  markKeyError,
+  markKeySuccess,
+  countEnabledMasterKeys,
+  maskForKeyLog,
+} from "@/app/lib/master-api-keys";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,17 +66,35 @@ export async function POST(request: Request) {
   }
   console.log("[v1/chat] auth ok, keyId:", apiKey.id);
 
-  // 2. Rate limit
-  const rateLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);
-  if (!rateLimit.allowed) {
-    console.log("[v1/chat] rate limited");
+  // 2. Rate limit (per API key)
+  const keyRateLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);
+  if (!keyRateLimit.allowed) {
+    console.log("[v1/chat] rate limited (key)");
     return Response.json(
       { error: { message: "Rate limit exceeded. Too many requests.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },
       {
         status: 429,
         headers: {
-          "Retry-After": String(rateLimit.retryAfter),
-          "X-RateLimit-Limit": String(rateLimit.limit),
+          "Retry-After": String(keyRateLimit.retryAfter),
+          "X-RateLimit-Limit": String(keyRateLimit.limit),
+          "X-RateLimit-Remaining": "0",
+          ...corsHeaders(),
+        },
+      },
+    );
+  }
+
+  // 2b. Rate limit (per user) — strictest wins; identical 429 shape, no leak of which limit
+  const userRateLimit = checkUserRateLimit(apiKey.userId, apiKey.user.rateLimit);
+  if (!userRateLimit.allowed) {
+    console.log("[v1/chat] rate limited (user)");
+    return Response.json(
+      { error: { message: "Rate limit exceeded. Too many requests.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(userRateLimit.retryAfter),
+          "X-RateLimit-Limit": String(userRateLimit.limit),
           "X-RateLimit-Remaining": "0",
           ...corsHeaders(),
         },
@@ -130,9 +155,15 @@ export async function POST(request: Request) {
     return errorResponse(`Model '${model}' is not allowed for this API key`, 403, "model_not_allowed");
   }
 
-  if (!apiKey.masterApiKey) {
-    console.log("[v1/chat] no master key bound");
-    return errorResponse("API key not fully activated (no master key bound)", 403, "configuration_error");
+  // 5b. Resolve master key from DB (with env fallback when zero DB keys)
+  const enabledKeyCount = await countEnabledMasterKeys();
+  const usingEnvFallback = enabledKeyCount === 0 && !!MASTER_API_KEY;
+  if (usingEnvFallback) {
+    console.warn("[v1/chat] WARNING: using MASTER_API_KEY env fallback (no DB master keys configured)");
+  }
+  if (enabledKeyCount === 0 && !MASTER_API_KEY) {
+    console.log("[v1/chat] no master key available (DB empty, env unset)");
+    return errorResponse("API key not fully activated (no master key available)", 403, "configuration_error");
   }
 
   // 6. Load wallet
@@ -222,200 +253,261 @@ export async function POST(request: Request) {
   console.log(`[v1/chat] reservation successful: reserved ${reservation.reservedAmount} IDR, new balance: ${reservation.newBalance} IDR`);
   console.log("[v1/chat] provider request ALLOWED");
 
-  // 9. Forward to upstream provider
+  // 9. Forward to upstream provider with failover
   body.model = resolvedModel.masterId;
   const isStream = body.stream === true;
   const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
   console.log("[v1/chat] forwarding to:", upstreamUrl, "stream:", isStream);
 
+  const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
+  let lastUpstreamStatus = 502;
+  let lastUpstreamText = "";
+
   try {
-    const upstream = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey.masterApiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      let currentKey: { id: string; plaintext: string };
+      if (usingEnvFallback) {
+        currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
+      } else {
+        const next = await getActiveMasterKeyForRequest();
+        if (!next) {
+          console.log("[v1/chat] no more usable master keys");
+          break;
+        }
+        currentKey = next;
+      }
 
-    console.log("[v1/chat] upstream status:", upstream.status);
+      const maskedLog = usingEnvFallback ? "env-fallback" : maskForKeyLog(currentKey.plaintext);
+      console.log(`[v1/chat] attempt ${attempt + 1}/${MAX_ATTEMPTS} with key ${maskedLog}`);
 
-    if (!upstream.ok) {
-      const text = await upstream.text();
-      console.error("[v1/chat] upstream error:", upstream.status, text.slice(0, 500));
-
-      // Release the full reservation — provider didn't produce a usable response
-      await releaseReservation({
-        walletId: reservation.walletId,
-        reservedAmount: reservation.reservedAmount,
-        description: resolvedModel.modelId,
+      const upstream = await fetch(upstreamUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentKey.plaintext}`,
+        },
+        body: JSON.stringify(body),
       });
-      console.log("[v1/chat] reservation released (upstream error)");
 
-      await logNonBilledUsage({
-        userId: apiKey.userId,
-        apiKeyId: apiKey.id,
-        aiModelId: resolvedModel.id,
-        modelLabel: resolvedModel.modelId,
-        provider: resolvedModel.provider,
-        status: "error",
-        requestMeta: buildMeta(upstream.status),
-      });
-      return errorResponse(
-        `Upstream error: ${upstream.status} ${text.slice(0, 500)}`,
-        upstream.status,
-        "api_error",
+      console.log("[v1/chat] upstream status:", upstream.status);
+
+      const isRetryable = !usingEnvFallback && (
+        upstream.status === 401 ||
+        upstream.status === 403 ||
+        upstream.status === 429 ||
+        upstream.status >= 500
       );
-    }
 
-    // --- Streaming response ---
-    if (isStream && upstream.body) {
-      const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
-      const reader = upstream.body.getReader();
-      let streamPromptTokens = 0;
-      let streamCompletionTokens = 0;
-      let buffer = "";
+      if (isRetryable) {
+        const text = await upstream.text().catch(() => "");
+        console.error(`[v1/chat] upstream error (retryable): ${upstream.status}, marking key ${maskedLog} errored`);
+        await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
+        lastUpstreamStatus = upstream.status;
+        lastUpstreamText = text;
+        continue;
+      }
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              buffer += decoder.decode(value, { stream: true });
+      if (!upstream.ok) {
+        const text = await upstream.text().catch(() => "");
+        console.error("[v1/chat] upstream error (non-retryable):", upstream.status, text.slice(0, 500));
 
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
+        await releaseReservation({
+          walletId: reservation.walletId,
+          reservedAmount: reservation.reservedAmount,
+          description: resolvedModel.modelId,
+        });
+        console.log("[v1/chat] reservation released (upstream error)");
 
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const data = line.slice(6).trim();
-                  if (data === "[DONE]") continue;
-                  try {
-                    const parsed = JSON.parse(data) as {
-                      usage?: { prompt_tokens?: number; completion_tokens?: number };
-                    };
-                    if (parsed.usage) {
-                      streamPromptTokens = parsed.usage.prompt_tokens || 0;
-                      streamCompletionTokens = parsed.usage.completion_tokens || 0;
+        await logNonBilledUsage({
+          userId: apiKey.userId,
+          apiKeyId: apiKey.id,
+          aiModelId: resolvedModel.id,
+          modelLabel: resolvedModel.modelId,
+          provider: resolvedModel.provider,
+          status: "error",
+          requestMeta: buildMeta(upstream.status),
+        });
+        return errorResponse(
+          `Upstream error: ${upstream.status} ${text.slice(0, 500)}`,
+          upstream.status,
+          "api_error",
+        );
+      }
+
+      if (!usingEnvFallback) {
+        await markKeySuccess(currentKey.id);
+      }
+
+      // --- Streaming response ---
+      if (isStream && upstream.body) {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+        const reader = upstream.body.getReader();
+        let streamPromptTokens = 0;
+        let streamCompletionTokens = 0;
+        let buffer = "";
+
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                  if (line.startsWith("data: ")) {
+                    const data = line.slice(6).trim();
+                    if (data === "[DONE]") continue;
+                    try {
+                      const parsed = JSON.parse(data) as {
+                        usage?: { prompt_tokens?: number; completion_tokens?: number };
+                      };
+                      if (parsed.usage) {
+                        streamPromptTokens = parsed.usage.prompt_tokens || 0;
+                        streamCompletionTokens = parsed.usage.completion_tokens || 0;
+                      }
+                    } catch {
+                      // skip non-JSON chunks
                     }
-                  } catch {
-                    // skip non-JSON chunks
                   }
+                  controller.enqueue(encoder.encode(line + "\n"));
                 }
-                controller.enqueue(encoder.encode(line + "\n"));
+              }
+              if (buffer) controller.enqueue(encoder.encode(buffer));
+            } finally {
+              // Settle the reservation against actual usage
+              const settleResult = await settleReservation({
+                userId: apiKey.userId,
+                apiKeyId: apiKey.id,
+                walletId: reservation.walletId,
+                reservedAmount: reservation.reservedAmount,
+                resolvedModel,
+                inputTokens: streamPromptTokens,
+                outputTokens: streamCompletionTokens,
+                requestMeta: buildMeta(200),
+              });
+
+              if (settleResult.ok) {
+                console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
+                const billingComment = `: x_billing ${JSON.stringify(settleResult.billing)}\n`;
+                controller.enqueue(encoder.encode(billingComment));
+              } else {
+                console.error("[v1/chat] settlement failed:", settleResult.error);
+              }
+
+              try {
+                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                controller.close();
+              } catch {
+                // Controller may already be closed or errored.
               }
             }
-            if (buffer) controller.enqueue(encoder.encode(buffer));
-          } finally {
-            // Settle the reservation against actual usage
-            const settleResult = await settleReservation({
-              userId: apiKey.userId,
-              apiKeyId: apiKey.id,
-              walletId: reservation.walletId,
-              reservedAmount: reservation.reservedAmount,
-              resolvedModel,
-              inputTokens: streamPromptTokens,
-              outputTokens: streamCompletionTokens,
-              requestMeta: buildMeta(200),
-            });
+          },
+        });
 
-            if (settleResult.ok) {
-              console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
-              const billingComment = `: x_billing ${JSON.stringify(settleResult.billing)}\n`;
-              controller.enqueue(encoder.encode(billingComment));
-            } else {
-              console.error("[v1/chat] settlement failed:", settleResult.error);
-            }
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            ...corsHeaders(),
+          },
+        });
+      }
 
-            try {
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              controller.close();
-            } catch {
-              // Controller may already be closed or errored.
-            }
-          }
-        },
-      });
+      // --- Non-streaming response ---
+      const rawText = await upstream.text();
+      let data: { usage?: { prompt_tokens?: number; completion_tokens?: number } };
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        console.error("[v1/chat] JSON parse failed. Raw (first 500):", rawText.slice(0, 500));
 
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-          ...corsHeaders(),
-        },
-      });
-    }
+        // Release reservation — no valid response to bill
+        await releaseReservation({
+          walletId: reservation.walletId,
+          reservedAmount: reservation.reservedAmount,
+          description: resolvedModel.modelId,
+        });
+        console.log("[v1/chat] reservation released (non-JSON response)");
 
-    // --- Non-streaming response ---
-    const rawText = await upstream.text();
-    let data: { usage?: { prompt_tokens?: number; completion_tokens?: number } };
-    try {
-      data = JSON.parse(rawText);
-    } catch {
-      console.error("[v1/chat] JSON parse failed. Raw (first 500):", rawText.slice(0, 500));
+        await logNonBilledUsage({
+          userId: apiKey.userId,
+          apiKeyId: apiKey.id,
+          aiModelId: resolvedModel.id,
+          modelLabel: resolvedModel.modelId,
+          provider: resolvedModel.provider,
+          status: "error",
+          requestMeta: buildMeta(502),
+        });
+        return errorResponse("Upstream returned a non-JSON response", 502, "api_error");
+      }
 
-      // Release reservation — no valid response to bill
-      await releaseReservation({
+      const promptTokensResp = data.usage?.prompt_tokens || 0;
+      const completionTokensResp = data.usage?.completion_tokens || 0;
+
+      // Settle the reservation against actual usage
+      const settleResult = await settleReservation({
+        userId: apiKey.userId,
+        apiKeyId: apiKey.id,
         walletId: reservation.walletId,
         reservedAmount: reservation.reservedAmount,
-        description: resolvedModel.modelId,
-      });
-      console.log("[v1/chat] reservation released (non-JSON response)");
-
-      await logNonBilledUsage({
-        userId: apiKey.userId,
-        apiKeyId: apiKey.id,
-        aiModelId: resolvedModel.id,
-        modelLabel: resolvedModel.modelId,
-        provider: resolvedModel.provider,
-        status: "error",
-        requestMeta: buildMeta(502),
-      });
-      return errorResponse("Upstream returned a non-JSON response", 502, "api_error");
-    }
-
-    const promptTokensResp = data.usage?.prompt_tokens || 0;
-    const completionTokensResp = data.usage?.completion_tokens || 0;
-
-    // Settle the reservation against actual usage
-    const settleResult = await settleReservation({
-      userId: apiKey.userId,
-      apiKeyId: apiKey.id,
-      walletId: reservation.walletId,
-      reservedAmount: reservation.reservedAmount,
-      resolvedModel,
-      inputTokens: promptTokensResp,
-      outputTokens: completionTokensResp,
-      requestMeta: buildMeta(200),
-    });
-
-    if (!settleResult.ok) {
-      console.error("[v1/chat] settlement failed:", settleResult.error);
-      // The response was already generated; we still return it but log the
-      // settlement failure. The reservation was already deducted, so the
-      // credits are held — an admin can reconcile.
-      await logNonBilledUsage({
-        userId: apiKey.userId,
-        apiKeyId: apiKey.id,
-        aiModelId: resolvedModel.id,
-        modelLabel: resolvedModel.modelId,
-        provider: resolvedModel.provider,
-        status: "error",
+        resolvedModel,
+        inputTokens: promptTokensResp,
+        outputTokens: completionTokensResp,
         requestMeta: buildMeta(200),
       });
-    } else {
-      console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
+
+      if (!settleResult.ok) {
+        console.error("[v1/chat] settlement failed:", settleResult.error);
+        await logNonBilledUsage({
+          userId: apiKey.userId,
+          apiKeyId: apiKey.id,
+          aiModelId: resolvedModel.id,
+          modelLabel: resolvedModel.modelId,
+          provider: resolvedModel.provider,
+          status: "error",
+          requestMeta: buildMeta(200),
+        });
+      } else {
+        console.log(`[v1/chat] final billing: cost=${settleResult.billing.totalCost} IDR, refund=${settleResult.refunded ?? 0} IDR, balance=${settleResult.billing.remainingBalance} IDR`);
+      }
+
+      // Attach billing info to response (custom field, OpenAI SDK ignores unknown fields)
+      if (settleResult.ok) {
+        (data as Record<string, unknown>).x_billing = settleResult.billing;
+      }
+
+      return Response.json(data, { headers: corsHeaders() });
     }
 
-    // Attach billing info to response (custom field, OpenAI SDK ignores unknown fields)
-    if (settleResult.ok) {
-      (data as Record<string, unknown>).x_billing = settleResult.billing;
-    }
+    // All attempts exhausted
+    console.error(`[v1/chat] all ${MAX_ATTEMPTS} attempts failed, last status: ${lastUpstreamStatus}`);
+    await releaseReservation({
+      walletId: reservation.walletId,
+      reservedAmount: reservation.reservedAmount,
+      description: resolvedModel.modelId,
+    });
+    console.log("[v1/chat] reservation released (all attempts failed)");
 
-    return Response.json(data, { headers: corsHeaders() });
+    await logNonBilledUsage({
+      userId: apiKey.userId,
+      apiKeyId: apiKey.id,
+      aiModelId: resolvedModel.id,
+      modelLabel: resolvedModel.modelId,
+      provider: resolvedModel.provider,
+      status: "error",
+      requestMeta: buildMeta(lastUpstreamStatus),
+    });
+    return errorResponse(
+      `Upstream error: ${lastUpstreamStatus} ${lastUpstreamText.slice(0, 500)}`,
+      lastUpstreamStatus,
+      "api_error",
+    );
   } catch (e) {
     console.error("[v1/chat/completions] proxy error:", e);
 

@@ -17,6 +17,7 @@ export default async function AdminLayout({
     { href: "/admin/wallets", label: "Wallets" },
     { href: "/admin/models", label: "Models" },
     { href: "/admin/api-keys", label: "API Keys" },
+    { href: "/admin/master-keys", label: "Master Keys" },
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/packages", label: "Paket" },
     { href: "/admin/settings", label: "Pengaturan" },

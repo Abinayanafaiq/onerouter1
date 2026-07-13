@@ -52,6 +52,11 @@ export async function POST(request: Request) {
       return created;
     });
 
+    await prisma.user.update({
+      where: { id: userId },
+      data: { whatsapp },
+    }).catch(() => {});
+
     return NextResponse.json({ success: true, orderId: order.id });
   } catch (e) {
     console.error("[manual/create] exception:", e);

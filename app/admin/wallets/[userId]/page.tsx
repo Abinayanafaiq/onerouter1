@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import Link from "next/link";
 import { WalletAdjustForm } from "./adjust-form";
+import { RateLimitForm } from "./rate-limit-form";
+import { WhatsAppForm } from "./whatsapp-form";
 
 export default async function AdminWalletDetailPage({
   params,
@@ -13,7 +15,7 @@ export default async function AdminWalletDetailPage({
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, whatsapp: true, rateLimit: true },
   });
   if (!user) notFound();
 
@@ -70,6 +72,12 @@ export default async function AdminWalletDetailPage({
           <span className="font-medium text-neutral-200">{totalOutput.toLocaleString("id-ID")}</span>
         </div>
       </div>
+
+      {/* WhatsApp */}
+      <WhatsAppForm userId={userId} currentWhatsApp={user.whatsapp} />
+
+      {/* Rate limit */}
+      <RateLimitForm userId={userId} currentLimit={user.rateLimit} />
 
       {/* Adjust balance */}
       <WalletAdjustForm userId={userId} currentBalance={balance} />

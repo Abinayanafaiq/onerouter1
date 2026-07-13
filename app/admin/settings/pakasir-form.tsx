@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type InitialData = {
   slug: string;
@@ -13,6 +13,11 @@ export function PakasirForm({ initial }: { initial: InitialData }) {
   const [slug, setSlug] = useState(initial.slug);
   const [apiKey, setApiKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +162,7 @@ export function PakasirForm({ initial }: { initial: InitialData }) {
         <p className="text-[10px] text-neutral-600 leading-relaxed">
           Webhook URL yang harus diisi di dashboard Pakasir:
           <code className="block mt-1 bg-neutral-950 border border-neutral-800 rounded px-2 py-1.5 font-mono text-neutral-400 break-all">
-            {typeof window !== "undefined" ? window.location.origin : ""}/api/pakasir/webhook
+            {origin}/api/pakasir/webhook
           </code>
         </p>
       </div>

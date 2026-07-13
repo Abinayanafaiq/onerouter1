@@ -156,12 +156,14 @@ export function DashboardShell({
   userEmail,
   userName,
   initialToks,
+  telegramGroupUrl,
   signOutAction,
 }: {
   children: React.ReactNode;
   userEmail: string;
   userName: string;
   initialToks: number;
+  telegramGroupUrl: string | null;
   signOutAction: () => Promise<void>;
 }) {
   const pathname = usePathname();
@@ -185,6 +187,7 @@ export function DashboardShell({
           pathname={pathname}
           userName={userName}
           userEmail={userEmail}
+          telegramGroupUrl={telegramGroupUrl}
           signOutAction={signOutAction}
         />
       </aside>
@@ -201,6 +204,7 @@ export function DashboardShell({
               pathname={pathname}
               userName={userName}
               userEmail={userEmail}
+              telegramGroupUrl={telegramGroupUrl}
               signOutAction={signOutAction}
               onNavigate={() => setMobileOpen(false)}
             />
@@ -314,12 +318,14 @@ function SidebarContent({
   pathname,
   userName,
   userEmail,
+  telegramGroupUrl,
   signOutAction,
   onNavigate,
 }: {
   pathname: string;
   userName: string;
   userEmail: string;
+  telegramGroupUrl: string | null;
   signOutAction: () => Promise<void>;
   onNavigate?: () => void;
 }) {
@@ -347,6 +353,25 @@ function SidebarContent({
           Resources
         </div>
         <NavList items={NAV_SECONDARY} pathname={pathname} onNavigate={onNavigate} />
+
+        {telegramGroupUrl && (
+          <div className="mt-4 px-3">
+            <a
+              href={telegramGroupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[12px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px] text-accent">
+                <path d="m21.5 4.5-3 15a1.5 1.5 0 0 1-2.2 1L11 17l-2.5 2.5a.8.8 0 0 1-1.4-.6V15l9-8-11 7L2 12.5a1 1 0 0 1 .1-1.9l18.5-7a1 1 0 0 1 1 1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              </svg>
+              <span>Join our Telegram group</span>
+              <svg viewBox="0 0 24 24" fill="none" className="ml-auto h-3.5 w-3.5 text-muted-foreground">
+                <path d="M7 17 17 7M7 7h10v10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Status footer */}

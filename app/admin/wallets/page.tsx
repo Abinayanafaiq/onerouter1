@@ -28,6 +28,7 @@ export default async function AdminWalletsPage() {
             <thead className="bg-neutral-900 border-b border-neutral-800">
               <tr>
                 <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">User</th>
+                <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">WhatsApp</th>
                 <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Saldo</th>
                 <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Dibuat</th>
                 <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Aksi</th>
@@ -43,6 +44,9 @@ export default async function AdminWalletsPage() {
                     >
                       {w.user.email}
                     </Link>
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-xs text-neutral-300">
+                    {w.user.whatsapp || "—"}
                   </td>
                   <td className="px-3 py-2.5 font-mono text-xs text-neutral-300">
                     Rp{Number(w.balance).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}

@@ -49,6 +49,11 @@ export async function POST(request: Request) {
       },
     });
 
+    await prisma.user.update({
+      where: { id: userId },
+      data: { whatsapp: body.whatsapp.trim() },
+    }).catch(() => {});
+
     await prisma.package.update({
       where: { id: body.packageId },
       data: { stock: { decrement: 1 } },

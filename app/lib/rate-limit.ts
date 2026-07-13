@@ -46,3 +46,49 @@ export function checkRateLimit(
     limit: max,
   };
 }
+
+/**
+ * Fixed-window in-memory rate limiter, keyed per user. An optional
+ * per-user `maxPerMinute` overrides the default limit (e.g. from User.rateLimit).
+ * Keyed separately from the per-key limiter so both can be enforced independently.
+ */
+export function checkUserRateLimit(
+  userId: string,
+  maxPerMinute?: number | null,
+): {
+  allowed: boolean;
+  remaining: number;
+  retryAfter: number;
+  limit: number;
+} {
+  if (!maxPerMinute || !Number.isFinite(maxPerMinute) || maxPerMinute <= 0) {
+    return { allowed: true, remaining: Infinity, retryAfter: 0, limit: Infinity };
+  }
+
+  const max = Math.floor(maxPerMinute);
+  const key = `user:${userId}`;
+  const now = Date.now();
+  const entry = limits.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    limits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: max - 1, retryAfter: 0, limit: max };
+  }
+
+  entry.count++;
+  if (entry.count > max) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+      limit: max,
+    };
+  }
+
+  return {
+    allowed: true,
+    remaining: max - entry.count,
+    retryAfter: 0,
+    limit: max,
+  };
+}

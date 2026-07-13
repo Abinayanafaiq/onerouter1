@@ -56,6 +56,11 @@ export async function POST(request: Request) {
       },
     });
 
+    await prisma.user.update({
+      where: { id: userId },
+      data: { whatsapp: body.whatsapp.trim() },
+    }).catch(() => {});
+
     const result = await createTransaction({
       method: "qris",
       orderId: order.id,

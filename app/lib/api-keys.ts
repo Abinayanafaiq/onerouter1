@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
 import { generateApiKey, hashKey, maskFromParts, maskKey } from "./apikey";
-import { MASTER_API_KEY } from "./constants";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -96,7 +95,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<CreateApiK
       last4: generated.last4,
       name: input.name,
       label: input.name,
-      masterApiKey: MASTER_API_KEY || null,
+      masterApiKey: null,
       enabled: true,
       isActive: true,
       ipWhitelist: input.ipWhitelist ?? [],

@@ -113,7 +113,7 @@ export async function approvePaidOrder(
             keyHash: generated.keyHash,
             prefix: generated.prefix,
             last4: generated.last4,
-            masterApiKey: process.env.MASTER_API_KEY || null,
+            masterApiKey: null,
             name: `${pkg.name}`,
             label: `${pkg.name} - ${paymentMethodLabel}`,
             enabled: true,

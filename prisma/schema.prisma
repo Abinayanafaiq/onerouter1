@@ -14,6 +14,8 @@ model User {
   password       String
   name           String?
   role           String          @default("USER")
+  whatsapp       String?
+  rateLimit      Int?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   apiKeys        ApiKey[]
@@ -210,4 +212,33 @@ model Setting {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model MasterApiKey {
+  id             String    @id @default(cuid())
+  label          String
+  cipher         String
+  prefix         String?
+  last4          String?
+  priority       Int       @default(0)
+  enabled        Boolean   @default(true)
+  lastUsedAt     DateTime?
+  lastErrorAt    DateTime?
+  lastErrorStatus Int?
+  lastErrorMsg   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([enabled, priority])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  target      String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
 }

@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
 import { hashKey, safeHashEqual } from "./apikey";
-import { MASTER_API_KEY } from "./constants";
 import { resolveModel, type ResolvedModel } from "./models";
 import {
   getWalletBalance,
@@ -66,10 +65,10 @@ export async function authenticateRequest(
 
   return {
     ...apiKey,
-    // Prefer the environment master key so rotating the upstream credential
-    // takes effect immediately without migrating every stored ApiKey row.
-    // Fall back to the per-key value only if the env key is unset.
-    masterApiKey: MASTER_API_KEY || apiKey.masterApiKey || null,
+    // Master key is now resolved per-request from the DB (with env fallback)
+    // by the route handler via app/lib/master-api-keys.ts. This field is kept
+    // for type compatibility but is no longer used for upstream auth.
+    masterApiKey: null,
   };
 }
 
