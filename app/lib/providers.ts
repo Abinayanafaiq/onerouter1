@@ -15,7 +15,7 @@
  */
 
 export const PROVIDER_MODEL_MAP = {
-  Alibaba: ["qwen-7-plus", "qwen3-coder-next"],
+  Alibaba: ["qwen3.7-plus", "qwen3-coder-next"],
   DeepSeek: ["deepseek-v4-flash", "deepseek-v4-pro"],
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast"],
   MiniMax: ["minimax-m3"],
@@ -99,8 +99,8 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     sort: 2,
   },
   {
-    modelId: "qwen-7-plus",
-    masterId: "qwen-7-plus",
+    modelId: "qwen3.7-plus",
+    masterId: "qwen3.7-plus",
     name: "Qwen 7 Plus",
     provider: "Alibaba",
     description: "Qwen 7 Plus — versatile model for chat and general tasks",

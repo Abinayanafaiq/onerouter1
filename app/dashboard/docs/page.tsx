@@ -3,7 +3,7 @@ import { CopyableCode } from "@/app/components/copyable-code";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL = "https://www.onerouter.my.id/v1";
+const API_BASE_URL = "https://9inference.cloud/v1";
 
 export default async function DocsPage() {
   const availableModels = await getAvailableModels();
