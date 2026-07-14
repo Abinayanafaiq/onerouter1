@@ -18,8 +18,6 @@ type PakasirResult = {
 type NowpaymentsResult = {
   orderId: string;
   checkoutLink: string;
-  payAmount: string;
-  payCurrency: string;
   toks: number;
 };
 
@@ -155,15 +153,11 @@ export function WalletTopUpForm({
         error?: string;
         orderId?: string;
         checkoutLink?: string;
-        payAmount?: string;
-        payCurrency?: string;
       };
       if (data.success && data.orderId && data.checkoutLink) {
         setNowpaymentsResult({
           orderId: data.orderId,
           checkoutLink: data.checkoutLink,
-          payAmount: data.payAmount ?? "",
-          payCurrency: data.payCurrency ?? "",
           toks,
         });
         startPolling(data.orderId, true);
@@ -224,12 +218,6 @@ export function WalletTopUpForm({
               <span className="font-medium">Kredit:</span>{" "}
               {nowpaymentsResult.toks.toLocaleString("id-ID")} {TOKS_LABEL}
             </p>
-            {nowpaymentsResult.payAmount && (
-              <p>
-                <span className="font-medium">Bayar:</span>{" "}
-                {nowpaymentsResult.payAmount} {nowpaymentsResult.payCurrency}
-              </p>
-            )}
           </div>
 
           <a

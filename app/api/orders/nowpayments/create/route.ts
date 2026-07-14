@@ -80,6 +80,9 @@ export async function POST(request: Request) {
       amount: pkg.price,
       payCurrency: coinDef.payCurrency,
       ipnCallbackUrl: `${origin}/api/nowpayments/webhook`,
+      successUrl: `${origin}/dashboard?payment=success`,
+      cancelUrl: `${origin}/checkout/${packageId}?payment=cancelled`,
+      orderDescription: `${pkg.name} - Order ${order.id.slice(-8)}`,
     });
 
     if (!invoice.ok) {
@@ -100,8 +103,6 @@ export async function POST(request: Request) {
       where: { id: order.id },
       data: {
         nowpaymentsInvoiceId: invoice.invoiceId,
-        nowpaymentsPayCurrency: invoice.payCurrency,
-        cryptoAmount: invoice.payAmount || null,
       },
     });
 

@@ -79,6 +79,9 @@ export async function POST(request: Request) {
       amount: roundedAmount,
       payCurrency: coinDef.payCurrency,
       ipnCallbackUrl: `${origin}/api/nowpayments/webhook`,
+      successUrl: `${origin}/dashboard/wallet?payment=success`,
+      cancelUrl: `${origin}/dashboard/wallet?payment=cancelled`,
+      orderDescription: `Wallet top up Rp${roundedAmount.toLocaleString("id-ID")}`,
     });
 
     if (!invoice.ok) {
@@ -93,8 +96,6 @@ export async function POST(request: Request) {
       where: { id: order.id },
       data: {
         nowpaymentsInvoiceId: invoice.invoiceId,
-        nowpaymentsPayCurrency: invoice.payCurrency,
-        cryptoAmount: invoice.payAmount || null,
       },
     });
 
@@ -102,8 +103,6 @@ export async function POST(request: Request) {
       success: true,
       orderId: order.id,
       checkoutLink: invoice.invoiceUrl,
-      payAmount: invoice.payAmount,
-      payCurrency: invoice.payCurrency,
     });
   } catch (e) {
     console.error("[wallet/topup-nowpayments/create] exception:", e);

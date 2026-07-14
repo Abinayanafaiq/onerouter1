@@ -82,7 +82,7 @@ export const NOWPAYMENTS_COINS = [
 export type NowpaymentsCoin = (typeof NOWPAYMENTS_COINS)[number];
 
 export type NowpaymentsInvoiceResult =
-  | { ok: true; invoiceId: string; invoiceUrl: string; payAmount: string; payCurrency: string }
+  | { ok: true; invoiceId: string; invoiceUrl: string }
   | { ok: false; error: string };
 
 export async function createInvoice(params: {
@@ -90,25 +90,33 @@ export async function createInvoice(params: {
   amount: number;
   payCurrency: string;
   ipnCallbackUrl: string;
+  successUrl?: string;
+  cancelUrl?: string;
+  orderDescription?: string;
 }): Promise<NowpaymentsInvoiceResult> {
   const { apiKey, sandbox } = await getNowpaymentsSettings();
   if (!apiKey) {
     return { ok: false, error: "NOWPayments belum dikonfigurasi. Isi API Key di pengaturan admin." };
   }
   try {
+    const body: Record<string, unknown> = {
+      price_amount: params.amount,
+      price_currency: "idr",
+      pay_currency: params.payCurrency,
+      order_id: params.orderId,
+      ipn_callback_url: params.ipnCallbackUrl,
+    };
+    if (params.orderDescription) body.order_description = params.orderDescription;
+    if (params.successUrl) body.success_url = params.successUrl;
+    if (params.cancelUrl) body.cancel_url = params.cancelUrl;
+
     const res = await fetch(`${baseUrl(sandbox)}/v1/invoice`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
       },
-      body: JSON.stringify({
-        price_amount: params.amount,
-        price_currency: "idr",
-        pay_currency: params.payCurrency,
-        order_id: params.orderId,
-        ipn_callback_url: params.ipnCallbackUrl,
-      }),
+      body: JSON.stringify(body),
       cache: "no-store",
     });
 
@@ -121,8 +129,6 @@ export async function createInvoice(params: {
     const data = (await res.json()) as {
       id: number | string;
       invoice_url?: string;
-      pay_amount?: string | number;
-      pay_currency?: string;
     };
 
     if (!data.id) {
@@ -133,8 +139,6 @@ export async function createInvoice(params: {
       ok: true,
       invoiceId: String(data.id),
       invoiceUrl: data.invoice_url || "",
-      payAmount: String(data.pay_amount ?? ""),
-      payCurrency: data.pay_currency || params.payCurrency,
     };
   } catch (e) {
     console.error("[nowpayments] createInvoice exception:", e);
