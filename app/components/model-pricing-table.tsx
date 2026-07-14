@@ -1,7 +1,19 @@
 import { getEnabledModels } from "@/app/lib/models";
 
+const TOKS_TO_RP = 1000;
+const TOKS_TO_USD = 0.0553;
+
 function fmtRupiah(n: number): string {
   return "Rp" + n.toLocaleString("id-ID");
+}
+
+function fmtUsd(rp: number): string {
+  const toks = rp / TOKS_TO_RP;
+  return "US$" + (toks * TOKS_TO_USD).toFixed(2);
+}
+
+function fmtToks(rp: number): string {
+  return (rp / TOKS_TO_RP).toLocaleString("en-US", { maximumFractionDigits: 1 }) + " TOKS";
 }
 
 /**
@@ -18,7 +30,7 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
   if (models.length === 0) {
     return (
       <div className="border border-foreground/10 rounded-2xl p-8 text-center text-muted-foreground bg-muted/30">
-        Belum ada model tersedia.
+        No models available yet.
       </div>
     );
   }
@@ -46,6 +58,8 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
               if (m.supportsText) caps.push("Text");
               if (m.supportsImages) caps.push("Images");
               if (m.supportsStreaming) caps.push("Stream");
+              const inRp = Number(m.inputPricePerMillion);
+              const outRp = Number(m.outputPricePerMillion);
               return (
                 <tr key={m.id} className="hover:bg-foreground/[0.03] transition">
                   <td className="px-4 py-3.5">
@@ -78,8 +92,14 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
                       </div>
                     </td>
                   )}
-                  <td className="px-4 py-3.5 text-right font-mono">{fmtRupiah(Number(m.inputPricePerMillion))}</td>
-                  <td className="px-4 py-3.5 text-right font-mono">{fmtRupiah(Number(m.outputPricePerMillion))}</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <div className="font-mono font-semibold">{fmtRupiah(inRp)}</div>
+                    <div className="text-[10px] text-muted-foreground">{fmtToks(inRp)} · {fmtUsd(inRp)}</div>
+                  </td>
+                  <td className="px-4 py-3.5 text-right">
+                    <div className="font-mono font-semibold">{fmtRupiah(outRp)}</div>
+                    <div className="text-[10px] text-muted-foreground">{fmtToks(outRp)} · {fmtUsd(outRp)}</div>
+                  </td>
                   <td className="px-4 py-3.5 text-center">
                     {m.maintenanceMode ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-500">
@@ -105,7 +125,7 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
         </table>
       </div>
       <div className="px-4 py-3 border-t border-foreground/10 text-[11px] text-muted-foreground">
-        Harga per 1 juta token. Kamu hanya membayar token yang benar-benar dipakai — tanpa langganan.
+        Prices are per 1 million tokens. <strong className="text-foreground">1 TOKS = Rp1,000 = US$0.0553</strong>. You only pay for tokens actually consumed — no subscriptions, no hidden fees.
       </div>
     </div>
   );

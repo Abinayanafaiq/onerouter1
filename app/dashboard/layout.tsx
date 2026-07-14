@@ -1,6 +1,6 @@
 import { auth, signOut } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
-import { getOrCreateWallet } from "@/app/lib/wallet";
+import { getWalletBalance } from "@/app/lib/wallet";
 import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { DashboardShell } from "@/app/components/dashboard-shell";
@@ -14,11 +14,16 @@ export default async function DashboardLayout({
   if (!session?.user) redirect("/login");
 
   const userId = (session.user as { id?: string }).id;
-  const [wallet, telegramGroupUrl] = await Promise.all([
-    userId ? getOrCreateWallet(userId) : null,
+  // Layout only needs to READ the balance — don't upsert here. Upsert holds a
+  // transaction + 2 round-trips and exhausts the tiny connection_limit=2 pool
+  // when CreditBadge fires /api/wallet/summary at the same time. Wallet rows
+  // are created lazily by getOrCreateWallet only on the first write (top-up /
+  // usage), so reading 0 here is fine and avoids the pool timeout.
+  const [balance, telegramGroupUrl] = await Promise.all([
+    userId ? getWalletBalance(userId) : Promise.resolve(0),
     getTelegramGroupUrl(),
   ]);
-  const balanceToks = idrToToks(Number(wallet?.balance ?? 0));
+  const balanceToks = idrToToks(balance);
   const userName = session.user.name || session.user.email || "Developer";
   const userEmail = session.user.email || "";
 

@@ -2,7 +2,7 @@ import { auth } from "@/app/lib/auth";
 import { findPackage } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { isPakasirConfigured } from "@/app/lib/pakasir";
-import { isNowpaymentsConfigured, NOWPAYMENTS_COINS } from "@/app/lib/nowpayments";
+import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { redirect } from "next/navigation";
 import { CheckoutForm } from "./form";
 import Link from "next/link";
@@ -19,9 +19,9 @@ export default async function CheckoutPage({
   const pkg = await findPackage(packageId);
   if (!pkg) redirect("/pricing");
 
-  const [pakasirConfigured, nowpaymentsConfigured] = await Promise.all([
+  const [pakasirConfigured, bscConfigured] = await Promise.all([
     isPakasirConfigured(),
-    isNowpaymentsConfigured(),
+    isBscConfigured(),
   ]);
 
   return (
@@ -45,8 +45,7 @@ export default async function CheckoutPage({
           chains={[...CRYPTO_CHAINS]}
           btcpayConfigured={isBtcpayConfigured()}
           pakasirConfigured={pakasirConfigured}
-          nowpaymentsConfigured={nowpaymentsConfigured}
-          nowpaymentsCoins={[...NOWPAYMENTS_COINS]}
+          bscConfigured={bscConfigured}
         />
       </main>
     </div>

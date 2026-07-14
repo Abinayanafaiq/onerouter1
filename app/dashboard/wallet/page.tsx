@@ -3,7 +3,7 @@ import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
 import { prisma } from "@/app/lib/prisma";
 import { IDR_PER_TOKS, TOKS_LABEL, idrToToks } from "@/app/lib/constants";
-import { isNowpaymentsConfigured, NOWPAYMENTS_COINS } from "@/app/lib/nowpayments";
+import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import Link from "next/link";
 import { WalletTopUpForm } from "./topup-form";
 
@@ -24,7 +24,7 @@ export default async function WalletPage() {
   const wallet = await getOrCreateWallet(userId);
   const transactions = await getTransactions(wallet.id, 100);
   const summary = await getWalletSummary(userId);
-  const nowpaymentsConfigured = await isNowpaymentsConfigured();
+  const bscConfigured = await isBscConfigured();
 
   // Get last used whatsapp from previous orders
   const lastOrder = await prisma.order.findFirst({
@@ -142,8 +142,7 @@ export default async function WalletPage() {
         </p>
         <WalletTopUpForm
           whatsapp={lastOrder?.whatsapp}
-          nowpaymentsConfigured={nowpaymentsConfigured}
-          nowpaymentsCoins={[...NOWPAYMENTS_COINS]}
+          bscConfigured={bscConfigured}
         />
       </div>
 

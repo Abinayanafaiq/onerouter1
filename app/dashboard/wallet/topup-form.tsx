@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { IDR_PER_TOKS, TOKS_LABEL, toksToIdr } from "@/app/lib/constants";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
-type Coin = { id: string; label: string; payCurrency: string };
-
 type PakasirResult = {
   orderId: string;
   qrImage: string;
@@ -15,9 +13,10 @@ type PakasirResult = {
   toks: number;
 };
 
-type NowpaymentsResult = {
+type BscResult = {
   orderId: string;
-  checkoutLink: string;
+  payAmount: string;
+  walletAddress: string;
   toks: number;
 };
 
@@ -25,25 +24,24 @@ const MIN_TOKS = 1;
 
 export function WalletTopUpForm({
   whatsapp,
-  nowpaymentsConfigured,
-  nowpaymentsCoins,
+  bscConfigured,
 }: {
   whatsapp?: string | null;
-  nowpaymentsConfigured: boolean;
-  nowpaymentsCoins: readonly Coin[];
+  bscConfigured: boolean;
 }) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [wa, setWa] = useState(whatsapp || "");
-  const [method, setMethod] = useState<"PAKASIR" | "NOWPAYMENTS">(
-    nowpaymentsConfigured ? "NOWPAYMENTS" : "PAKASIR",
+  const [method, setMethod] = useState<"PAKASIR" | "BSC">(
+    bscConfigured ? "BSC" : "PAKASIR",
   );
-  const [coin, setCoin] = useState(nowpaymentsCoins[0]?.id ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
-  const [nowpaymentsResult, setNowpaymentsResult] = useState<NowpaymentsResult | null>(null);
+  const [bscResult, setBscResult] = useState<BscResult | null>(null);
+  const [bscError, setBscError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
+  const [bscConfirmations, setBscConfirmations] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -56,17 +54,24 @@ export function WalletTopUpForm({
   useEffect(() => () => stopPolling(), [stopPolling]);
 
   const startPolling = useCallback(
-    (orderId: string, isNowpayments: boolean) => {
+    (orderId: string, isBsc: boolean) => {
       stopPolling();
-      const endpoint = isNowpayments
-        ? `/api/orders/nowpayments/status?orderId=${encodeURIComponent(orderId)}`
+      const endpoint = isBsc
+        ? `/api/orders/bsc/status?orderId=${encodeURIComponent(orderId)}`
         : `/api/orders/pakasir/status?orderId=${encodeURIComponent(orderId)}`;
       pollRef.current = setInterval(async () => {
         try {
           const res = await fetch(endpoint, { cache: "no-store" });
           if (!res.ok) return;
-          const data = (await res.json()) as { success: boolean; status?: string };
+          const data = (await res.json()) as {
+            success: boolean;
+            status?: string;
+            confirmations?: number;
+          };
           if (!data.success || !data.status) return;
+          if (isBsc && data.confirmations !== undefined) {
+            setBscConfirmations(data.confirmations);
+          }
           if (data.status === "APPROVED") {
             setPaymentStatus("APPROVED");
             stopPolling();
@@ -131,7 +136,7 @@ export function WalletTopUpForm({
     setSubmitting(false);
   }
 
-  async function handleNowpaymentsCreate() {
+  async function handleBscCreate() {
     const toks = parseInt(amount, 10);
     if (!toks || toks < MIN_TOKS) {
       setError(`Minimal top up ${MIN_TOKS} ${TOKS_LABEL}`);
@@ -139,40 +144,45 @@ export function WalletTopUpForm({
     }
     const idrAmount = toksToIdr(toks);
     setError(null);
+    setBscError(null);
     setSubmitting(true);
-    setNowpaymentsResult(null);
+    setBscResult(null);
+    setBscConfirmations(null);
     setPaymentStatus("PENDING");
     try {
-      const res = await fetch("/api/wallet/topup-nowpayments/create", {
+      const res = await fetch("/api/wallet/topup-bsc/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: idrAmount, coin }),
+        body: JSON.stringify({ amount: idrAmount }),
       });
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
         orderId?: string;
-        checkoutLink?: string;
+        payAmount?: string;
+        walletAddress?: string;
       };
-      if (data.success && data.orderId && data.checkoutLink) {
-        setNowpaymentsResult({
+      if (data.success && data.orderId && data.payAmount && data.walletAddress) {
+        setBscResult({
           orderId: data.orderId,
-          checkoutLink: data.checkoutLink,
+          payAmount: data.payAmount,
+          walletAddress: data.walletAddress,
           toks,
         });
         startPolling(data.orderId, true);
       } else {
-        setError(data.error || "Gagal membuat invoice");
+        setBscError(data.error || "Gagal membuat order");
       }
     } catch {
-      setError("Koneksi gagal");
+      setBscError("Koneksi gagal");
     }
     setSubmitting(false);
   }
 
   function resetForm() {
     setPakasirResult(null);
-    setNowpaymentsResult(null);
+    setBscResult(null);
+    setBscConfirmations(null);
     setPaymentStatus("PENDING");
     setAmount("");
     stopPolling();
@@ -201,57 +211,63 @@ export function WalletTopUpForm({
     );
   }
 
-  // NOWPAYMENTS invoice display
-  if (nowpaymentsResult) {
+  // BSC invoice display
+  if (bscResult) {
     return (
       <div className="space-y-4">
         <div className="border rounded-lg p-4 space-y-3">
           <div className="text-center">
-            <div className="w-12 h-12 mx-auto rounded-full border border-foreground/20 text-foreground flex items-center justify-center mb-2">
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 12 5 5L20 6" /></svg>
-            </div>
-            <p className="text-sm font-medium">Invoice NOWPayments Dibuat</p>
+            <p className="text-sm font-medium mb-2">Transfer USDT BEP20</p>
           </div>
-
-          <div className="bg-muted rounded-md p-3 text-sm space-y-1">
-            <p>
-              <span className="font-medium">Kredit:</span>{" "}
-              {nowpaymentsResult.toks.toLocaleString("id-ID")} {TOKS_LABEL}
+          <div className="bg-muted rounded-md p-3 text-sm space-y-2">
+            <div>
+              <span className="font-medium block text-xs text-muted-foreground mb-1">Kredit:</span>
+              <p className="font-bold">{bscResult.toks.toLocaleString("id-ID")} {TOKS_LABEL}</p>
+            </div>
+            <div>
+              <span className="font-medium block text-xs text-muted-foreground mb-1">Kirim tepat:</span>
+              <code className="text-lg font-mono font-bold break-all">{bscResult.payAmount} USDT</code>
+            </div>
+            <div>
+              <span className="font-medium block text-xs text-muted-foreground mb-1">Ke address (BEP20/BSC):</span>
+              <code className="text-xs font-mono break-all block bg-background p-2 rounded border">
+                {bscResult.walletAddress}
+              </code>
+            </div>
+            <p className="text-xs text-amber-600 pt-1">
+              Transfer harus PERSIS {bscResult.payAmount} USDT di jaringan BEP20 (BSC). Amount unik untuk identifikasi order.
             </p>
           </div>
-
-          <a
-            href={nowpaymentsResult.checkoutLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full bg-foreground text-background py-2.5 rounded-md font-medium hover:opacity-90 text-center text-sm"
+          <button
+            type="button"
+            onClick={() => navigator.clipboard?.writeText(bscResult.walletAddress)}
+            className="block text-center w-full border py-2 rounded-md text-sm font-medium hover:bg-muted"
           >
-            Bayar Sekarang
-          </a>
-
+            Copy Address
+          </button>
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
             {paymentStatus === "PENDING" && (
               <>
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                Menunggu konfirmasi pembayaran...
+                {bscConfirmations !== null
+                  ? `Terdeteksi di blockchain. Menunggu konfirmasi... (${bscConfirmations})`
+                  : "Menunggu pembayaran..."}
               </>
             )}
             {paymentStatus === "CANCELLED" && (
-              <span className="text-red-600">Invoice kadaluarsa/dibatalkan.</span>
+              <span className="text-red-600">Order dibatalkan.</span>
             )}
           </div>
-
           {paymentStatus === "CANCELLED" && (
             <button
               onClick={resetForm}
               className="block text-center w-full border py-2 rounded-md text-sm font-medium hover:bg-muted"
             >
-              Buat Invoice Baru
+              Buat Order Baru
             </button>
           )}
-
           <p className="text-xs text-muted-foreground text-center">
-            Setelah pembayaran terkonfirmasi on-chain, {TOKS_LABEL} otomatis masuk.
+            Verifikasi otomatis via BSC. Konfirmasi ~36 detik setelah tx terdeteksi.
           </p>
         </div>
       </div>
@@ -351,11 +367,11 @@ export function WalletTopUpForm({
           </div>
           <button
             type="button"
-            onClick={method === "NOWPAYMENTS" ? handleNowpaymentsCreate : handlePakasirCreate}
+            onClick={method === "BSC" ? handleBscCreate : handlePakasirCreate}
             disabled={submitting}
             className="bg-foreground text-background px-4 py-2 rounded-md text-xs font-medium hover:opacity-90 disabled:opacity-50"
           >
-            {submitting ? "..." : method === "NOWPAYMENTS" ? "Buat Invoice" : "Bayar via QRIS"}
+            {submitting ? "..." : method === "BSC" ? "Buat Order" : "Bayar via QRIS"}
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mt-2">
@@ -393,39 +409,25 @@ export function WalletTopUpForm({
         >
           QRIS
         </button>
-        {nowpaymentsConfigured && (
+        {bscConfigured && (
           <button
             type="button"
-            onClick={() => setMethod("NOWPAYMENTS")}
+            onClick={() => setMethod("BSC")}
             className={`flex-1 py-2 text-xs font-medium ${
-              method === "NOWPAYMENTS"
+              method === "BSC"
                 ? "bg-foreground text-background"
                 : "hover:bg-muted"
             }`}
           >
-            Crypto (NOWPayments)
+            USDT BEP20
           </button>
         )}
       </div>
 
-      {method === "NOWPAYMENTS" && nowpaymentsConfigured && (
-        <div>
-          <label className="text-xs font-medium block mb-1.5">Pilih Coin / Network</label>
-          <select
-            value={coin}
-            onChange={(e) => setCoin(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm"
-          >
-            {nowpaymentsCoins.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Kurs dihitung otomatis saat pembayaran. {TOKS_LABEL} masuk setelah konfirmasi on-chain.
-          </p>
-        </div>
+      {method === "BSC" && bscConfigured && (
+        <p className="text-[10px] text-muted-foreground">
+          Bayar langsung dengan USDT di jaringan BEP20 (BSC). No minimum, no gateway fee. Amount USDT dihitung saat order dibuat (kurs real-time).
+        </p>
       )}
 
       {method === "PAKASIR" && (
@@ -435,6 +437,7 @@ export function WalletTopUpForm({
       )}
 
       {error && <p className="text-xs text-red-600">{error}</p>}
+      {bscError && <p className="text-xs text-red-600">{bscError}</p>}
     </div>
   );
 }

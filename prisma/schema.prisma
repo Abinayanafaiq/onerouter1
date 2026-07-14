@@ -99,6 +99,7 @@ model Order {
   nowpaymentsInvoiceId String?
   nowpaymentsPaymentId  String?
   nowpaymentsPayCurrency String?
+  cryptoExpectedAmount  String?
   pakasirMethod        String?
   pakasirPaymentNumber String?
   pakasirExpiredAt     DateTime?

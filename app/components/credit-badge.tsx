@@ -40,13 +40,16 @@ export function CreditBadge({ initialToks }: { initialToks: number }) {
   }, []);
 
   useEffect(() => {
-    // Refresh on mount, on custom event, and when the tab regains focus.
-    refresh();
+    // Don't refetch immediately on mount — the server already passed in
+    // initialToks via the layout. Wait a short beat so we don't pile onto the
+    // same connection pool window as the layout/page render.
+    const mountTimer = setTimeout(refresh, 1500);
     const onEvent = () => refresh();
     window.addEventListener(WALLET_REFRESH_EVENT, onEvent);
     window.addEventListener("focus", onEvent);
     const interval = setInterval(refresh, 30000);
     return () => {
+      clearTimeout(mountTimer);
       window.removeEventListener(WALLET_REFRESH_EVENT, onEvent);
       window.removeEventListener("focus", onEvent);
       clearInterval(interval);

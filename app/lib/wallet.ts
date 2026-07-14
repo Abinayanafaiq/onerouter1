@@ -32,17 +32,47 @@ export async function getOrCreateWallet(userId: string) {
   // Use upsert to avoid a race when multiple concurrent requests (layout,
   // page, and credit badge all run on the same navigation) try to create the
   // wallet at once — which would violate the unique constraint on userId.
-  return prisma.wallet.upsert({
-    where: { userId },
-    update: {},
-    create: { userId, balance: 0 },
-  });
+  // Retry once on pool exhaustion so a transient full pool (connection_limit=2
+  // + pgbouncer) doesn't surface as a hard 500 to the user.
+  try {
+    return await prisma.wallet.upsert({
+      where: { userId },
+      update: {},
+      create: { userId, balance: 0 },
+    });
+  } catch (e) {
+    if (isPoolTimeout(e)) {
+      await new Promise((r) => setTimeout(r, 200));
+      return prisma.wallet.upsert({
+        where: { userId },
+        update: {},
+        create: { userId, balance: 0 },
+      });
+    }
+    throw e;
+  }
+}
+
+function isPoolTimeout(e: unknown): boolean {
+  const msg = (e as Error)?.message ?? "";
+  return /connection pool|Timed out fetching a new connection/i.test(msg);
 }
 
 export async function getWalletBalance(userId: string): Promise<number> {
-  const wallet = await prisma.wallet.findUnique({ where: { userId } });
-  if (!wallet) return 0;
-  return Number(wallet.balance);
+  try {
+    const wallet = await prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet) return 0;
+    return Number(wallet.balance);
+  } catch (e) {
+    // If the pool is momentarily exhausted (e.g. layout + credit badge + page
+    // all firing at once on navigation), don't crash the whole dashboard —
+    // return 0 and let the client-side CreditBadge refetch recover it.
+    if (isPoolTimeout(e)) {
+      console.warn("[getWalletBalance] pool timeout — returning 0");
+      return 0;
+    }
+    throw e;
+  }
 }
 
 export type TopUpResult =

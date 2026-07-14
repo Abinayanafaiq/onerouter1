@@ -164,7 +164,7 @@ export default async function Home() {
                 href="/register"
                 className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm"
               >
-                Start Building
+                Get Your Free API Key
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -192,7 +192,7 @@ export default async function Home() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Pay per token
+                1 TOKS = Rp1,000 = US$0.0553
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
@@ -371,6 +371,15 @@ export default async function Home() {
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
               Pay only for the tokens you use. No subscriptions. No hidden fees.
             </p>
+
+            {/* TOKS conversion banner */}
+            <div className="mx-auto mt-6 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-accent/20 bg-accent/5 px-4 py-2 text-[12px]">
+              <span className="font-semibold text-accent">1 TOKS</span>
+              <span className="text-muted-foreground">=</span>
+              <span className="font-semibold text-foreground">Rp1,000</span>
+              <span className="text-muted-foreground">=</span>
+              <span className="font-semibold text-foreground">US$0.0553</span>
+            </div>
           </div>
 
           <div className="mx-auto mt-12 max-w-5xl">
@@ -380,10 +389,10 @@ export default async function Home() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/register"
-              className="btn-accent inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
+              className="btn-accent group inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
             >
-              Start Building
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+              Get Your Free API Key
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
@@ -394,6 +403,9 @@ export default async function Home() {
               View full pricing
             </Link>
           </div>
+          <p className="mt-4 text-center text-[12px] text-muted-foreground">
+            No credit card required · Credits never expire · 14-day refund guarantee
+          </p>
         </div>
       </section>
 
@@ -456,19 +468,29 @@ export default async function Home() {
               aria-hidden
             />
             <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-30" aria-hidden />
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-3.5 py-1.5 text-[12px] font-medium text-accent">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+              Get started in under 5 minutes
+            </div>
+
+            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
               Ship AI features faster
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Get an API key in minutes. One endpoint, every model, billed per token.
+              Get an API key in minutes. One endpoint, every model, billed per token —
+              starting at 1 TOKS = Rp1,000 = US$0.0553.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="btn-accent inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+                className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
               >
-                Start Building
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                Get Your Free API Key
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
@@ -478,6 +500,26 @@ export default async function Home() {
               >
                 Read the docs
               </Link>
+            </div>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                No credit card required
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                14-day refund guarantee
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Credits never expire
+              </span>
             </div>
           </div>
         </div>
@@ -673,11 +715,21 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
                     {m.contextWindow || "—"}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-right font-mono text-foreground">
-                  Rp{m.inputPricePerMillion.toLocaleString("id-ID")}
+                <td className="px-5 py-4 text-right">
+                  <div className="font-mono font-semibold text-foreground">
+                    Rp{m.inputPricePerMillion.toLocaleString("id-ID")}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {(m.inputPricePerMillion / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} TOKS · US${((m.inputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                  </div>
                 </td>
-                <td className="px-5 py-4 text-right font-mono text-foreground">
-                  Rp{m.outputPricePerMillion.toLocaleString("id-ID")}
+                <td className="px-5 py-4 text-right">
+                  <div className="font-mono font-semibold text-foreground">
+                    Rp{m.outputPricePerMillion.toLocaleString("id-ID")}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {(m.outputPricePerMillion / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} TOKS · US${((m.outputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                  </div>
                 </td>
                 <td className="px-5 py-4 text-center">
                   {m.maintenanceMode ? (
@@ -698,7 +750,7 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
         </table>
       </div>
       <div className="border-t border-white/[0.08] px-5 py-3.5 text-[11px] text-muted-foreground">
-        Prices per 1 million tokens. You only pay for tokens consumed — no subscriptions, no hidden fees.
+        Prices per 1 million tokens. <strong className="text-foreground">1 TOKS = Rp1,000 = US$0.0553</strong>. You only pay for tokens consumed — no subscriptions, no hidden fees.
       </div>
     </div>
   );

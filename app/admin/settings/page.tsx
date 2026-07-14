@@ -1,21 +1,18 @@
 import { getPakasirSettings } from "@/app/lib/pakasir";
-import { getNowpaymentsSettings } from "@/app/lib/nowpayments";
+import { getBscSettings } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { PakasirForm } from "./pakasir-form";
-import { NowpaymentsForm } from "./nowpayments-form";
+import { BscForm } from "./bsc-form";
 import { TelegramForm } from "./telegram-form";
 
 export default async function AdminSettingsPage() {
-  const [settings, nowpaymentsSettings, telegramUrl] = await Promise.all([
+  const [settings, bscSettings, telegramUrl] = await Promise.all([
     getPakasirSettings(),
-    getNowpaymentsSettings(),
+    getBscSettings(),
     getTelegramGroupUrl(),
   ]);
   const maskedApiKey = settings.apiKey
     ? `${settings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, settings.apiKey.length - 8))}${settings.apiKey.slice(-4)}`
-    : "";
-  const nowpaymentsMaskedApiKey = nowpaymentsSettings.apiKey
-    ? `${nowpaymentsSettings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, nowpaymentsSettings.apiKey.length - 8))}${nowpaymentsSettings.apiKey.slice(-4)}`
     : "";
 
   return (
@@ -34,12 +31,12 @@ export default async function AdminSettingsPage() {
           webhookSecretSet: !!settings.webhookSecret,
         }}
       />
-      <NowpaymentsForm
+      <BscForm
         initial={{
-          apiKeyMasked: nowpaymentsMaskedApiKey,
-          apiKeySet: !!nowpaymentsSettings.apiKey,
-          ipnSecretSet: !!nowpaymentsSettings.ipnSecret,
-          sandbox: nowpaymentsSettings.sandbox,
+          walletAddress: bscSettings.walletAddress,
+          rpcUrl: bscSettings.rpcUrl,
+          confirmations: bscSettings.confirmations,
+          isConfigured: !!bscSettings.walletAddress,
         }}
       />
       <TelegramForm initialUrl={telegramUrl} />
