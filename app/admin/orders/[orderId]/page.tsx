@@ -36,6 +36,9 @@ export default async function AdminOrderDetailPage({
         <Row label="Metode" value={order.paymentMethod} />
         {order.cryptoChain && <Row label="Chain" value={order.cryptoChain} />}
         {order.btcpayInvoiceId && <Row label="BTCPay" value={<span className="font-mono text-xs">{order.btcpayInvoiceId}</span>} />}
+        {order.nowpaymentsInvoiceId && <Row label="NOWPayments Inv" value={<span className="font-mono text-xs">{order.nowpaymentsInvoiceId}</span>} />}
+        {order.nowpaymentsPaymentId && <Row label="NOWPayments Pay" value={<span className="font-mono text-xs">{order.nowpaymentsPaymentId}</span>} />}
+        {order.nowpaymentsPayCurrency && <Row label="Pay Currency" value={<span className="font-mono text-xs">{order.nowpaymentsPayCurrency}</span>} />}
         {order.pakasirMethod && <Row label="Pakasir Method" value={order.pakasirMethod} />}
         {order.pakasirPaymentNumber && (
           <Row

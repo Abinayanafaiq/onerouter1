@@ -96,6 +96,9 @@ model Order {
   cryptoChain     String?
   cryptoAmount    String?
   btcpayInvoiceId String?
+  nowpaymentsInvoiceId String?
+  nowpaymentsPaymentId  String?
+  nowpaymentsPayCurrency String?
   pakasirMethod        String?
   pakasirPaymentNumber String?
   pakasirExpiredAt     DateTime?

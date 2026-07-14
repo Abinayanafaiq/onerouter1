@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 type Chain = { id: string; label: string; chain: string };
+type Coin = { id: string; label: string; payCurrency: string };
 
 type PakasirResult = {
   qrImage: string;
@@ -20,21 +21,30 @@ export function CheckoutForm({
   chains,
   btcpayConfigured,
   pakasirConfigured,
+  nowpaymentsConfigured,
+  nowpaymentsCoins,
 }: {
   packageId: string;
   amount: number;
   chains: readonly Chain[];
   btcpayConfigured: boolean;
   pakasirConfigured: boolean;
+  nowpaymentsConfigured: boolean;
+  nowpaymentsCoins: readonly Coin[];
 }) {
   const router = useRouter();
-  const defaultTab: "PAKASIR" | "CRYPTO" = pakasirConfigured ? "PAKASIR" : "CRYPTO";
-  const [method, setMethod] = useState<"PAKASIR" | "CRYPTO">(defaultTab);
-  const [chain, setChain] = useState(chains[0].id);
+  const defaultTab: "PAKASIR" | "CRYPTO" | "NOWPAYMENTS" = pakasirConfigured
+    ? "PAKASIR"
+    : nowpaymentsConfigured
+      ? "NOWPAYMENTS"
+      : "CRYPTO";
+  const [method, setMethod] = useState<"PAKASIR" | "CRYPTO" | "NOWPAYMENTS">(defaultTab);
+  const [chain, setChain] = useState(chains[0]?.id ?? "");
+  const [coin, setCoin] = useState(nowpaymentsCoins[0]?.id ?? "");
   const [whatsapp, setWhatsapp] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [cryptoResult, setCryptoResult] = useState<
-    { ok: true; checkoutLink: string } | { ok: false; error: string } | null
+    { ok: true; checkoutLink: string; provider: string } | { ok: false; error: string } | null
   >(null);
   const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
   const [pakasirError, setPakasirError] = useState<string | null>(null);
@@ -97,7 +107,32 @@ export function CheckoutForm({
     };
 
     if (data.success && data.checkoutLink) {
-      setCryptoResult({ ok: true, checkoutLink: data.checkoutLink });
+      setCryptoResult({ ok: true, checkoutLink: data.checkoutLink, provider: "BTCPay" });
+    } else {
+      setCryptoResult({ ok: false, error: data.error || "Gagal membuat order" });
+    }
+    setSubmitting(false);
+  }
+
+  async function handleNowpayments(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setCryptoResult(null);
+
+    const res = await fetch("/api/orders/nowpayments/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageId, coin }),
+    });
+
+    const data = (await res.json()) as {
+      success: boolean;
+      error?: string;
+      checkoutLink?: string;
+    };
+
+    if (data.success && data.checkoutLink) {
+      setCryptoResult({ ok: true, checkoutLink: data.checkoutLink, provider: "NOWPayments" });
     } else {
       setCryptoResult({ ok: false, error: data.error || "Gagal membuat order" });
     }
@@ -172,7 +207,7 @@ export function CheckoutForm({
         </div>
         <h2 className="text-lg font-bold">Invoice Dibuat</h2>
         <p className="text-sm text-muted-foreground">
-          Klik tombol di bawah untuk membayar via BTCPay
+          Klik tombol di bawah untuk membayar via {cryptoResult.provider}
         </p>
         <a
           href={cryptoResult.checkoutLink}
@@ -226,6 +261,19 @@ export function CheckoutForm({
             QRIS
           </button>
         )}
+        {nowpaymentsConfigured && (
+          <button
+            type="button"
+            onClick={() => setMethod("NOWPAYMENTS")}
+            className={`flex-1 py-2 text-sm font-medium ${
+              method === "NOWPAYMENTS"
+                ? "bg-foreground text-background"
+                : "hover:bg-muted"
+            }`}
+          >
+            Crypto (NOWPayments)
+          </button>
+        )}
         {btcpayConfigured && (
           <button
             type="button"
@@ -236,12 +284,12 @@ export function CheckoutForm({
                 : "hover:bg-muted"
             }`}
           >
-            Crypto (BTC/USDT)
+            Crypto (BTCPay)
           </button>
         )}
       </div>
 
-      {!showPakasirTab && !btcpayConfigured && (
+      {!showPakasirTab && !btcpayConfigured && !nowpaymentsConfigured && (
         <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
           Pembayaran belum dikonfigurasi. Hubungi admin.
         </div>
@@ -262,6 +310,40 @@ export function CheckoutForm({
               className="w-full px-3 py-2 border rounded-md bg-background text-sm"
             >
               {chains.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {cryptoResult?.ok === false && (
+            <p className="text-sm text-red-600">{cryptoResult.error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-foreground text-background py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting ? "Membuat Invoice..." : "Buat Invoice Crypto"}
+          </button>
+        </form>
+      )}
+
+      {method === "NOWPAYMENTS" && nowpaymentsConfigured && (
+        <form onSubmit={handleNowpayments} className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Bayar dengan crypto via NOWPayments. BTC &amp; USDT multi-chain. Kurs otomatis saat pembayaran.
+          </p>
+          <div>
+            <label className="text-sm font-medium block mb-1.5">
+              Pilih Coin / Network
+            </label>
+            <select
+              value={coin}
+              onChange={(e) => setCoin(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+            >
+              {nowpaymentsCoins.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>

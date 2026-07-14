@@ -3,6 +3,7 @@ import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
 import { prisma } from "@/app/lib/prisma";
 import { IDR_PER_TOKS, TOKS_LABEL, idrToToks } from "@/app/lib/constants";
+import { isNowpaymentsConfigured, NOWPAYMENTS_COINS } from "@/app/lib/nowpayments";
 import Link from "next/link";
 import { WalletTopUpForm } from "./topup-form";
 
@@ -23,6 +24,7 @@ export default async function WalletPage() {
   const wallet = await getOrCreateWallet(userId);
   const transactions = await getTransactions(wallet.id, 100);
   const summary = await getWalletSummary(userId);
+  const nowpaymentsConfigured = await isNowpaymentsConfigured();
 
   // Get last used whatsapp from previous orders
   const lastOrder = await prisma.order.findFirst({
@@ -135,10 +137,14 @@ export default async function WalletPage() {
       <div className="border rounded-xl p-5 space-y-4">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Top Up Kredit {TOKS_LABEL}</h2>
         <p className="text-xs text-muted-foreground">
-          Masukkan jumlah {TOKS_LABEL} (1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString("id-ID")}). Pembayaran via QRIS/Pakasir auto-konfirmasi.
+          Masukkan jumlah {TOKS_LABEL} (1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString("id-ID")}). Pembayaran via QRIS/Crypto auto-konfirmasi.
           Bayar hanya untuk yang kamu pakai — tanpa langganan.
         </p>
-        <WalletTopUpForm whatsapp={lastOrder?.whatsapp} />
+        <WalletTopUpForm
+          whatsapp={lastOrder?.whatsapp}
+          nowpaymentsConfigured={nowpaymentsConfigured}
+          nowpaymentsCoins={[...NOWPAYMENTS_COINS]}
+        />
       </div>
 
       {/* Transaction History */}

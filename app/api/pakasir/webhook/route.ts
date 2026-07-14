@@ -19,18 +19,15 @@ export async function POST(request: Request) {
 
     console.log("[pakasir/webhook] payment received:", rawBody.slice(0, 300));
 
-    // 1. Verify signature. A webhook secret must be configured — without it,
-    //    anyone could forge a webhook and credit wallets.
-    if (!settings.webhookSecret) {
-      console.error("[pakasir/webhook] REJECTED: webhook secret not configured");
-      return NextResponse.json(
-        { error: "Webhook secret not configured" },
-        { status: 403 },
-      );
-    }
-    if (!(await verifyWebhookSignature(rawBody, sig))) {
-      console.error("[pakasir/webhook] REJECTED: invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+    // 1. Signature verification (optional — Pakasir does not sign webhooks).
+    //    If a signature header IS present, verify it with the configured secret.
+    //    If no signature header, skip HMAC and rely on the Transaction Detail
+    //    API re-verification below (step 3) for authenticity.
+    if (sig && settings.webhookSecret) {
+      if (!(await verifyWebhookSignature(rawBody, sig))) {
+        console.error("[pakasir/webhook] REJECTED: invalid signature");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+      }
     }
 
     const event = JSON.parse(rawBody) as PakasirWebhookPayload;

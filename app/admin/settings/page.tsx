@@ -1,15 +1,21 @@
 import { getPakasirSettings } from "@/app/lib/pakasir";
+import { getNowpaymentsSettings } from "@/app/lib/nowpayments";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { PakasirForm } from "./pakasir-form";
+import { NowpaymentsForm } from "./nowpayments-form";
 import { TelegramForm } from "./telegram-form";
 
 export default async function AdminSettingsPage() {
-  const [settings, telegramUrl] = await Promise.all([
+  const [settings, nowpaymentsSettings, telegramUrl] = await Promise.all([
     getPakasirSettings(),
+    getNowpaymentsSettings(),
     getTelegramGroupUrl(),
   ]);
   const maskedApiKey = settings.apiKey
     ? `${settings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, settings.apiKey.length - 8))}${settings.apiKey.slice(-4)}`
+    : "";
+  const nowpaymentsMaskedApiKey = nowpaymentsSettings.apiKey
+    ? `${nowpaymentsSettings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, nowpaymentsSettings.apiKey.length - 8))}${nowpaymentsSettings.apiKey.slice(-4)}`
     : "";
 
   return (
@@ -26,6 +32,14 @@ export default async function AdminSettingsPage() {
           apiKeyMasked: maskedApiKey,
           apiKeySet: !!settings.apiKey,
           webhookSecretSet: !!settings.webhookSecret,
+        }}
+      />
+      <NowpaymentsForm
+        initial={{
+          apiKeyMasked: nowpaymentsMaskedApiKey,
+          apiKeySet: !!nowpaymentsSettings.apiKey,
+          ipnSecretSet: !!nowpaymentsSettings.ipnSecret,
+          sandbox: nowpaymentsSettings.sandbox,
         }}
       />
       <TelegramForm initialUrl={telegramUrl} />
