@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "OneRouter — API Model AI Murah, Bayar Per Token",
+    title: "9inference — API Model AI Murah, Bayar Per Token",
     description:
       "Gateway AI murah kompatibel OpenAI. DeepSeek, GLM, Qwen, Kimi — satu API key, bayar per token.",
     type: "website",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OneRouter — API Model AI Murah, Bayar Per Token",
+    title: "9inference — API Model AI Murah, Bayar Per Token",
     description:
       "Gateway AI murah kompatibel OpenAI. DeepSeek, GLM, Qwen, Kimi — satu API key, bayar per token.",
   },
@@ -164,24 +164,24 @@ export default async function Home() {
                 href="/register"
                 className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm"
               >
-                Dapatkan API Key Gratis
+                Mulai gratis — API key instan
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
               <Link
-                href="/dashboard/docs"
+                href="/pricing"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                  <path d="M4 4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9-2v5h5M8 13h8M8 17h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Lihat Dokumentasi
+                Lihat harga token
               </Link>
             </div>
+            <p className="mt-3 text-[12px] text-muted-foreground">
+              Setup &lt; 2 menit · Tanpa kartu kredit · Bayar per token
+            </p>
 
             {/* Mini trust row */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -192,13 +192,13 @@ export default async function Home() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                1 TOKS = Rp1.000 = US$0.0553
+                1 TOKS = Rp1.000
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Pengganti OpenAI drop-in
+                Drop-in OpenAI
               </span>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default async function Home() {
               Dari nol ke inferensi dalam hitungan menit
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
-              Jika Anda sudah memakai OpenAI SDK, Anda sudah mengenal OneRouter. Arahkan client
+              Jika Anda sudah memakai OpenAI SDK, Anda sudah mengenal 9inference. Arahkan client
               ke base URL kami — selesai.
             </p>
           </div>
@@ -391,16 +391,16 @@ export default async function Home() {
               href="/register"
               className="btn-accent group inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
             >
-                Dapatkan API Key Gratis
+                Daftar gratis
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
               <Link
-                href="/pricing"
+                href="/models"
                 className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                Lihat harga lengkap
+                Lihat semua model
               </Link>
             </div>
             <p className="mt-4 text-center text-[12px] text-muted-foreground">
@@ -450,6 +450,17 @@ export default async function Home() {
               </div>
             ))}
           </div>
+          <div className="mt-10 text-center">
+            <Link
+              href="/register"
+              className="btn-accent inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm"
+            >
+              Siap coba? Daftar gratis
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -474,31 +485,31 @@ export default async function Home() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Mulai dalam kurang dari 5 menit
+              {modelCount} model · Bayar per token · 1 TOKS = Rp1.000
             </div>
 
             <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-              Rilis fitur AI lebih cepat
+              Hemat biaya AI mulai hari ini
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Dapatkan API key dalam hitungan menit. Satu endpoint, semua model, ditagih per token —
-              mulai dari 1 TOKS = Rp1.000 = US$0.0553.
+              Daftar gratis, dapat API key instan. Satu endpoint multi-model, bayar hanya token yang dipakai —
+              tanpa langganan.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
                 className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
               >
-                Dapatkan API Key Gratis
+                Mulai gratis — API key instan
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
               <Link
-                href="/dashboard/docs"
+                href="/models"
                 className="rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                Baca dokumentasi
+                Lihat model murah
               </Link>
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
@@ -534,9 +545,9 @@ export default async function Home() {
             <div>
               <Link href="/" className="flex items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-                  1R
+                  9i
                 </span>
-                <span className="text-[15px] font-semibold tracking-tight">OneRouter</span>
+                <span className="text-[15px] font-semibold tracking-tight">9inference</span>
               </Link>
               <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
                 API model AI murah — bayar per token, kompatibel OpenAI, untuk developer Indonesia.
@@ -565,7 +576,7 @@ export default async function Home() {
               title="Akun"
               links={[
                 { label: "Masuk", href: "/login" },
-                { label: "Mulai Sekarang", href: "/register" },
+                { label: "Daftar gratis", href: "/register" },
                 { label: "Isi Saldo", href: "/dashboard/wallet" },
               ]}
             />
@@ -573,7 +584,7 @@ export default async function Home() {
 
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
             <p className="text-[12px] text-muted-foreground">
-              © {new Date().getFullYear()} OneRouter. Hak cipta dilindungi.
+              © {new Date().getFullYear()} 9inference. Hak cipta dilindungi.
             </p>
             <p className="text-[12px] text-muted-foreground">
               Bayar hanya yang dipakai. Tanpa langganan. Tanpa biaya tersembunyi.
@@ -664,7 +675,7 @@ function ModelShowcaseCard({ model }: { model: ModelCardData }) {
           href={`/models/${encodeURIComponent(model.modelId)}`}
           className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
         >
-          Detail
+          Pakai model
         </Link>
       </div>
     </div>

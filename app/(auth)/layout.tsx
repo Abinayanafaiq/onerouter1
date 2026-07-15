@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="border-b">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="font-bold text-lg">
-            OneRouter
+            9inference
           </Link>
           <div className="text-sm text-muted-foreground">
             <Link href="/" className="hover:text-foreground">

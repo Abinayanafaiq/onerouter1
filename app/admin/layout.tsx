@@ -37,7 +37,7 @@ export default async function AdminLayout({
               <span className="bg-neutral-100 text-neutral-900 px-1.5 py-0.5 rounded text-[10px] font-mono">
                 ADM
               </span>
-              <span className="hidden sm:inline">OneRouter</span>
+              <span className="hidden sm:inline">9inference</span>
             </Link>
             <nav className="flex items-center gap-1">
               {navItems.map((item) => (

@@ -9,7 +9,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-white/[0.06] px-4 py-12 sm:px-6">
         <div className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="text-sm font-semibold">OneRouter</div>
+            <div className="text-sm font-semibold">9inference</div>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
               API model AI murah — bayar per token, kompatibel OpenAI.
             </p>
@@ -42,7 +42,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           />
         </div>
         <p className="mx-auto mt-10 max-w-6xl text-[12px] text-muted-foreground">
-          © {new Date().getFullYear()} OneRouter. API model murah untuk developer Indonesia.
+          © {new Date().getFullYear()} 9inference. API model murah untuk developer Indonesia.
         </p>
       </footer>
     </div>

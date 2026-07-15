@@ -23,7 +23,7 @@ export default async function DocsPage() {
 
 const client = new OpenAI({
   baseURL: "${API_BASE_URL}",
-  apiKey: process.env.ONEROUTER_API_KEY,
+  apiKey: process.env.NINEINFERENCE_API_KEY,
 });
 
 const res = await client.chat.completions.create({
@@ -48,7 +48,7 @@ console.log(res.choices[0].message.content);`;
       <header className="animate-fade-up">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">API Documentation</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          OneRouter exposes an OpenAI-compatible Chat Completions API. Point your existing SDK at
+          9inference exposes an OpenAI-compatible Chat Completions API. Point your existing SDK at
           our base URL and start inferencing in minutes.
         </p>
       </header>

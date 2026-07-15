@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "OneRouter — Platform Inferensi AI";
+export const alt = "9inference — Platform Inferensi AI";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -36,9 +36,9 @@ export default function TwitterImage() {
               fontFamily: "ui-monospace, Menlo, monospace",
             }}
           >
-            1R
+            9i
           </div>
-          <div style={{ fontSize: 36, fontWeight: 700 }}>OneRouter</div>
+          <div style={{ fontSize: 36, fontWeight: 700 }}>9inference</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

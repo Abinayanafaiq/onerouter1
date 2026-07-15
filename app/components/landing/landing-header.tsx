@@ -33,10 +33,10 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-            1R
+            9i
           </span>
           <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight">OneRouter</div>
+            <div className="text-[15px] font-semibold tracking-tight">9inference</div>
             <div className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:block">
               Platform Inferensi AI
             </div>
@@ -85,7 +85,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 href="/register"
                 className="btn-accent rounded-lg px-4 py-2 text-[13px]"
               >
-                Mulai Sekarang
+                Daftar gratis
               </Link>
             </>
           )}
@@ -148,7 +148,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                     onClick={() => setOpen(false)}
                     className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
                   >
-                    Mulai Sekarang
+                    Daftar gratis
                   </Link>
                 </>
               )}

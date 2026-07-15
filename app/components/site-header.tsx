@@ -11,7 +11,7 @@ export async function SiteHeader() {
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link href="/" className="font-bold text-lg flex items-center gap-2">
           <span className="bg-white text-black px-2 py-0.5 rounded text-xs font-mono font-bold">
-            1R
+            9i
           </span>
           <span className="gradient-text">{APP_NAME}</span>
         </Link>
@@ -68,7 +68,7 @@ export async function SiteHeader() {
                 href="/register"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Mulai
+                Daftar gratis
               </Link>
             </>
           )}

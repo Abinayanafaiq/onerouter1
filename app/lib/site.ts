@@ -7,10 +7,10 @@ export function getSiteUrl(): string {
     "";
   if (fromEnv) return fromEnv.replace(/\/+$/, "");
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`;
-  return "https://onerouter.id";
+  return "https://9inference.cloud";
 }
 
-export const SITE_NAME = "OneRouter";
+export const SITE_NAME = "9inference";
 export const SITE_TAGLINE = "API Model AI Murah — Bayar Per Token";
 export const SITE_DESCRIPTION =
   "API model AI murah di Indonesia. Gateway inferensi kompatibel OpenAI untuk DeepSeek, GLM, Qwen, Kimi & lainnya. Bayar per token (TOKS), tanpa langganan, harga transparan dalam rupiah.";
@@ -29,5 +29,5 @@ export const SITE_KEYWORDS = [
   "LLM gateway Indonesia",
   "harga token AI",
   "inference API murah",
-  "OneRouter",
+  "9inference",
 ];

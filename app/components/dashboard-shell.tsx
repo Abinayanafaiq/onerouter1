@@ -230,8 +230,8 @@ export function DashboardShell({
 
           {/* Brand (mobile) */}
           <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
-            <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-[10px] font-bold text-background">1R</span>
-            <span className="text-sm font-semibold">OneRouter</span>
+            <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-[10px] font-bold text-background">9i</span>
+            <span className="text-sm font-semibold">9inference</span>
           </Link>
 
           {/* Org context (desktop) */}
@@ -334,10 +334,10 @@ function SidebarContent({
       {/* Brand */}
       <div className="flex h-14 items-center gap-2.5 border-b border-white/[0.06] px-4">
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-          1R
+          9i
         </span>
         <div className="leading-tight">
-          <div className="text-[13px] font-semibold tracking-tight">OneRouter</div>
+          <div className="text-[13px] font-semibold tracking-tight">9inference</div>
           <div className="text-[10px] text-muted-foreground">AI Inference Platform</div>
         </div>
       </div>

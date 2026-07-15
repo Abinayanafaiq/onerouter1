@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   void createApiRequestLog({
     apiKeyId: apiKey.id,
     userId: apiKey.userId,
-    provider: "onerouter",
+    provider: "9inference",
     model: "models.list",
     endpoint: ENDPOINT,
     method: "GET",

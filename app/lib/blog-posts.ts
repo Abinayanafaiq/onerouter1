@@ -39,7 +39,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Apa arti bayar per token?",
         paragraphs: [
           "Dengan model bayar per token, Anda hanya dikenai biaya untuk input dan output yang benar-benar dikirim/diterima. Tidak ada minimum seat, tidak ada biaya platform tersembunyi.",
-          "Di OneRouter, unit kredit disebut TOKS. 1 TOKS = Rp1.000. Setiap model punya tarif input/output per 1 juta token dalam rupiah, sehingga mudah dihitung untuk budgeting startup maupun agency.",
+          "Di 9inference, unit kredit disebut TOKS. 1 TOKS = Rp1.000. Setiap model punya tarif input/output per 1 juta token dalam rupiah, sehingga mudah dihitung untuk budgeting startup maupun agency.",
         ],
       },
       {
@@ -50,9 +50,9 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
       },
       {
-        heading: "Mulai hemat dengan OneRouter",
+        heading: "Mulai hemat dengan 9inference",
         paragraphs: [
-          "OneRouter menggabungkan DeepSeek, GLM, Qwen, Kimi, dan model lain di satu API key. Daftar gratis, isi saldo seperlunya, lalu panggil model lewat endpoint OpenAI-compatible.",
+          "9inference menggabungkan DeepSeek, GLM, Qwen, Kimi, dan model lain di satu API key. Daftar gratis, isi saldo seperlunya, lalu panggil model lewat endpoint OpenAI-compatible.",
           "Lihat katalog model dan harga terbaru, lalu bandingkan tarif input/output sebelum deploy ke production.",
         ],
       },
@@ -60,7 +60,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "deepseek-api-murah-cara-pakai",
-    title: "DeepSeek API Murah: Cara Pakai via OneRouter",
+    title: "DeepSeek API Murah: Cara Pakai via 9inference",
     description:
       "Pakai DeepSeek API murah tanpa ribet multi-provider. Panduan setup, contoh cURL/SDK, dan tips hemat token untuk production.",
     keywords: [
@@ -82,9 +82,9 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
       },
       {
-        heading: "Setup DeepSeek lewat OneRouter",
+        heading: "Setup DeepSeek lewat 9inference",
         paragraphs: [
-          "Daftar akun OneRouter, buat API key, lalu set base URL ke endpoint OneRouter. Ganti parameter model ke ID DeepSeek yang tersedia di katalog.",
+          "Daftar akun 9inference, buat API key, lalu set base URL ke endpoint 9inference. Ganti parameter model ke ID DeepSeek yang tersedia di katalog.",
           "Karena kompatibel OpenAI, kode Node.js/Python yang sudah ada hampir tidak perlu diubah — cukup base URL dan API key.",
         ],
       },
@@ -124,7 +124,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Yang harus ada di alternatif OpenAI",
         paragraphs: [
           "Endpoint chat completions, streaming, daftar model, auth via Bearer token, dan dokumentasi contoh SDK. Idealnya ada billing transparan dalam IDR.",
-          "OneRouter dirancang sebagai drop-in: ganti base URL, pilih model (DeepSeek, GLM, Qwen, Kimi, dll.), tetap pakai OpenAI SDK.",
+          "9inference dirancang sebagai drop-in: ganti base URL, pilih model (DeepSeek, GLM, Qwen, Kimi, dll.), tetap pakai OpenAI SDK.",
         ],
       },
       {
@@ -156,7 +156,7 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "GLM vs Qwen secara praktis",
         paragraphs: [
-          "GLM sering dipilih untuk penalaran dan coding; Qwen unggul di multilingual dan task umum. Keduanya tersedia lewat gateway OneRouter dengan harga per token yang transparan.",
+          "GLM sering dipilih untuk penalaran dan coding; Qwen unggul di multilingual dan task umum. Keduanya tersedia lewat gateway 9inference dengan harga per token yang transparan.",
           "Pilih berdasarkan benchmark internal Anda, bukan hanya harga termurah di kertas.",
         ],
       },
@@ -164,7 +164,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Cara membaca harga per 1 juta token",
         paragraphs: [
           "Harga input dan output biasanya berbeda. Output sering lebih mahal. Estimasi biaya = (token input × tarif input) + (token output × tarif output).",
-          "Di OneRouter tarif ditampilkan dalam rupiah per 1 juta token, plus konversi ke TOKS agar mudah di-top-up.",
+          "Di 9inference tarif ditampilkan dalam rupiah per 1 juta token, plus konversi ke TOKS agar mudah di-top-up.",
         ],
       },
       {
@@ -203,7 +203,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Keunggulan bayar per token",
         paragraphs: [
           "Biaya mengikuti pemakaian nyata. Mudah scale up/down. Cocok multi-model karena Anda tidak bayar seat per provider.",
-          "OneRouter memakai model prepaid TOKS: isi saldo, pakai seperlunya, kredit tidak memaksa langganan bulanan.",
+          "9inference memakai model prepaid TOKS: isi saldo, pakai seperlunya, kredit tidak memaksa langganan bulanan.",
         ],
       },
       {

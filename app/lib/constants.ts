@@ -3,7 +3,7 @@ export const MASTER_API_KEY = process.env.MASTER_API_KEY || "";
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@onerouter.id";
 
-export const APP_NAME = "OneRouter";
+export const APP_NAME = "9inference";
 export const APP_TAGLINE = "Token AI Murah - Multi Model Premium";
 
 /**

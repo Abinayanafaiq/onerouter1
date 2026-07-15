@@ -28,7 +28,7 @@ export default async function CheckoutPage({
     <div className="min-h-screen flex flex-col">
       <header className="border-b">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <Link href="/" className="font-bold text-lg">OneRouter</Link>
+          <Link href="/" className="font-bold text-lg">9inference</Link>
           <span className="text-sm text-muted-foreground">{session.user.email}</span>
         </div>
       </header>

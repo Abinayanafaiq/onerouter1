@@ -113,7 +113,7 @@ export function HeroTerminal() {
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]/80" />
           <span className="h-3 w-3 rounded-full bg-[#febc2e]/80" />
           <span className="h-3 w-3 rounded-full bg-[#28c840]/80" />
-          <span className="ml-3 font-mono text-[11px] text-muted-foreground">onerouter — chat</span>
+          <span className="ml-3 font-mono text-[11px] text-muted-foreground">9inference — chat</span>
           <span className="ml-auto flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />

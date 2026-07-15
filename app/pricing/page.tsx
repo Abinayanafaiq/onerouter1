@@ -19,14 +19,14 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Harga Token AI Murah — Bayar Per Token | OneRouter",
+    title: "Harga Token AI Murah — Bayar Per Token | 9inference",
     description:
       "1 TOKS = Rp1.000. Harga API model murah, transparan, tanpa langganan.",
     url: "/pricing",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Harga Token AI Murah — Bayar Per Token | OneRouter",
+    title: "Harga Token AI Murah — Bayar Per Token | 9inference",
     description:
       "1 TOKS = Rp1.000. Harga API model murah, transparan, tanpa langganan.",
   },
@@ -81,7 +81,7 @@ const TRUST_BADGES = [
 const TESTIMONIALS = [
   {
     quote:
-      "Kami mengganti tiga SDK provider dengan satu key OneRouter. Onboarding 10 menit dan tagihan infra turun.",
+      "Kami mengganti tiga SDK provider dengan satu key 9inference. Onboarding 10 menit dan tagihan infra turun.",
     name: "Andi Pratama",
     role: "CTO, PinjamCepat",
     initials: "AP",
@@ -104,8 +104,8 @@ const TESTIMONIALS = [
 
 const FAQS = [
   {
-    q: "Apa itu API model AI murah di OneRouter?",
-    a: "OneRouter adalah gateway API model AI murah berbayar per token. Anda mengakses DeepSeek, GLM, Qwen, Kimi dan model lain lewat satu API key kompatibel OpenAI, dengan harga token dalam rupiah tanpa langganan wajib.",
+    q: "Apa itu API model AI murah di 9inference?",
+    a: "9inference adalah gateway API model AI murah berbayar per token. Anda mengakses DeepSeek, GLM, Qwen, Kimi dan model lain lewat satu API key kompatibel OpenAI, dengan harga token dalam rupiah tanpa langganan wajib.",
   },
   {
     q: "Apa itu TOKS dan bagaimana sistem harganya?",
@@ -125,7 +125,7 @@ const FAQS = [
   },
   {
     q: "Bisakah saya ganti model tanpa mengubah kode?",
-    a: "Ya. OneRouter kompatibel OpenAI — ubah parameter model di request, SDK Anda tetap sama. Ganti antara GLM, DeepSeek, Qwen, Kimi dan lainnya dengan satu baris.",
+    a: "Ya. 9inference kompatibel OpenAI — ubah parameter model di request, SDK Anda tetap sama. Ganti antara GLM, DeepSeek, Qwen, Kimi dan lainnya dengan satu baris.",
   },
   {
     q: "Apakah data dan API key saya aman?",
@@ -133,19 +133,19 @@ const FAQS = [
   },
   {
     q: "Apakah ada refund untuk kredit yang tidak terpakai?",
-    a: "Kredit yang tidak terpakai tidak kedaluwarsa. Jika dalam 14 hari setelah top-up pertama Anda merasa OneRouter tidak cocok, hubungi support untuk refund penuh sisa saldo.",
+    a: "Kredit yang tidak terpakai tidak kedaluwarsa. Jika dalam 14 hari setelah top-up pertama Anda merasa 9inference tidak cocok, hubungi support untuk refund penuh sisa saldo.",
   },
 ];
 
 const COMPARISON = [
-  { feature: "Satu API key untuk semua model", onerouter: true, direct: false },
-  { feature: "Routing failover otomatis", onerouter: true, direct: false },
-  { feature: "Bayar per token, tanpa langganan", onerouter: true, direct: true },
-  { feature: "SDK kompatibel OpenAI", onerouter: true, direct: false },
-  { feature: "Billing terpadu IDR & USD", onerouter: true, direct: false },
-  { feature: "Rate limit & rotasi per-key", onerouter: true, direct: false },
-  { feature: "Kelola N akun provider", onerouter: false, direct: true },
-  { feature: "N invoice terpisah / bulan", onerouter: false, direct: true },
+  { feature: "Satu API key untuk semua model", ours: true, direct: false },
+  { feature: "Routing failover otomatis", ours: true, direct: false },
+  { feature: "Bayar per token, tanpa langganan", ours: true, direct: true },
+  { feature: "SDK kompatibel OpenAI", ours: true, direct: false },
+  { feature: "Billing terpadu IDR & USD", ours: true, direct: false },
+  { feature: "Rate limit & rotasi per-key", ours: true, direct: false },
+  { feature: "Kelola N akun provider", ours: false, direct: true },
+  { feature: "N invoice terpisah / bulan", ours: false, direct: true },
 ];
 
 export default function PricingPage() {
@@ -303,7 +303,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Mengapa OneRouter
+              Mengapa 9inference
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               Satu API vs. mengelola setiap provider sendiri
@@ -318,7 +318,7 @@ export default function PricingPage() {
                     Kemampuan
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-accent">
-                    OneRouter
+                    9inference
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-muted-foreground">
                     Langsung ke provider
@@ -330,7 +330,7 @@ export default function PricingPage() {
                   <tr key={row.feature} className="transition hover:bg-white/[0.02]">
                     <td className="px-5 py-3.5 text-[13px] text-foreground">{row.feature}</td>
                     <td className="px-5 py-3.5 text-center">
-                      {row.onerouter ? (
+                      {row.ours ? (
                         <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-5 w-5 text-accent">
                           <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -369,7 +369,7 @@ export default function PricingPage() {
               Dipercaya builder
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Tim rilis lebih cepat dengan OneRouter
+              Tim rilis lebih cepat dengan 9inference
             </h2>
           </div>
 

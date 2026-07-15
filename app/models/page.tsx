@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Katalog Model AI & Harga Token Murah",
   description:
-    "Daftar model AI murah di OneRouter: DeepSeek, GLM, Qwen, Kimi & lainnya. Lihat harga token per 1 juta, context window, dan mulai pakai API kompatibel OpenAI.",
+    "Daftar model AI murah di 9inference: DeepSeek, GLM, Qwen, Kimi & lainnya. Lihat harga token per 1 juta, context window, dan mulai pakai API kompatibel OpenAI.",
   keywords: [
     "katalog model AI",
     "API model murah",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/models" },
   openGraph: {
-    title: "Katalog Model AI & Harga Token Murah | OneRouter",
+    title: "Katalog Model AI & Harga Token Murah | 9inference",
     description:
       "Bandingkan model AI dan harga token murah. Satu API key untuk DeepSeek, GLM, Qwen, Kimi & lainnya.",
     url: "/models",
@@ -39,7 +39,7 @@ export default async function PublicModelsPage() {
   const itemList = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Katalog Model AI OneRouter",
+    name: "Katalog Model AI 9inference",
     numberOfItems: models.length,
     itemListElement: models.map((m, i) => ({
       "@type": "ListItem",
@@ -156,7 +156,7 @@ export default async function PublicModelsPage() {
           <div className="mt-14 rounded-2xl border border-accent/20 bg-accent/5 p-6 sm:p-8">
             <h2 className="text-xl font-bold">Cari API model murah untuk production?</h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              OneRouter memberi harga token transparan dalam rupiah, isi saldo fleksibel, dan
+              9inference memberi harga token transparan dalam rupiah, isi saldo fleksibel, dan
               satu API key multi-model. Baca juga panduan{" "}
               <Link href="/blog/api-model-ai-murah-indonesia" className="text-accent underline">
                 API model AI murah di Indonesia

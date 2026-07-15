@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/blog" },
   openGraph: {
-    title: "Blog OneRouter — API Model Murah & Tutorial",
+    title: "Blog 9inference — API Model Murah & Tutorial",
     description:
       "Panduan API model AI murah, bayar per token, dan integrasi OpenAI-compatible.",
     url: "/blog",

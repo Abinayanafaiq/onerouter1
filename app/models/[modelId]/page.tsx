@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const m = toModelCardData(model);
   const title = `${m.name} API Murah — Harga Token & Cara Pakai`;
-  const description = `Pakai ${m.name} (${m.provider}) lewat API murah OneRouter. Input Rp${m.inputPricePerMillion.toLocaleString("id-ID")}/1Jt token, output Rp${m.outputPricePerMillion.toLocaleString("id-ID")}/1Jt. Kompatibel OpenAI, bayar per token.`;
+  const description = `Pakai ${m.name} (${m.provider}) lewat API murah 9inference. Input Rp${m.inputPricePerMillion.toLocaleString("id-ID")}/1Jt token, output Rp${m.outputPricePerMillion.toLocaleString("id-ID")}/1Jt. Kompatibel OpenAI, bayar per token.`;
   return {
     title,
     description,
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ],
     alternates: { canonical: `/models/${encodeURIComponent(m.modelId)}` },
     openGraph: {
-      title: `${title} | OneRouter`,
+      title: `${title} | 9inference`,
       description,
       url: `/models/${encodeURIComponent(m.modelId)}`,
     },
@@ -68,7 +68,7 @@ export default async function PublicModelDetailPage({ params }: Props) {
     url: `${base}/models/${encodeURIComponent(m.modelId)}`,
     description:
       m.description ||
-      `API ${m.name} murah via OneRouter. Bayar per token, kompatibel OpenAI.`,
+      `API ${m.name} murah via 9inference. Bayar per token, kompatibel OpenAI.`,
     offers: {
       "@type": "Offer",
       priceCurrency: "IDR",
@@ -112,7 +112,7 @@ export default async function PublicModelDetailPage({ params }: Props) {
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
             {m.description ||
-              `Akses ${m.name} lewat gateway OneRouter dengan harga token transparan. Satu API key multi-model, kompatibel OpenAI SDK, bayar per token tanpa langganan.`}
+              `Akses ${m.name} lewat gateway 9inference dengan harga token transparan. Satu API key multi-model, kompatibel OpenAI SDK, bayar per token tanpa langganan.`}
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -143,7 +143,7 @@ export default async function PublicModelDetailPage({ params }: Props) {
           <section className="mt-12">
             <h2 className="text-xl font-bold">Cara memanggil {m.name}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Ganti base URL ke OneRouter, set model ke{" "}
+              Ganti base URL ke 9inference, set model ke{" "}
               <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[12px]">
                 {m.modelId}
               </code>
@@ -155,7 +155,7 @@ export default async function PublicModelDetailPage({ params }: Props) {
           </section>
 
           <section className="mt-12">
-            <h2 className="text-xl font-bold">Kenapa pakai {m.name} di OneRouter?</h2>
+            <h2 className="text-xl font-bold">Kenapa pakai {m.name} di 9inference?</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
               <li>Harga token AI transparan dalam rupiah (1 TOKS = Rp1.000)</li>
               <li>Satu API key untuk multi-model — ganti model tanpa ganti integrasi</li>

@@ -27,8 +27,8 @@ const TABS: Tab[] = [
     code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://onerouter.id/v1",
-  apiKey: process.env.ONEROUTER_API_KEY,
+  baseURL: "https://9inference.cloud/v1",
+  apiKey: process.env.NINEINFERENCE_API_KEY,
 });
 
 const res = await client.chat.completions.create({
@@ -53,7 +53,7 @@ console.log(res.choices[0].message.content);`,
     code: `from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://onerouter.id/v1",
+    base_url="https://9inference.cloud/v1",
     api_key="or_xxxxx",
 )
 
@@ -75,7 +75,7 @@ print(res.choices[0].message.content)`,
       </svg>
     ),
     lang: "bash",
-    code: `curl https://onerouter.id/v1/chat/completions \\
+    code: `curl https://9inference.cloud/v1/chat/completions \\
   -H "Authorization: Bearer or_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -208,7 +208,7 @@ export function CodeTabs() {
               {tab.lang}
             </span>
             <span className="font-mono text-[10px] text-muted-foreground">
-              onerouter.id/v1
+              9inference.cloud/v1
             </span>
           </div>
         </div>

@@ -52,10 +52,10 @@ export default async function BlogPostPage({ params }: Props) {
     description: post.description,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
-    author: { "@type": "Organization", name: "OneRouter" },
+    author: { "@type": "Organization", name: "9inference" },
     publisher: {
       "@type": "Organization",
-      name: "OneRouter",
+      name: "9inference",
       url: base,
     },
     mainEntityOfPage: `${base}/blog/${post.slug}`,

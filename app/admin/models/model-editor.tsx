@@ -193,7 +193,7 @@ export function ModelEditor({ model }: { model: ModelData }) {
               </option>
             ))}
             <option value="prokuy">prokuy</option>
-            <option value="onerouter">onerouter</option>
+            <option value="9inference">9inference</option>
           </select>
         </Field>
         <Field label="Model ID">
