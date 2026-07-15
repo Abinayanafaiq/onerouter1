@@ -11,20 +11,23 @@ export function getSiteUrl(): string {
 }
 
 export const SITE_NAME = "OneRouter";
-export const SITE_TAGLINE = "Platform Inferensi AI — Satu API, Banyak Model";
+export const SITE_TAGLINE = "API Model AI Murah — Bayar Per Token";
 export const SITE_DESCRIPTION =
-  "Gateway inferensi AI siap produksi. API terpadu kompatibel OpenAI untuk GLM, DeepSeek, Qwen, Kimi & lainnya. Bayar per token, tanpa langganan.";
+  "API model AI murah di Indonesia. Gateway inferensi kompatibel OpenAI untuk DeepSeek, GLM, Qwen, Kimi & lainnya. Bayar per token (TOKS), tanpa langganan, harga transparan dalam rupiah.";
 export const SITE_KEYWORDS = [
-  "OneRouter",
-  "API inferensi AI",
+  "API model murah",
+  "API model AI murah",
+  "token AI murah",
+  "DeepSeek API murah",
+  "GLM API murah",
+  "Qwen API murah",
+  "Kimi API murah",
+  "API AI Indonesia",
   "API kompatibel OpenAI",
-  "LLM gateway",
-  "GLM API",
-  "DeepSeek API",
-  "Qwen API",
-  "Kimi API",
-  "platform AI Indonesia",
-  "bayar per token",
-  "AI inference API",
-  "OpenAI compatible API",
+  "alternatif OpenAI murah",
+  "bayar per token AI",
+  "LLM gateway Indonesia",
+  "harga token AI",
+  "inference API murah",
+  "OneRouter",
 ];

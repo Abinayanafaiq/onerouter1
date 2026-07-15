@@ -16,11 +16,14 @@ export async function SiteHeader() {
           <span className="gradient-text">{APP_NAME}</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/#models" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
+          <Link href="/models" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
             Model
           </Link>
           <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition">
             Harga
+          </Link>
+          <Link href="/blog" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
+            Blog
           </Link>
           {isAuthed ? (
             <>

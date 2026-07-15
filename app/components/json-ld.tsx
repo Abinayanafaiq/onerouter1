@@ -40,8 +40,9 @@ export function JsonLd() {
       "@type": "Offer",
       price: "0",
       priceCurrency: "IDR",
-      description: "Daftar gratis, bayar per token saat dipakai",
+      description: "Daftar gratis, API model AI murah bayar per token",
     },
+    keywords: "API model murah, DeepSeek API, token AI murah, OpenAI compatible",
   };
 
   return (

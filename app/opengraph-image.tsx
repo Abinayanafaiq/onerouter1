@@ -43,19 +43,19 @@ export default function OpenGraphImage() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.1, letterSpacing: -1.5 }}>
-            Satu API. Model AI Terbaik.
+            API Model AI Murah
           </div>
           <div style={{ fontSize: 28, color: "#a1a1aa", maxWidth: 900, lineHeight: 1.35 }}>
-            Gateway inferensi AI kompatibel OpenAI. GLM, DeepSeek, Qwen, Kimi & lainnya — bayar per token.
+            DeepSeek, GLM, Qwen, Kimi — satu API key, bayar per token, harga dalam rupiah.
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 24, fontSize: 22, color: "#00ff88" }}>
-          <span>API terpadu</span>
+          <span>API model murah</span>
           <span>·</span>
           <span>Bayar per token</span>
           <span>·</span>
-          <span>Siap produksi</span>
+          <span>OpenAI-compatible</span>
         </div>
       </div>
     ),

@@ -11,22 +11,30 @@ import { CodeTabs } from "@/app/components/landing/code-tabs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Satu API. Model AI Terbaik di Dunia.",
+  title: "API Model AI Murah — Bayar Per Token | DeepSeek, GLM, Qwen",
   description:
-    "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu. Cepat, andal, dan dibuat untuk developer. GLM, DeepSeek, Qwen, Kimi & lainnya — satu API key.",
+    "API model AI murah di Indonesia. Satu endpoint kompatibel OpenAI untuk DeepSeek, GLM, Qwen, Kimi & lainnya. Bayar per token (TOKS), harga transparan dalam rupiah, tanpa langganan.",
+  keywords: [
+    "API model murah",
+    "API model AI murah",
+    "token AI murah",
+    "DeepSeek API murah",
+    "alternatif OpenAI murah",
+    "API AI Indonesia",
+  ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "OneRouter — Satu API. Model AI Terbaik di Dunia.",
+    title: "OneRouter — API Model AI Murah, Bayar Per Token",
     description:
-      "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu. Cepat, andal, dan dibuat untuk developer.",
+      "Gateway AI murah kompatibel OpenAI. DeepSeek, GLM, Qwen, Kimi — satu API key, bayar per token.",
     type: "website",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "OneRouter — Satu API. Model AI Terbaik di Dunia.",
+    title: "OneRouter — API Model AI Murah, Bayar Per Token",
     description:
-      "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu.",
+      "Gateway AI murah kompatibel OpenAI. DeepSeek, GLM, Qwen, Kimi — satu API key, bayar per token.",
   },
 };
 
@@ -137,17 +145,17 @@ export default async function Home() {
 
             {/* Headline */}
             <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-              Satu API.
+              API Model AI
               <br />
-              <span className="gradient-text-accent">Model AI Terbaik</span>
+              <span className="gradient-text-accent">Murah</span>
               <br />
-              di Dunia.
+              Bayar Per Token.
             </h1>
 
             {/* Subheadline */}
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu.
-              Cepat, andal, dan dibuat untuk developer.
+              Gateway inferensi kompatibel OpenAI untuk DeepSeek, GLM, Qwen, Kimi & lainnya.
+              Harga token transparan dalam rupiah — tanpa langganan, tanpa biaya tersembunyi.
             </p>
 
             {/* CTAs */}
@@ -280,7 +288,7 @@ export default async function Home() {
               </p>
             </div>
             <Link
-              href="/dashboard/models"
+              href="/models"
               className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
               Lihat semua model →
@@ -531,26 +539,26 @@ export default async function Home() {
                 <span className="text-[15px] font-semibold tracking-tight">OneRouter</span>
               </Link>
               <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-                Satu API. Model AI terbaik di dunia. Dibuat untuk developer.
+                API model AI murah — bayar per token, kompatibel OpenAI, untuk developer Indonesia.
               </p>
             </div>
 
             <FooterCol
               title="Platform"
               links={[
-                { label: "Model", href: "/#models" },
-                { label: "Harga", href: "/#pricing" },
-                { label: "Playground", href: "/dashboard/chat" },
+                { label: "Model AI Murah", href: "/models" },
+                { label: "Harga Token", href: "/pricing" },
+                { label: "Blog", href: "/blog" },
                 { label: "Dashboard", href: "/dashboard" },
               ]}
             />
             <FooterCol
-              title="Developer"
+              title="Belajar"
               links={[
-                { label: "Dokumentasi", href: "/dashboard/docs" },
-                { label: "API Key", href: "/dashboard/api-keys" },
-                { label: "Pemakaian", href: "/dashboard/usage" },
-                { label: "Pengaturan", href: "/dashboard/settings" },
+                { label: "API Model AI Murah", href: "/blog/api-model-ai-murah-indonesia" },
+                { label: "DeepSeek API Murah", href: "/blog/deepseek-api-murah-cara-pakai" },
+                { label: "Alternatif OpenAI", href: "/blog/alternatif-openai-api-murah" },
+                { label: "Bayar Per Token", href: "/blog/bayar-per-token-vs-langganan" },
               ]}
             />
             <FooterCol
@@ -558,7 +566,7 @@ export default async function Home() {
               links={[
                 { label: "Masuk", href: "/login" },
                 { label: "Mulai Sekarang", href: "/register" },
-                { label: "Tagihan", href: "/dashboard/wallet" },
+                { label: "Isi Saldo", href: "/dashboard/wallet" },
               ]}
             />
           </div>
@@ -653,10 +661,10 @@ function ModelShowcaseCard({ model }: { model: ModelCardData }) {
           {model.modelId}
         </code>
         <Link
-          href="/dashboard/chat"
+          href={`/models/${encodeURIComponent(model.modelId)}`}
           className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
         >
-          Coba
+          Detail
         </Link>
       </div>
     </div>

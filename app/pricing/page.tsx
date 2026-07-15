@@ -2,25 +2,33 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/app/components/site-header";
 import { ModelPricingTable } from "@/app/components/model-pricing-table";
+import { FaqJsonLd } from "@/app/components/faq-json-ld";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Harga — Bayar Per Token",
+  title: "Harga Token AI Murah — Bayar Per Token (IDR)",
   description:
-    "Harga sederhana berbasis pemakaian. 1 TOKS = Rp1.000 = US$0.0553. Bayar hanya token yang dipakai. Tanpa langganan, tanpa biaya tersembunyi, tanpa lock-in.",
+    "Harga API model AI murah berbasis token. 1 TOKS = Rp1.000. Bandingkan tarif DeepSeek, GLM, Qwen & lainnya. Bayar hanya yang dipakai — tanpa langganan.",
+  keywords: [
+    "harga token AI",
+    "API model murah",
+    "token AI murah",
+    "harga DeepSeek API",
+    "bayar per token",
+  ],
   alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Harga — Bayar Per Token | OneRouter",
+    title: "Harga Token AI Murah — Bayar Per Token | OneRouter",
     description:
-      "1 TOKS = Rp1.000 = US$0.0553. Bayar hanya yang dipakai. Tanpa langganan.",
+      "1 TOKS = Rp1.000. Harga API model murah, transparan, tanpa langganan.",
     url: "/pricing",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Harga — Bayar Per Token | OneRouter",
+    title: "Harga Token AI Murah — Bayar Per Token | OneRouter",
     description:
-      "1 TOKS = Rp1.000 = US$0.0553. Bayar hanya yang dipakai. Tanpa langganan.",
+      "1 TOKS = Rp1.000. Harga API model murah, transparan, tanpa langganan.",
   },
 };
 
@@ -96,6 +104,10 @@ const TESTIMONIALS = [
 
 const FAQS = [
   {
+    q: "Apa itu API model AI murah di OneRouter?",
+    a: "OneRouter adalah gateway API model AI murah berbayar per token. Anda mengakses DeepSeek, GLM, Qwen, Kimi dan model lain lewat satu API key kompatibel OpenAI, dengan harga token dalam rupiah tanpa langganan wajib.",
+  },
+  {
     q: "Apa itu TOKS dan bagaimana sistem harganya?",
     a: "TOKS adalah unit kredit internal kami. 1 TOKS = Rp1.000 = US$0.0553. Setiap model punya tarif per 1 juta token dalam rupiah; Anda hanya membayar token yang benar-benar dipakai. Tanpa langganan, tanpa minimum.",
   },
@@ -140,6 +152,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
+      <FaqJsonLd faqs={FAQS} />
 
       <section className="relative px-4 pt-32 pb-16 sm:px-6 sm:pt-40 sm:pb-24">
         <div
@@ -160,11 +173,11 @@ export default function PricingPage() {
           </div>
 
           <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
-            Harga <span className="gradient-text-accent">per-token</span> yang sederhana & transparan
+            Harga token AI <span className="gradient-text-accent">murah</span> — bayar per token
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Bayar hanya untuk token yang dipakai. Tanpa langganan, tanpa komitmen bulanan, tanpa biaya tersembunyi.
-            Satu API key membuka semua model frontier.
+            API model AI murah dengan tarif transparan dalam rupiah. Bayar hanya token yang dipakai —
+            tanpa langganan, tanpa komitmen bulanan. Satu API key untuk DeepSeek, GLM, Qwen, Kimi & lainnya.
           </p>
 
           <div className="mx-auto mt-10 max-w-2xl">
@@ -244,6 +257,17 @@ export default function PricingPage() {
           </div>
 
           <ModelPricingTable />
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Detail per model:{" "}
+            <Link href="/models" className="text-accent underline">
+              buka katalog model AI
+            </Link>{" "}
+            · panduan{" "}
+            <Link href="/blog/api-model-ai-murah-indonesia" className="text-accent underline">
+              API model murah
+            </Link>
+          </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
             <span>
