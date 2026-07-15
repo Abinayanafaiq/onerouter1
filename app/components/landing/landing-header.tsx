@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const NAV_LINKS = [
-  { label: "Models", href: "/#models" },
-  { label: "Pricing", href: "/#pricing" },
-  { label: "Docs", href: "/dashboard/docs" },
+  { label: "Model", href: "/#models" },
+  { label: "Harga", href: "/#pricing" },
+  { label: "Dokumentasi", href: "/dashboard/docs" },
   { label: "Platform", href: "/#platform" },
 ];
 
@@ -38,7 +38,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
           <div className="leading-tight">
             <div className="text-[15px] font-semibold tracking-tight">OneRouter</div>
             <div className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:block">
-              AI Inference Platform
+              Platform Inferensi AI
             </div>
           </div>
         </Link>
@@ -70,7 +70,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 href="/dashboard"
                 className="btn-accent rounded-lg px-4 py-2 text-[13px]"
               >
-                Launch console
+                Buka konsol
               </Link>
             </>
           ) : (
@@ -79,13 +79,13 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 href="/login"
                 className="rounded-lg px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition hover:text-foreground"
               >
-                Sign in
+                Masuk
               </Link>
               <Link
                 href="/register"
                 className="btn-accent rounded-lg px-4 py-2 text-[13px]"
               >
-                Start Building
+                Mulai Sekarang
               </Link>
             </>
           )}
@@ -132,7 +132,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                   onClick={() => setOpen(false)}
                   className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
                 >
-                  Launch console
+                  Buka konsol
                 </Link>
               ) : (
                 <>
@@ -141,14 +141,14 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                     onClick={() => setOpen(false)}
                     className="rounded-lg border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-foreground"
                   >
-                    Sign in
+                    Masuk
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
                     className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
                   >
-                    Start Building
+                    Mulai Sekarang
                   </Link>
                 </>
               )}

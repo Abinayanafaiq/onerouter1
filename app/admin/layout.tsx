@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { auth, signOut } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({
   children,
@@ -13,12 +18,12 @@ export default async function AdminLayout({
 
   const navItems = [
     { href: "/admin", label: "Dashboard" },
-    { href: "/admin/orders", label: "Orders" },
-    { href: "/admin/wallets", label: "Wallets" },
-    { href: "/admin/models", label: "Models" },
-    { href: "/admin/api-keys", label: "API Keys" },
-    { href: "/admin/master-keys", label: "Master Keys" },
-    { href: "/admin/analytics", label: "Analytics" },
+    { href: "/admin/orders", label: "Pesanan" },
+    { href: "/admin/wallets", label: "Dompet" },
+    { href: "/admin/models", label: "Model" },
+    { href: "/admin/api-keys", label: "API Key" },
+    { href: "/admin/master-keys", label: "Master Key" },
+    { href: "/admin/analytics", label: "Analitik" },
     { href: "/admin/packages", label: "Paket" },
     { href: "/admin/settings", label: "Pengaturan" },
   ];

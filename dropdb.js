@@ -1,11 +1,19 @@
+/**
+ * SAFETY: This script NEVER drops, truncates, or wipes the database.
+ * It only applies CREATE statements from prisma/migration.sql (schema bootstrap).
+ * Destructive SQL (DROP / TRUNCATE / DELETE / etc.) is blocked.
+ */
 require('dotenv').config();
 const fs = require('fs');
 const { Client } = require('pg');
+
+const FORBIDDEN =
+  /\b(DROP\s+(DATABASE|SCHEMA|TABLE|INDEX|VIEW|SEQUENCE|TYPE|ROLE|USER|FUNCTION|PROCEDURE)|TRUNCATE|DELETE\s+FROM|ALTER\s+TABLE\s+\S+\s+DROP|prisma\s+migrate\s+reset|db\s+push\s+--force-reset)\b/i;
+
 const sql = fs.readFileSync('./prisma/migration.sql', 'utf8');
 
 const acc = { list: [], buffer: '' };
 sql.split(/\r?\n/).forEach((line) => {
-  // Skip pure comment lines
   if (line.trim().startsWith('--')) return;
   acc.buffer += (acc.buffer ? '\n' : '') + line;
   const trimmed = acc.buffer.trim();
@@ -15,6 +23,16 @@ sql.split(/\r?\n/).forEach((line) => {
   }
 });
 if (acc.buffer.trim()) acc.list.push(acc.buffer.trim());
+
+for (let i = 0; i < acc.list.length; i++) {
+  if (FORBIDDEN.test(acc.list[i])) {
+    console.error(
+      `BLOCKED: Statement ${i} looks destructive. This project never deletes the database.`,
+    );
+    console.error(acc.list[i].slice(0, 200));
+    process.exit(1);
+  }
+}
 
 const c = new Client({ connectionString: process.env.DATABASE_URL });
 c.connect()
@@ -29,7 +47,7 @@ c.connect()
       }
     }
     const r = await c.query("SELECT tablename FROM pg_tables WHERE schemaname='public'");
-    console.log('TABLES:', JSON.stringify(r.rows.map(x => x.tablename)));
+    console.log('TABLES:', JSON.stringify(r.rows.map((x) => x.tablename)));
     await c.end();
   })
   .catch((e) => {

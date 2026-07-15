@@ -11,37 +11,29 @@ import { CodeTabs } from "@/app/components/landing/code-tabs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "OneRouter — One API. The World's Best AI Models.",
+  title: "Satu API. Model AI Terbaik di Dunia.",
   description:
-    "Access leading AI models through a unified OpenAI-compatible inference API. Fast, reliable, and built for developers. GLM, DeepSeek, Qwen, Kimi & more — one API key.",
-  keywords: [
-    "AI inference API",
-    "OpenAI compatible API",
-    "LLM gateway",
-    "GLM API",
-    "DeepSeek API",
-    "Qwen API",
-    "AI infrastructure",
-    "developer AI platform",
-  ],
+    "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu. Cepat, andal, dan dibuat untuk developer. GLM, DeepSeek, Qwen, Kimi & lainnya — satu API key.",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "OneRouter — One API. The World's Best AI Models.",
+    title: "OneRouter — Satu API. Model AI Terbaik di Dunia.",
     description:
-      "Access leading AI models through a unified OpenAI-compatible inference API. Fast, reliable, and built for developers.",
+      "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu. Cepat, andal, dan dibuat untuk developer.",
     type: "website",
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "OneRouter — One API. The World's Best AI Models.",
+    title: "OneRouter — Satu API. Model AI Terbaik di Dunia.",
     description:
-      "Access leading AI models through a unified OpenAI-compatible inference API.",
+      "Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu.",
   },
 };
 
 const INFRA_FEATURES = [
   {
-    title: "Unified API",
-    desc: "One endpoint to access multiple frontier AI models. Switch models with a single parameter — no SDK changes.",
+    title: "API Terpadu",
+    desc: "Satu endpoint untuk mengakses banyak model AI frontier. Ganti model dengan satu parameter — tanpa ubah SDK.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M4 7h16M4 12h10M4 17h7M17 17l4 4M21 17l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -49,8 +41,8 @@ const INFRA_FEATURES = [
     ),
   },
   {
-    title: "Fast Inference",
-    desc: "Optimized routing for low-latency responses. Smart failover keeps your requests fast and resilient.",
+    title: "Inferensi Cepat",
+    desc: "Routing dioptimalkan untuk latensi rendah. Failover cerdas menjaga request tetap cepat dan tangguh.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M13 2 4 14h7l-1 8 9-12h-7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -58,8 +50,8 @@ const INFRA_FEATURES = [
     ),
   },
   {
-    title: "OpenAI Compatible",
-    desc: "Works instantly with existing SDKs. Change the base URL and ship — no rewrites, no lock-in.",
+    title: "Kompatibel OpenAI",
+    desc: "Langsung bekerja dengan SDK yang sudah ada. Cukup ganti base URL — tanpa rewrite, tanpa lock-in.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="m8 16-4-4 4-4M16 8l4 4-4 4M14 4l-4 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -67,8 +59,8 @@ const INFRA_FEATURES = [
     ),
   },
   {
-    title: "Secure & Reliable",
-    desc: "Enterprise-grade API key management, per-key rate limits, and encrypted credentials. Your data stays yours.",
+    title: "Aman & Andal",
+    desc: "Manajemen API key kelas enterprise, rate limit per-key, dan kredensial terenkripsi. Data Anda tetap milik Anda.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -79,10 +71,10 @@ const INFRA_FEATURES = [
 ];
 
 const TRUST_AUDIENCES = [
-  { name: "Startups", desc: "Ship AI features without managing multiple providers." },
-  { name: "Developers", desc: "A clean, documented API that just works." },
-  { name: "Researchers", desc: "Benchmark models side-by-side from one interface." },
-  { name: "AI Engineers", desc: "Production-grade routing, observability, and control." },
+  { name: "Startup", desc: "Rilis fitur AI tanpa mengelola banyak provider." },
+  { name: "Developer", desc: "API yang bersih, terdokumentasi, dan langsung jalan." },
+  { name: "Peneliti", desc: "Bandingkan model berdampingan dari satu antarmuka." },
+  { name: "AI Engineer", desc: "Routing, observabilitas, dan kontrol siap produksi." },
 ];
 
 const PROVIDER_DOT: Record<string, string> = {
@@ -95,10 +87,10 @@ const PROVIDER_DOT: Record<string, string> = {
 
 function capabilityLabel(name: string, modelId: string): string {
   const h = (name + " " + modelId).toLowerCase();
-  if (/code|coder/.test(h)) return "Coding";
-  if (/fast|flash/.test(h)) return "Low Latency";
-  if (/pro|reason/.test(h)) return "Reasoning";
-  return "General Intelligence";
+  if (/code|coder/.test(h)) return "Koding";
+  if (/fast|flash/.test(h)) return "Latensi Rendah";
+  if (/pro|reason/.test(h)) return "Penalaran";
+  return "Kecerdasan Umum";
 }
 
 export default async function Home() {
@@ -140,22 +132,22 @@ export default async function Home() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              OpenAI-compatible inference · {modelCount} models live
+              Inferensi kompatibel OpenAI · {modelCount} model aktif
             </div>
 
             {/* Headline */}
             <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-              One API.
+              Satu API.
               <br />
-              <span className="gradient-text-accent">The World's Best</span>
+              <span className="gradient-text-accent">Model AI Terbaik</span>
               <br />
-              AI Models.
+              di Dunia.
             </h1>
 
             {/* Subheadline */}
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Access leading AI models through a unified OpenAI-compatible inference API.
-              Fast, reliable, and built for developers.
+              Akses model AI terkemuka lewat API inferensi kompatibel OpenAI yang terpadu.
+              Cepat, andal, dan dibuat untuk developer.
             </p>
 
             {/* CTAs */}
@@ -164,7 +156,7 @@ export default async function Home() {
                 href="/register"
                 className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm"
               >
-                Get Your Free API Key
+                Dapatkan API Key Gratis
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -176,7 +168,7 @@ export default async function Home() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                   <path d="M4 4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9-2v5h5M8 13h8M8 17h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                View Documentation
+                Lihat Dokumentasi
               </Link>
             </div>
 
@@ -186,19 +178,19 @@ export default async function Home() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                No credit card required
+                Tanpa kartu kredit
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                1 TOKS = Rp1,000 = US$0.0553
+                1 TOKS = Rp1.000 = US$0.0553
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Drop-in OpenAI replacement
+                Pengganti OpenAI drop-in
               </span>
             </div>
           </div>
@@ -217,7 +209,7 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Frontier models, one gateway
+              Model frontier, satu gateway
             </span>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"].map((p) => (
@@ -237,14 +229,14 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Developer Infrastructure
+              Infrastruktur Developer
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Infrastructure for production AI
+              Infrastruktur untuk AI produksi
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
-              Everything you need to ship reliable AI features — from routing to billing —
-              behind a single, predictable API.
+              Semua yang Anda butuhkan untuk merilis fitur AI andal — dari routing hingga billing —
+              di balik satu API yang prediktabel.
             </p>
           </div>
 
@@ -277,27 +269,27 @@ export default async function Home() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                Model Catalog
+                Katalog Model
               </span>
               <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-                Frontier models, ready to call
+                Model frontier, siap dipanggil
               </h2>
               <p className="mt-4 text-base text-muted-foreground">
-                {modelCount} production-ready models from leading providers — all behind one
-                API key, billed per token.
+                {modelCount} model siap produksi dari provider terkemuka — semua di balik satu
+                API key, ditagih per token.
               </p>
             </div>
             <Link
               href="/dashboard/models"
               className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
-              Browse all models →
+              Lihat semua model →
             </Link>
           </div>
 
           {models.length === 0 ? (
             <div className="glass mt-12 rounded-2xl p-16 text-center text-sm text-muted-foreground">
-              Model catalog is being updated.
+              Katalog model sedang diperbarui.
             </div>
           ) : (
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -321,10 +313,10 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Performance
+              Performa
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Built for scale and speed
+              Dibangun untuk skala dan kecepatan
             </h2>
           </div>
           <div className="mt-14">
@@ -340,14 +332,14 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Developer Experience
+              Pengalaman Developer
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              From zero to inference in minutes
+              Dari nol ke inferensi dalam hitungan menit
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
-              If you've used the OpenAI SDK, you already know OneRouter. Point your client at
-              our base URL and you're done.
+              Jika Anda sudah memakai OpenAI SDK, Anda sudah mengenal OneRouter. Arahkan client
+              ke base URL kami — selesai.
             </p>
           </div>
           <div className="mt-12">
@@ -363,13 +355,13 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Pricing
+              Harga
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Simple usage-based pricing
+              Harga sederhana berbasis pemakaian
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Pay only for the tokens you use. No subscriptions. No hidden fees.
+              Bayar hanya untuk token yang Anda pakai. Tanpa langganan. Tanpa biaya tersembunyi.
             </p>
 
             {/* TOKS conversion banner */}
@@ -391,21 +383,21 @@ export default async function Home() {
               href="/register"
               className="btn-accent group inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
             >
-              Get Your Free API Key
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
-            >
-              View full pricing
-            </Link>
-          </div>
-          <p className="mt-4 text-center text-[12px] text-muted-foreground">
-            No credit card required · Credits never expire · 14-day refund guarantee
-          </p>
+                Dapatkan API Key Gratis
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
+              >
+                Lihat harga lengkap
+              </Link>
+            </div>
+            <p className="mt-4 text-center text-[12px] text-muted-foreground">
+              Tanpa kartu kredit · Kredit tidak kedaluwarsa · Jaminan refund 14 hari
+            </p>
         </div>
       </section>
 
@@ -422,11 +414,11 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Trusted by builders
+              Dipercaya builder
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Built for developers building the future
-              <br className="hidden sm:block" /> of AI applications
+              Dibuat untuk developer yang membangun masa depan
+              <br className="hidden sm:block" /> aplikasi AI
             </h2>
           </div>
 
@@ -474,22 +466,22 @@ export default async function Home() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Get started in under 5 minutes
+              Mulai dalam kurang dari 5 menit
             </div>
 
             <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-              Ship AI features faster
+              Rilis fitur AI lebih cepat
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Get an API key in minutes. One endpoint, every model, billed per token —
-              starting at 1 TOKS = Rp1,000 = US$0.0553.
+              Dapatkan API key dalam hitungan menit. Satu endpoint, semua model, ditagih per token —
+              mulai dari 1 TOKS = Rp1.000 = US$0.0553.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
                 className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
               >
-                Get Your Free API Key
+                Dapatkan API Key Gratis
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -498,7 +490,7 @@ export default async function Home() {
                 href="/dashboard/docs"
                 className="rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                Read the docs
+                Baca dokumentasi
               </Link>
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
@@ -506,19 +498,19 @@ export default async function Home() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                No credit card required
+                Tanpa kartu kredit
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                14-day refund guarantee
+                Jaminan refund 14 hari
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Credits never expire
+                Kredit tidak kedaluwarsa
               </span>
             </div>
           </div>
@@ -539,44 +531,44 @@ export default async function Home() {
                 <span className="text-[15px] font-semibold tracking-tight">OneRouter</span>
               </Link>
               <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-                One API. The world's best AI models. Built for developers.
+                Satu API. Model AI terbaik di dunia. Dibuat untuk developer.
               </p>
             </div>
 
             <FooterCol
               title="Platform"
               links={[
-                { label: "Models", href: "/#models" },
-                { label: "Pricing", href: "/#pricing" },
+                { label: "Model", href: "/#models" },
+                { label: "Harga", href: "/#pricing" },
                 { label: "Playground", href: "/dashboard/chat" },
                 { label: "Dashboard", href: "/dashboard" },
               ]}
             />
             <FooterCol
-              title="Developers"
+              title="Developer"
               links={[
-                { label: "Documentation", href: "/dashboard/docs" },
-                { label: "API Keys", href: "/dashboard/api-keys" },
-                { label: "Usage", href: "/dashboard/usage" },
-                { label: "Settings", href: "/dashboard/settings" },
+                { label: "Dokumentasi", href: "/dashboard/docs" },
+                { label: "API Key", href: "/dashboard/api-keys" },
+                { label: "Pemakaian", href: "/dashboard/usage" },
+                { label: "Pengaturan", href: "/dashboard/settings" },
               ]}
             />
             <FooterCol
-              title="Account"
+              title="Akun"
               links={[
-                { label: "Sign in", href: "/login" },
-                { label: "Start Building", href: "/register" },
-                { label: "Billing", href: "/dashboard/wallet" },
+                { label: "Masuk", href: "/login" },
+                { label: "Mulai Sekarang", href: "/register" },
+                { label: "Tagihan", href: "/dashboard/wallet" },
               ]}
             />
           </div>
 
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
             <p className="text-[12px] text-muted-foreground">
-              © {new Date().getFullYear()} OneRouter. All rights reserved.
+              © {new Date().getFullYear()} OneRouter. Hak cipta dilindungi.
             </p>
             <p className="text-[12px] text-muted-foreground">
-              Pay only for what you use. No subscriptions. No hidden fees.
+              Bayar hanya yang dipakai. Tanpa langganan. Tanpa biaya tersembunyi.
             </p>
           </div>
         </div>
@@ -639,19 +631,19 @@ function ModelShowcaseCard({ model }: { model: ModelCardData }) {
               : "border-amber-500/30 bg-amber-500/10 text-amber-400"
           }`}
         >
-          {isLive ? "Live" : "Maintenance"}
+          {isLive ? "Aktif" : "Pemeliharaan"}
         </span>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-[12px]">
         <div>
-          <div className="text-[10px] text-muted-foreground">Context</div>
+          <div className="text-[10px] text-muted-foreground">Konteks</div>
           <div className="mt-0.5 font-semibold text-foreground">
             {model.contextWindow ?? "—"}
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-muted-foreground">Capability</div>
+          <div className="text-[10px] text-muted-foreground">Kemampuan</div>
           <div className="mt-0.5 font-semibold text-foreground">{cap}</div>
         </div>
       </div>
@@ -664,7 +656,7 @@ function ModelShowcaseCard({ model }: { model: ModelCardData }) {
           href="/dashboard/chat"
           className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
         >
-          Try
+          Coba
         </Link>
       </div>
     </div>
@@ -675,7 +667,7 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
   if (models.length === 0) {
     return (
       <div className="glass rounded-2xl p-12 text-center text-sm text-muted-foreground">
-        Pricing is being updated.
+        Harga sedang diperbarui.
       </div>
     );
   }
@@ -685,11 +677,11 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.08] text-left">
-              {["Model", "Provider", "Context", "Input / 1M", "Output / 1M", "Status"].map((h) => (
+              {["Model", "Provider", "Konteks", "Input / 1Jt", "Output / 1Jt", "Status"].map((h) => (
                 <th
                   key={h}
                   className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${
-                    h === "Input / 1M" || h === "Output / 1M" ? "text-right" : ""
+                    h === "Input / 1Jt" || h === "Output / 1Jt" ? "text-right" : ""
                   } ${h === "Status" ? "text-center" : ""}`}
                 >
                   {h}
@@ -720,7 +712,7 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
                     Rp{m.inputPricePerMillion.toLocaleString("id-ID")}
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {(m.inputPricePerMillion / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} TOKS · US${((m.inputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                    {(m.inputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS · US${((m.inputPricePerMillion / 1000) * 0.0553).toFixed(2)}
                   </div>
                 </td>
                 <td className="px-5 py-4 text-right">
@@ -728,19 +720,19 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
                     Rp{m.outputPricePerMillion.toLocaleString("id-ID")}
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {(m.outputPricePerMillion / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} TOKS · US${((m.outputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                    {(m.outputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS · US${((m.outputPricePerMillion / 1000) * 0.0553).toFixed(2)}
                   </div>
                 </td>
                 <td className="px-5 py-4 text-center">
                   {m.maintenanceMode ? (
                     <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      Maintenance
+                      Pemeliharaan
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent">
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                      Live
+                      Aktif
                     </span>
                   )}
                 </td>
@@ -750,7 +742,7 @@ function PremiumPricingTable({ models }: { models: ModelCardData[] }) {
         </table>
       </div>
       <div className="border-t border-white/[0.08] px-5 py-3.5 text-[11px] text-muted-foreground">
-        Prices per 1 million tokens. <strong className="text-foreground">1 TOKS = Rp1,000 = US$0.0553</strong>. You only pay for tokens consumed — no subscriptions, no hidden fees.
+        Harga per 1 juta token. <strong className="text-foreground">1 TOKS = Rp1.000 = US$0.0553</strong>. Anda hanya membayar token yang dipakai — tanpa langganan, tanpa biaya tersembunyi.
       </div>
     </div>
   );

@@ -268,7 +268,7 @@ export default async function DashboardPage() {
           label="Avg Latency"
           value={avgLatency}
           suffix=" ms"
-          sub={`${latencySamples.toLocaleString("en-US")} samples`}
+          sub={`${latencySamples.toLocaleString("id-ID")} sampel`}
           delay="animate-fade-up-delay-3"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -582,7 +582,7 @@ export default async function DashboardPage() {
                           {t.type === "USAGE" ? t.description?.replace(/^AI usage:\s*/, "") ?? "Usage" : t.type}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
-                          {t.createdAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                          {t.createdAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
                         </div>
                       </div>
                     </div>

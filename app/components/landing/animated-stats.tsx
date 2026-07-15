@@ -11,10 +11,10 @@ type Stat = {
 };
 
 const STATS: Stat[] = [
-  { value: 10, display: (n) => String(Math.round(n)), label: "AI Models", suffix: "+" },
-  { value: 1, display: (n) => String(Math.round(n)), label: "Maximum Context", suffix: "M+" },
-  { value: 100, display: (n) => `<${Math.round(n)}`, label: "Fast Response", suffix: "ms" },
-  { value: 99.9, display: (n) => n.toFixed(1), label: "Reliability", suffix: "%" },
+  { value: 10, display: (n) => String(Math.round(n)), label: "Model AI", suffix: "+" },
+  { value: 1, display: (n) => String(Math.round(n)), label: "Konteks Maksimal", suffix: "M+" },
+  { value: 100, display: (n) => `<${Math.round(n)}`, label: "Respons Cepat", suffix: "ms" },
+  { value: 99.9, display: (n) => n.toFixed(1), label: "Keandalan", suffix: "%" },
 ];
 
 function CountUp({ stat, delay }: { stat: Stat; delay: number }) {

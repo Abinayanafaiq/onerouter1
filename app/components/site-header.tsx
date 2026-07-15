@@ -17,10 +17,10 @@ export async function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/#models" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
-            Models
+            Model
           </Link>
           <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition">
-            Pricing
+            Harga
           </Link>
           {isAuthed ? (
             <>
@@ -28,7 +28,7 @@ export async function SiteHeader() {
                 href="/dashboard/wallet"
                 className="text-muted-foreground hover:text-foreground transition"
               >
-                Wallet
+                Dompet
               </Link>
               <Link
                 href="/dashboard"
@@ -40,7 +40,7 @@ export async function SiteHeader() {
                 href="/dashboard/wallet"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Top Up Credits
+                Isi Saldo
               </Link>
               <form
                 action={async () => {
@@ -65,7 +65,7 @@ export async function SiteHeader() {
                 href="/register"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Get Started
+                Mulai
               </Link>
             </>
           )}

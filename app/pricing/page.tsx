@@ -6,13 +6,21 @@ import { ModelPricingTable } from "@/app/components/model-pricing-table";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Pricing — Pay Per Token | OneRouter",
+  title: "Harga — Bayar Per Token",
   description:
-    "Simple usage-based pricing. 1 TOKS = Rp1,000 = US$0.0553. Pay only for the tokens you use. No subscriptions, no hidden fees, no lock-in.",
+    "Harga sederhana berbasis pemakaian. 1 TOKS = Rp1.000 = US$0.0553. Bayar hanya token yang dipakai. Tanpa langganan, tanpa biaya tersembunyi, tanpa lock-in.",
+  alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Pricing — Pay Per Token | OneRouter",
+    title: "Harga — Bayar Per Token | OneRouter",
     description:
-      "1 TOKS = Rp1,000 = US$0.0553. Pay only for what you use. No subscriptions.",
+      "1 TOKS = Rp1.000 = US$0.0553. Bayar hanya yang dipakai. Tanpa langganan.",
+    url: "/pricing",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Harga — Bayar Per Token | OneRouter",
+    description:
+      "1 TOKS = Rp1.000 = US$0.0553. Bayar hanya yang dipakai. Tanpa langganan.",
   },
 };
 
@@ -21,8 +29,8 @@ const TOKS_TO_USD = 0.0553;
 
 const TRUST_BADGES = [
   {
-    title: "No Subscription",
-    desc: "No recurring bills or monthly commitments. Ever.",
+    title: "Tanpa Langganan",
+    desc: "Tanpa tagihan berulang atau komitmen bulanan. Selamanya.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -31,8 +39,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Top Up Anytime",
-    desc: "Add credits only when you need them — you're in control.",
+    title: "Isi Saldo Kapan Saja",
+    desc: "Tambah kredit hanya saat dibutuhkan — Anda yang mengontrol.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -41,8 +49,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Transparent Pricing",
-    desc: "Clear rates upfront. No hidden fees, no surprise charges.",
+    title: "Harga Transparan",
+    desc: "Tarif jelas di muka. Tanpa biaya tersembunyi, tanpa kejutan.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" stroke="currentColor" strokeWidth="1.6" />
@@ -51,8 +59,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Bank-Grade Security",
-    desc: "Encrypted API keys, per-key rate limits, SOC2-style controls.",
+    title: "Keamanan Kelas Bank",
+    desc: "API key terenkripsi, rate limit per-key, kontrol gaya SOC2.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -65,21 +73,21 @@ const TRUST_BADGES = [
 const TESTIMONIALS = [
   {
     quote:
-      "We replaced three provider SDKs with a single OneRouter key. Onboarding took 10 minutes and our infra bill dropped.",
+      "Kami mengganti tiga SDK provider dengan satu key OneRouter. Onboarding 10 menit dan tagihan infra turun.",
     name: "Andi Pratama",
     role: "CTO, PinjamCepat",
     initials: "AP",
   },
   {
     quote:
-      "Pay-per-token with no subscription is exactly what our research lab needed. We benchmark 6 models from one endpoint.",
+      "Bayar per token tanpa langganan tepat untuk lab riset kami. Kami benchmark 6 model dari satu endpoint.",
     name: "Sarah Wijaya",
     role: "ML Lead, Univ. Indonesia",
     initials: "SW",
   },
   {
     quote:
-      "The failover routing saved our launch. When one provider throttled us, traffic moved automatically — zero downtime.",
+      "Routing failover menyelamatkan peluncuran kami. Saat satu provider throttle, traffic pindah otomatis — zero downtime.",
     name: "Daniel Tan",
     role: "Founder, SaaSKit",
     initials: "DT",
@@ -88,44 +96,44 @@ const TESTIMONIALS = [
 
 const FAQS = [
   {
-    q: "What is a TOKS and how does pricing work?",
-    a: "TOKS is our internal credit unit. 1 TOKS = Rp1,000 = US$0.0553. Each model has a per-1M-token rate in rupiah; you only pay for the tokens your requests actually consume. No subscription, no minimum.",
+    q: "Apa itu TOKS dan bagaimana sistem harganya?",
+    a: "TOKS adalah unit kredit internal kami. 1 TOKS = Rp1.000 = US$0.0553. Setiap model punya tarif per 1 juta token dalam rupiah; Anda hanya membayar token yang benar-benar dipakai. Tanpa langganan, tanpa minimum.",
   },
   {
-    q: "Do I need a credit card to start?",
-    a: "No. Sign up free, generate an API key, and top up credits whenever you're ready. You can start with any amount — there's no minimum deposit.",
+    q: "Apakah saya butuh kartu kredit untuk mulai?",
+    a: "Tidak. Daftar gratis, buat API key, dan isi saldo kapan saja. Anda bisa mulai dengan jumlah berapa pun — tidak ada deposit minimum.",
   },
   {
-    q: "What happens when I run out of credits?",
-    a: "Requests will return a top-up reminder instead of failing silently. Add credits in your wallet and you're back online in seconds. Your API keys and settings stay intact.",
+    q: "Apa yang terjadi jika kredit habis?",
+    a: "Request akan mengembalikan pengingat isi saldo, bukan gagal diam-diam. Tambah kredit di dompet dan Anda online lagi dalam hitungan detik. API key dan pengaturan tetap utuh.",
   },
   {
-    q: "Are there any hidden fees or subscriptions?",
-    a: "None. You pay only for tokens consumed at the published rates. No monthly fee, no platform fee, no per-seat charge. The price you see is the price you pay.",
+    q: "Apakah ada biaya tersembunyi atau langganan?",
+    a: "Tidak ada. Anda hanya membayar token yang dipakai sesuai tarif yang dipublikasikan. Tanpa biaya bulanan, tanpa biaya platform, tanpa biaya per seat. Harga yang Anda lihat adalah harga yang Anda bayar.",
   },
   {
-    q: "Can I switch models without changing my code?",
-    a: "Yes. OneRouter is OpenAI-compatible — change the model parameter in your request and the rest of your SDK stays the same. Switch between GLM, DeepSeek, Qwen, Kimi and more with one line.",
+    q: "Bisakah saya ganti model tanpa mengubah kode?",
+    a: "Ya. OneRouter kompatibel OpenAI — ubah parameter model di request, SDK Anda tetap sama. Ganti antara GLM, DeepSeek, Qwen, Kimi dan lainnya dengan satu baris.",
   },
   {
-    q: "Is my data and API key secure?",
-    a: "API keys are hashed at rest, credentials are encrypted, and per-key rate limits prevent abuse. We never train on your data and never share prompts with third parties.",
+    q: "Apakah data dan API key saya aman?",
+    a: "API key di-hash saat disimpan, kredensial dienkripsi, dan rate limit per-key mencegah penyalahgunaan. Kami tidak melatih model dengan data Anda dan tidak membagikan prompt ke pihak ketiga.",
   },
   {
-    q: "Do you offer refunds for unused credits?",
-    a: "Unused credits never expire. If you decide OneRouter isn't for you within 14 days of your first top-up, contact support for a full refund of the unused balance.",
+    q: "Apakah ada refund untuk kredit yang tidak terpakai?",
+    a: "Kredit yang tidak terpakai tidak kedaluwarsa. Jika dalam 14 hari setelah top-up pertama Anda merasa OneRouter tidak cocok, hubungi support untuk refund penuh sisa saldo.",
   },
 ];
 
 const COMPARISON = [
-  { feature: "Single API key for all models", onerouter: true, direct: false },
-  { feature: "Automatic failover routing", onerouter: true, direct: false },
-  { feature: "Pay per token, no subscription", onerouter: true, direct: true },
-  { feature: "OpenAI-compatible SDK", onerouter: true, direct: false },
-  { feature: "Unified billing in IDR & USD", onerouter: true, direct: false },
-  { feature: "Per-key rate limits & rotation", onerouter: true, direct: false },
-  { feature: "Manage N provider accounts", onerouter: false, direct: true },
-  { feature: "N separate invoices / month", onerouter: false, direct: true },
+  { feature: "Satu API key untuk semua model", onerouter: true, direct: false },
+  { feature: "Routing failover otomatis", onerouter: true, direct: false },
+  { feature: "Bayar per token, tanpa langganan", onerouter: true, direct: true },
+  { feature: "SDK kompatibel OpenAI", onerouter: true, direct: false },
+  { feature: "Billing terpadu IDR & USD", onerouter: true, direct: false },
+  { feature: "Rate limit & rotasi per-key", onerouter: true, direct: false },
+  { feature: "Kelola N akun provider", onerouter: false, direct: true },
+  { feature: "N invoice terpisah / bulan", onerouter: false, direct: true },
 ];
 
 export default function PricingPage() {
@@ -133,9 +141,6 @@ export default function PricingPage() {
     <div className="min-h-screen">
       <SiteHeader />
 
-      {/* ============================================================
-          HERO + TOKS CONVERSION BANNER
-          ============================================================ */}
       <section className="relative px-4 pt-32 pb-16 sm:px-6 sm:pt-40 sm:pb-24">
         <div
           className="pointer-events-none absolute inset-0 -z-10"
@@ -151,18 +156,17 @@ export default function PricingPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
             </span>
-            Pay As You Go · No Subscription
+            Bayar Sesuai Pakai · Tanpa Langganan
           </div>
 
           <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
-            Simple, transparent <span className="gradient-text-accent">per-token</span> pricing
+            Harga <span className="gradient-text-accent">per-token</span> yang sederhana & transparan
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Pay only for the tokens you use. No subscriptions, no monthly commitments, no hidden fees.
-            One API key unlocks every frontier model.
+            Bayar hanya untuk token yang dipakai. Tanpa langganan, tanpa komitmen bulanan, tanpa biaya tersembunyi.
+            Satu API key membuka semua model frontier.
           </p>
 
-          {/* TOKS conversion card — the centerpiece */}
           <div className="mx-auto mt-10 max-w-2xl">
             <div className="glass relative overflow-hidden rounded-2xl p-6 sm:p-8">
               <div
@@ -171,23 +175,23 @@ export default function PricingPage() {
                 aria-hidden
               />
               <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                Credit Conversion Rate
+                Kurs Konversi Kredit
               </div>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
                   <div className="text-[11px] text-muted-foreground">1 TOKS</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">1 TOKS</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">Base credit unit</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">Unit kredit dasar</div>
                 </div>
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-                  <div className="text-[11px] text-muted-foreground">Indonesian Rupiah</div>
+                  <div className="text-[11px] text-muted-foreground">Rupiah Indonesia</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">
                     Rp{TOKS_TO_RP.toLocaleString("id-ID")}
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground">per TOKS</div>
                 </div>
                 <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
-                  <div className="text-[11px] text-accent">US Dollar</div>
+                  <div className="text-[11px] text-accent">Dolar AS</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">
                     US${TOKS_TO_USD.toFixed(4)}
                   </div>
@@ -195,19 +199,18 @@ export default function PricingPage() {
                 </div>
               </div>
               <p className="mt-4 text-[12px] text-muted-foreground">
-                Top up in rupiah or USD — your credits are tracked in TOKS and converted automatically.
-                Rates are fixed and shown before every request.
+                Isi saldo dalam rupiah atau USD — kredit dilacak dalam TOKS dan dikonversi otomatis.
+                Tarif tetap dan ditampilkan sebelum setiap request.
               </p>
             </div>
           </div>
 
-          {/* Primary CTA — above the fold */}
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/register"
               className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
             >
-              Get Your API Key — Free
+              Dapatkan API Key — Gratis
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -216,49 +219,42 @@ export default function PricingPage() {
               href="/dashboard/wallet"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
-              Top Up Credits
+              Isi Saldo
             </Link>
           </div>
           <p className="mt-4 text-[12px] text-muted-foreground">
-            No credit card required · Cancel anytime · 14-day refund guarantee
+            Tanpa kartu kredit · Batal kapan saja · Jaminan refund 14 hari
           </p>
         </div>
       </section>
 
-      {/* ============================================================
-          PRICING TABLE
-          ============================================================ */}
       <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Model Catalog
+              Katalog Model
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Per-token rates for every model
+              Tarif per-token untuk setiap model
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
-              Prices are per 1 million tokens and billed in rupiah. Convert to TOKS or USD instantly
-              using the rate above.
+              Harga per 1 juta token dan ditagih dalam rupiah. Konversi ke TOKS atau USD secara instan
+              menggunakan kurs di atas.
             </p>
           </div>
 
           <ModelPricingTable />
 
-          {/* Conversion helper line under table */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
             <span>
-              <strong className="text-foreground">Rp1,000</strong> = 1 TOKS = <strong className="text-foreground">US$0.0553</strong>
+              <strong className="text-foreground">Rp1.000</strong> = 1 TOKS = <strong className="text-foreground">US$0.0553</strong>
             </span>
             <span className="hidden h-3 w-px bg-white/10 sm:inline-block" />
-            <span>1M tokens = 1,000 × model rate in TOKS</span>
+            <span>1Jt token = 1.000 × tarif model dalam TOKS</span>
           </div>
         </div>
       </section>
 
-      {/* ============================================================
-          TRUST BADGES
-          ============================================================ */}
       <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -279,17 +275,14 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          COMPARISON vs GOING DIRECT
-          ============================================================ */}
       <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Why OneRouter
+              Mengapa OneRouter
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              One API vs. managing every provider yourself
+              Satu API vs. mengelola setiap provider sendiri
             </h2>
           </div>
 
@@ -298,13 +291,13 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-white/[0.08] text-left">
                   <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Capability
+                    Kemampuan
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-accent">
                     OneRouter
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-muted-foreground">
-                    Direct to providers
+                    Langsung ke provider
                   </th>
                 </tr>
               </thead>
@@ -340,9 +333,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          TESTIMONIALS
-          ============================================================ */}
       <section className="relative px-4 py-16 sm:px-6 sm:py-24">
         <div
           className="pointer-events-none absolute inset-0 -z-10"
@@ -352,10 +342,10 @@ export default function PricingPage() {
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Trusted by builders
+              Dipercaya builder
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Teams ship faster with OneRouter
+              Tim rilis lebih cepat dengan OneRouter
             </h2>
           </div>
 
@@ -383,9 +373,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          FAQ — objection handling
-          ============================================================ */}
       <section className="px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
@@ -393,7 +380,7 @@ export default function PricingPage() {
               FAQ
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Questions, answered
+              Pertanyaan, dijawab
             </h2>
           </div>
 
@@ -416,9 +403,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          FINAL CTA — urgency + risk reversal
-          ============================================================ */}
       <section className="px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-5xl">
           <div className="glass relative overflow-hidden rounded-3xl p-12 text-center sm:p-20">
@@ -437,15 +421,15 @@ export default function PricingPage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Get started in under 5 minutes
+              Mulai dalam kurang dari 5 menit
             </div>
 
             <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-              Ship AI features today
+              Rilis fitur AI hari ini
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Generate your API key now. One endpoint, every frontier model, billed per token —
-              starting at 1 TOKS = Rp1,000 = US$0.0553.
+              Buat API key sekarang. Satu endpoint, semua model frontier, ditagih per token —
+              mulai dari 1 TOKS = Rp1.000 = US$0.0553.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -453,7 +437,7 @@ export default function PricingPage() {
                 href="/register"
                 className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
               >
-                Get Your Free API Key
+                Dapatkan API Key Gratis
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -462,7 +446,7 @@ export default function PricingPage() {
                 href="/dashboard/docs"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                Read the docs
+                Baca dokumentasi
               </Link>
             </div>
 
@@ -471,19 +455,19 @@ export default function PricingPage() {
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                No credit card required
+                Tanpa kartu kredit
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                14-day refund guarantee
+                Jaminan refund 14 hari
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Credits never expire
+                Kredit tidak kedaluwarsa
               </span>
             </div>
           </div>

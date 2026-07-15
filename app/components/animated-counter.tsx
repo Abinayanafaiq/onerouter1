@@ -7,7 +7,7 @@ function easeOutExpo(t: number): number {
 }
 
 function formatValue(value: number, decimals: number): string {
-  return value.toLocaleString("en-US", {
+  return value.toLocaleString("id-ID", {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals,
   });

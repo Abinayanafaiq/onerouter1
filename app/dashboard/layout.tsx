@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { auth, signOut } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
 import { getWalletBalance } from "@/app/lib/wallet";
 import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { DashboardShell } from "@/app/components/dashboard-shell";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardLayout({
   children,

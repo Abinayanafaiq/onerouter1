@@ -13,7 +13,7 @@ function fmtUsd(rp: number): string {
 }
 
 function fmtToks(rp: number): string {
-  return (rp / TOKS_TO_RP).toLocaleString("en-US", { maximumFractionDigits: 1 }) + " TOKS";
+  return (rp / TOKS_TO_RP).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " TOKS";
 }
 
 /**
@@ -30,7 +30,7 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
   if (models.length === 0) {
     return (
       <div className="border border-foreground/10 rounded-2xl p-8 text-center text-muted-foreground bg-muted/30">
-        No models available yet.
+        Belum ada model tersedia.
       </div>
     );
   }
@@ -43,20 +43,20 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
             <tr className="border-b border-foreground/10 text-left">
               <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Model</th>
               <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Provider</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Context</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Konteks</th>
               {!compact && (
-                <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Supports</th>
+                <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Dukungan</th>
               )}
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Input / 1M</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Output / 1M</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Input / 1Jt</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Output / 1Jt</th>
               <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-center">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-foreground/5">
             {models.map((m) => {
               const caps: string[] = [];
-              if (m.supportsText) caps.push("Text");
-              if (m.supportsImages) caps.push("Images");
+              if (m.supportsText) caps.push("Teks");
+              if (m.supportsImages) caps.push("Gambar");
               if (m.supportsStreaming) caps.push("Stream");
               const inRp = Number(m.inputPricePerMillion);
               const outRp = Number(m.outputPricePerMillion);
@@ -104,17 +104,17 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
                     {m.maintenanceMode ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-500">
                         <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                        Maintenance
+                        Pemeliharaan
                       </span>
                     ) : m.enabled ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-500">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        Live
+                        Aktif
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
-                        Disabled
+                        Nonaktif
                       </span>
                     )}
                   </td>
@@ -125,7 +125,7 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
         </table>
       </div>
       <div className="px-4 py-3 border-t border-foreground/10 text-[11px] text-muted-foreground">
-        Prices are per 1 million tokens. <strong className="text-foreground">1 TOKS = Rp1,000 = US$0.0553</strong>. You only pay for tokens actually consumed — no subscriptions, no hidden fees.
+        Harga per 1 juta token. <strong className="text-foreground">1 TOKS = Rp1.000 = US$0.0553</strong>. Anda hanya membayar token yang dipakai — tanpa langganan, tanpa biaya tersembunyi.
       </div>
     </div>
   );
