@@ -1,7 +1,11 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { SiteHeader } from "@/app/components/site-header";
 
-export function PublicShell({ children }: { children: React.ReactNode }) {
+export async function PublicShell({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations("Footer");
+  const tc = await getTranslations("Common");
+
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -11,38 +15,38 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           <div>
             <div className="text-sm font-semibold">9inference</div>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              API model AI murah — bayar per token, kompatibel OpenAI.
+              {t("tagline")}
             </p>
           </div>
           <FooterCol
-            title="Produk"
+            title={t("product")}
             links={[
-              { label: "Model AI", href: "/models" },
-              { label: "Harga Token", href: "/pricing" },
-              { label: "Blog", href: "/blog" },
-              { label: "Daftar", href: "/register" },
+              { label: t("aiModels"), href: "/models" },
+              { label: t("tokenPricing"), href: "/pricing" },
+              { label: tc("blog"), href: "/blog" },
+              { label: tc("registerShort"), href: "/register" },
             ]}
           />
           <FooterCol
-            title="Belajar"
+            title={t("learn")}
             links={[
-              { label: "API Model AI Murah", href: "/blog/api-model-ai-murah-indonesia" },
-              { label: "DeepSeek API Murah", href: "/blog/deepseek-api-murah-cara-pakai" },
-              { label: "Alternatif OpenAI", href: "/blog/alternatif-openai-api-murah" },
-              { label: "Bayar Per Token", href: "/blog/bayar-per-token-vs-langganan" },
+              { label: t("apiCheap"), href: "/blog/api-model-ai-murah-indonesia" },
+              { label: t("deepseekCheap"), href: "/blog/deepseek-api-murah-cara-pakai" },
+              { label: t("openaiAlt"), href: "/blog/alternatif-openai-api-murah" },
+              { label: t("payPerToken"), href: "/blog/bayar-per-token-vs-langganan" },
             ]}
           />
           <FooterCol
-            title="Akun"
+            title={t("account")}
             links={[
-              { label: "Masuk", href: "/login" },
-              { label: "Dashboard", href: "/dashboard" },
-              { label: "Isi Saldo", href: "/dashboard/wallet" },
+              { label: tc("login"), href: "/login" },
+              { label: tc("dashboard"), href: "/dashboard" },
+              { label: tc("wallet"), href: "/dashboard/wallet" },
             ]}
           />
         </div>
         <p className="mx-auto mt-10 max-w-6xl text-[12px] text-muted-foreground">
-          © {new Date().getFullYear()} 9inference. API model murah untuk developer Indonesia.
+          {t("copyright", { year: new Date().getFullYear() })}
         </p>
       </footer>
     </div>
@@ -65,7 +69,7 @@ function FooterCol({
         {links.map((l) => (
           <li key={l.href + l.label}>
             <Link
-              href={l.href}
+              href={l.href as "/"}
               className="text-[13px] text-muted-foreground transition hover:text-foreground"
             >
               {l.label}

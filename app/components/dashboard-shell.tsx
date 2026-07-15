@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { CreditBadge } from "@/app/components/credit-badge";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 
 type NavItem = {
   label: string;
@@ -12,9 +13,9 @@ type NavItem = {
   badge?: string;
 };
 
-const NAV_MAIN: NavItem[] = [
+const NAV_MAIN_DEFS = [
   {
-    label: "Overview",
+    key: "overview" as const,
     href: "/dashboard",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -23,7 +24,7 @@ const NAV_MAIN: NavItem[] = [
     ),
   },
   {
-    label: "Playground",
+    key: "playground" as const,
     href: "/dashboard/chat",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -32,7 +33,7 @@ const NAV_MAIN: NavItem[] = [
     ),
   },
   {
-    label: "API Keys",
+    key: "apiKeys" as const,
     href: "/dashboard/api-keys",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -41,7 +42,7 @@ const NAV_MAIN: NavItem[] = [
     ),
   },
   {
-    label: "Models",
+    key: "models" as const,
     href: "/dashboard/models",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -50,7 +51,7 @@ const NAV_MAIN: NavItem[] = [
     ),
   },
   {
-    label: "Usage",
+    key: "usage" as const,
     href: "/dashboard/usage",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -59,7 +60,7 @@ const NAV_MAIN: NavItem[] = [
     ),
   },
   {
-    label: "Billing",
+    key: "billing" as const,
     href: "/dashboard/wallet",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -70,9 +71,9 @@ const NAV_MAIN: NavItem[] = [
   },
 ];
 
-const NAV_SECONDARY: NavItem[] = [
+const NAV_SECONDARY_DEFS = [
   {
-    label: "Documentation",
+    key: "documentation" as const,
     href: "/dashboard/docs",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -81,7 +82,7 @@ const NAV_SECONDARY: NavItem[] = [
     ),
   },
   {
-    label: "Settings",
+    key: "settings" as const,
     href: "/dashboard/settings",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -166,9 +167,21 @@ export function DashboardShell({
   telegramGroupUrl: string | null;
   signOutAction: () => Promise<void>;
 }) {
+  const t = useTranslations("Dashboard");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const navMain: NavItem[] = NAV_MAIN_DEFS.map((d) => ({
+    label: t(d.key),
+    href: d.href,
+    icon: d.icon,
+  }));
+  const navSecondary: NavItem[] = NAV_SECONDARY_DEFS.map((d) => ({
+    label: t(d.key),
+    href: d.href,
+    icon: d.icon,
+  }));
 
   return (
     <div className="relative min-h-screen bg-background text-foreground">
@@ -189,6 +202,11 @@ export function DashboardShell({
           userEmail={userEmail}
           telegramGroupUrl={telegramGroupUrl}
           signOutAction={signOutAction}
+          navMain={navMain}
+          navSecondary={navSecondary}
+          systemsOk={t("systemsOk")}
+          systemsDetail={t("systemsDetail")}
+          signOutLabel={t("signOut")}
         />
       </aside>
 
@@ -207,6 +225,11 @@ export function DashboardShell({
               telegramGroupUrl={telegramGroupUrl}
               signOutAction={signOutAction}
               onNavigate={() => setMobileOpen(false)}
+              navMain={navMain}
+              navSecondary={navSecondary}
+              systemsOk={t("systemsOk")}
+              systemsDetail={t("systemsDetail")}
+              signOutLabel={t("signOut")}
             />
           </aside>
         </div>
@@ -241,6 +264,7 @@ export function DashboardShell({
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher />
             {/* Token balance */}
             <CreditBadge initialToks={initialToks} />
 
@@ -321,6 +345,11 @@ function SidebarContent({
   telegramGroupUrl,
   signOutAction,
   onNavigate,
+  navMain,
+  navSecondary,
+  systemsOk,
+  systemsDetail,
+  signOutLabel,
 }: {
   pathname: string;
   userName: string;
@@ -328,6 +357,11 @@ function SidebarContent({
   telegramGroupUrl: string | null;
   signOutAction: () => Promise<void>;
   onNavigate?: () => void;
+  navMain: NavItem[];
+  navSecondary: NavItem[];
+  systemsOk: string;
+  systemsDetail: string;
+  signOutLabel: string;
 }) {
   return (
     <>
@@ -347,12 +381,12 @@ function SidebarContent({
         <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
           Platform
         </div>
-        <NavList items={NAV_MAIN} pathname={pathname} onNavigate={onNavigate} />
+        <NavList items={navMain} pathname={pathname} onNavigate={onNavigate} />
 
         <div className="mb-2 mt-6 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
           Resources
         </div>
-        <NavList items={NAV_SECONDARY} pathname={pathname} onNavigate={onNavigate} />
+        <NavList items={navSecondary} pathname={pathname} onNavigate={onNavigate} />
 
         {telegramGroupUrl && (
           <div className="mt-4 px-3">
@@ -382,10 +416,10 @@ function SidebarContent({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
             </span>
-            <span className="text-[11px] font-medium text-foreground">All systems operational</span>
+            <span className="text-[11px] font-medium text-foreground">{systemsOk}</span>
           </div>
           <div className="mt-1.5 text-[10px] text-muted-foreground">
-            API · Gateway · Inference
+            {systemsDetail}
           </div>
         </div>
       </div>

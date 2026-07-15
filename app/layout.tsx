@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist, Geist_Mono } from "next/font/google";
+import { getLocale } from "next-intl/server";
 import { JsonLd } from "@/app/components/json-ld";
 import {
   getSiteUrl,
@@ -9,6 +10,7 @@ import {
   SITE_TAGLINE,
 } from "@/app/lib/site";
 import "./globals.css";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -63,13 +65,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
     languages: {
-      "id-ID": "/",
-      "x-default": "/",
+      "id-ID": "/id",
+      "en-US": "/en",
+      "x-default": "/id",
     },
   },
   openGraph: {
     type: "website",
     locale: "id_ID",
+    alternateLocale: ["en_US"],
     url: siteUrl,
     siteName: SITE_NAME,
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
@@ -103,16 +107,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let locale = "id";
+  try {
+    locale = await getLocale();
+  } catch {
+    locale = "id";
+  }
+
   return (
     <html
-      lang="id"
+      lang={locale}
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <JsonLd />

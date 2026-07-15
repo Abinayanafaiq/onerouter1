@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-
-const NAV_LINKS = [
-  { label: "Model", href: "/models" },
-  { label: "Harga", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Platform", href: "/#platform" },
-];
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 
 export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
+  const t = useTranslations();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const navLinks = [
+    { label: t("Nav.models"), href: "/models" as const },
+    { label: t("Nav.pricing"), href: "/pricing" as const },
+    { label: t("Nav.blog"), href: "/blog" as const },
+    { label: t("Nav.platform"), href: "/#platform" as const },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -30,7 +33,6 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
             9i
@@ -38,14 +40,13 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
           <div className="leading-tight">
             <div className="text-[15px] font-semibold tracking-tight">9inference</div>
             <div className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:block">
-              Platform Inferensi AI
+              {t("Header.tagline")}
             </div>
           </div>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -56,21 +57,21 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
           ))}
         </nav>
 
-        {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
+          <LanguageSwitcher />
           {isAuthed ? (
             <>
               <Link
                 href="/dashboard"
                 className="rounded-lg px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition hover:text-foreground"
               >
-                Dashboard
+                {t("Common.dashboard")}
               </Link>
               <Link
                 href="/dashboard"
                 className="btn-accent rounded-lg px-4 py-2 text-[13px]"
               >
-                Buka konsol
+                {t("Common.openConsole")}
               </Link>
             </>
           ) : (
@@ -79,43 +80,44 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 href="/login"
                 className="rounded-lg px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition hover:text-foreground"
               >
-                Masuk
+                {t("Common.login")}
               </Link>
               <Link
                 href="/register"
                 className="btn-accent rounded-lg px-4 py-2 text-[13px]"
               >
-                Daftar gratis
+                {t("Common.register")}
               </Link>
             </>
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-muted-foreground md:hidden"
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          {open ? (
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-              <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          )}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-muted-foreground"
+            aria-label={t("Header.toggleMenu")}
+            aria-expanded={open}
+          >
+            {open ? (
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="border-t border-white/[0.06] bg-background/95 backdrop-blur-xl md:hidden">
           <nav className="mx-auto max-w-7xl space-y-1 px-4 py-4">
-            {NAV_LINKS.map((l) => (
+            {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
@@ -125,14 +127,14 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 {l.label}
               </Link>
             ))}
-            <div className="mt-3 flex flex-col gap-2 border-t border-white/[0.06] pt-3">
+            <div className="mt-3 grid gap-2 border-t border-white/[0.06] pt-3">
               {isAuthed ? (
                 <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
                   className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
                 >
-                  Buka konsol
+                  {t("Common.openConsole")}
                 </Link>
               ) : (
                 <>
@@ -141,14 +143,14 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                     onClick={() => setOpen(false)}
                     className="rounded-lg border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-foreground"
                   >
-                    Masuk
+                    {t("Common.login")}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
                     className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
                   >
-                    Daftar gratis
+                    {t("Common.register")}
                   </Link>
                 </>
               )}

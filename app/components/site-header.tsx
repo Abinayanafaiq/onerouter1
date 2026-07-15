@@ -1,10 +1,13 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { auth, signOut } from "@/app/lib/auth";
 import { APP_NAME } from "@/app/lib/constants";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 
 export async function SiteHeader() {
   const session = await auth();
   const isAuthed = !!session?.user;
+  const t = await getTranslations();
 
   return (
     <header className="sticky top-0 z-50 border-b border-foreground/5 bg-background/70 backdrop-blur-xl">
@@ -17,33 +20,34 @@ export async function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/models" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
-            Model
+            {t("Common.models")}
           </Link>
           <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition">
-            Harga
+            {t("Common.pricing")}
           </Link>
           <Link href="/blog" className="text-muted-foreground hover:text-foreground transition hidden sm:inline">
-            Blog
+            {t("Common.blog")}
           </Link>
+          <LanguageSwitcher />
           {isAuthed ? (
             <>
               <Link
                 href="/dashboard/wallet"
                 className="text-muted-foreground hover:text-foreground transition"
               >
-                Dompet
+                {t("Common.wallet")}
               </Link>
               <Link
                 href="/dashboard"
                 className="text-muted-foreground hover:text-foreground transition hidden sm:inline"
               >
-                Dashboard
+                {t("Common.dashboard")}
               </Link>
               <Link
                 href="/dashboard/wallet"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Isi Saldo
+                {t("Common.topUp")}
               </Link>
               <form
                 action={async () => {
@@ -55,20 +59,20 @@ export async function SiteHeader() {
                   type="submit"
                   className="text-muted-foreground hover:text-foreground transition text-xs"
                 >
-                  Keluar
+                  {t("Common.logout")}
                 </button>
               </form>
             </>
           ) : (
             <>
               <Link href="/login" className="text-muted-foreground hover:text-foreground transition">
-                Masuk
+                {t("Common.login")}
               </Link>
               <Link
                 href="/register"
                 className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-medium hover:bg-foreground/90 transition shadow-lg shadow-white/10"
               >
-                Daftar gratis
+                {t("Common.register")}
               </Link>
             </>
           )}

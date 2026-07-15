@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { ModelCardData } from "@/app/lib/model-card-data";
 
 export type { ModelCardData };

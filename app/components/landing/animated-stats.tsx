@@ -10,12 +10,14 @@ type Stat = {
   suffix?: string;
 };
 
-const STATS: Stat[] = [
-  { value: 10, display: (n) => String(Math.round(n)), label: "Model AI", suffix: "+" },
-  { value: 1, display: (n) => String(Math.round(n)), label: "Konteks Maksimal", suffix: "M+" },
-  { value: 100, display: (n) => `<${Math.round(n)}`, label: "Respons Cepat", suffix: "ms" },
-  { value: 99.9, display: (n) => n.toFixed(1), label: "Keandalan", suffix: "%" },
-];
+function buildStats(labels: string[]): Stat[] {
+  return [
+    { value: 10, display: (n) => String(Math.round(n)), label: labels[0] || "AI Models", suffix: "+" },
+    { value: 1, display: (n) => String(Math.round(n)), label: labels[1] || "Max Context", suffix: "M+" },
+    { value: 100, display: (n) => `<${Math.round(n)}`, label: labels[2] || "Fast Response", suffix: "ms" },
+    { value: 99.9, display: (n) => n.toFixed(1), label: labels[3] || "Reliability", suffix: "%" },
+  ];
+}
 
 function CountUp({ stat, delay }: { stat: Stat; delay: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -55,10 +57,11 @@ function CountUp({ stat, delay }: { stat: Stat; delay: number }) {
   );
 }
 
-export function AnimatedStats() {
+export function AnimatedStats({ labels = [] }: { labels?: string[] }) {
+  const stats = buildStats(labels);
   return (
     <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-      {STATS.map((s, i) => (
+      {stats.map((s, i) => (
         <CountUp key={s.label} stat={s} delay={i * 0.08} />
       ))}
     </div>

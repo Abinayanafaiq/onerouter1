@@ -39,6 +39,7 @@ export const authConfig: NextAuthConfig = {
   ],
   session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 },
   pages: {
+    // Locale prefix is added by next-intl proxy; bare path is rewritten.
     signIn: "/login",
   },
   callbacks: {
