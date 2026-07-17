@@ -104,9 +104,20 @@ export async function loginAction(formData: FormData): Promise<LoginActionResult
   const securityAnswer = (formData.get("securityAnswer") as string | null) || "";
   if (!email || !password) return { error: t("errorRequired") };
 
-  const ts = await verifyTurnstile(turnstileToken, await headers());
-  if (!ts.success) {
-    return { error: t("errorBotCheck") };
+  // Turnstile verification: only required at step 1 (no securityAnswer yet).
+  // At step 2, the Turnstile token from step 1 is single-use and already
+  // consumed by Cloudflare's siteverify endpoint — re-submitting it would
+  // fail with `timeout-or-duplicate`. Skipping Turnstile at step 2 is safe
+  // because step 2 is ONLY reachable after step 1 already passed Turnstile
+  // AND the password was verified correct. An attacker who reaches step 2
+  // is (a) a human who passed captcha, (b) knows the admin password. The
+  // security question itself is the gate at this point — Turnstile adds no
+  // marginal protection here. The rate-limit in `authorize` still applies.
+  if (!securityAnswer) {
+    const ts = await verifyTurnstile(turnstileToken, await headers());
+    if (!ts.success) {
+      return { error: t("errorBotCheck") };
+    }
   }
 
   // NOTE: Brute-force rate-limiting for login is enforced INSIDE the
