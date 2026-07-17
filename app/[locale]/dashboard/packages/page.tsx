@@ -1,5 +1,6 @@
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +53,7 @@ export default async function PackagesPage() {
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
-  const [keys, orders] = await Promise.all([
+  const [keys, orders, packageModels] = await Promise.all([
     prisma.apiKey.findMany({
       where: { userId, billingMode: "TOKEN_PACKAGE" },
       orderBy: { createdAt: "desc" },
@@ -69,6 +70,7 @@ export default async function PackagesPage() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    getEnabledPackageModels(),
   ]);
 
   const now = new Date();
@@ -76,6 +78,10 @@ export default async function PackagesPage() {
     key.enabled && key.isActive && (!key.expiresAt || key.expiresAt > now) && key.tokenUsed < key.tokenQuota,
   );
   const totalRemaining = activeKeys.reduce((sum, key) => sum + (key.tokenQuota - key.tokenUsed), 0n);
+  const modelsByProvider = packageModels.reduce<Record<string, typeof packageModels>>((groups, model) => {
+    (groups[model.provider] ??= []).push(model);
+    return groups;
+  }, {});
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -101,6 +107,63 @@ export default async function PackagesPage() {
         <SummaryCard label="Paket aktif" value={activeKeys.length.toLocaleString("id-ID")} detail="API key siap digunakan" accent />
         <SummaryCard label="Total sisa token" value={formatNumber(totalRemaining)} detail="Dari seluruh paket aktif" />
         <SummaryCard label="Total pembelian" value={orders.length.toLocaleString("id-ID")} detail="Termasuk order tertunda" />
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.015]">
+        <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Model yang tersedia</h2>
+              <span className="rounded-full border border-accent/15 bg-accent/[0.07] px-2 py-0.5 font-mono text-[10px] text-accent">
+                {packageModels.length} model aktif
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Gunakan ID model berikut tanpa prefix <code className="text-foreground/80">wz/</code> pada endpoint paket.
+            </p>
+          </div>
+          <div className="shrink-0 rounded-lg border border-white/[0.07] bg-black/20 px-3 py-2">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Contoh model</span>
+            <code className="ml-2 text-[11px] text-accent">gemini-2.5-flash-lite</code>
+          </div>
+        </div>
+
+        {packageModels.length === 0 ? (
+          <div className="px-5 py-10 text-center text-xs text-muted-foreground">
+            Belum ada model paket yang aktif. Silakan hubungi admin.
+          </div>
+        ) : (
+          <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2 xl:grid-cols-3">
+            {Object.entries(modelsByProvider).map(([provider, models]) => (
+              <div key={provider} className="bg-[#090a08] p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
+                    <h3 className="text-xs font-semibold">{provider}</h3>
+                  </div>
+                  <span className="font-mono text-[9px] text-muted-foreground">{models.length} model</span>
+                </div>
+                <div className="space-y-2">
+                  {models.map((model) => (
+                    <div key={model.id} className="group rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition hover:border-accent/20 hover:bg-accent/[0.035]">
+                      <div className="flex items-center justify-between gap-3">
+                        <code className="min-w-0 truncate text-[11px] text-foreground/90" title={model.modelId}>{model.modelId}</code>
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${model.supportsStreaming ? "bg-emerald-400/10 text-emerald-300" : "bg-white/[0.05] text-muted-foreground"}`}>
+                          {model.supportsStreaming ? "stream" : "non-stream"}
+                        </span>
+                      </div>
+                      <div className="mt-1 truncate text-[9px] text-muted-foreground" title={model.name}>{model.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-col gap-2 border-t border-white/[0.07] bg-white/[0.015] px-5 py-4 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <span>Daftar mengikuti pengaturan admin dan dapat berubah sewaktu-waktu.</span>
+          <code className="text-foreground/70">GET {PACKAGE_BASE_URL}/models</code>
+        </div>
       </section>
 
       <section className="space-y-3">
