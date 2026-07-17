@@ -60,6 +60,15 @@ const NAV_MAIN_DEFS = [
     ),
   },
   {
+    key: "packages" as const,
+    href: "/dashboard/packages",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+        <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     key: "billing" as const,
     href: "/dashboard/wallet",
     icon: (
