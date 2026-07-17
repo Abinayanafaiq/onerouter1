@@ -28,13 +28,13 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "border-b border-white/[0.06] bg-background/80 backdrop-blur-xl"
+          ? "border-b border-white/[0.08] bg-background/90 backdrop-blur-xl"
           : "border-b border-transparent bg-transparent"
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
+          <span className="grid h-8 w-8 place-items-center rounded-sm bg-accent text-[11px] font-black text-background">
             9i
           </span>
           <div className="leading-tight">

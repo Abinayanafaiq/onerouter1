@@ -116,34 +116,31 @@ export default async function Home({
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="landing-shell relative min-h-screen overflow-hidden bg-background">
       <LandingHeader isAuthed={isAuthed} />
 
       {/* ============================================================
           HERO
           ============================================================ */}
-      <section className="relative px-4 pt-32 pb-20 sm:px-6 sm:pt-40 sm:pb-28">
+      <section className="landing-section relative min-h-[880px] px-4 pb-24 pt-32 sm:px-6 sm:pb-32 sm:pt-44 lg:flex lg:min-h-screen lg:items-center">
         {/* Background effects */}
         <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-60" aria-hidden />
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(60% 50% at 15% 0%, rgba(0,255,136,0.08) 0%, transparent 60%), radial-gradient(50% 50% at 100% 0%, rgba(99,102,241,0.10) 0%, transparent 55%), radial-gradient(80% 60% at 50% 120%, rgba(99,102,241,0.05) 0%, transparent 60%)",
+              "radial-gradient(55% 55% at 8% 10%, rgba(184,255,69,0.12) 0%, transparent 65%), radial-gradient(45% 50% at 100% 5%, rgba(255,112,72,0.10) 0%, transparent 60%)",
           }}
           aria-hidden
         />
-        <div
-          className="pointer-events-none absolute left-1/2 top-[-6%] -z-10 h-[480px] w-[760px] -translate-x-1/2 rounded-full blur-[150px] animate-pulse-soft"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%)" }}
-          aria-hidden
-        />
+        <div className="hero-orbit pointer-events-none absolute -right-72 top-16 -z-10 h-[760px] w-[760px] opacity-70" aria-hidden />
+        <div className="hero-orbit pointer-events-none absolute -right-48 top-40 -z-10 h-[520px] w-[520px] opacity-50" aria-hidden />
 
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-16 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
           {/* Left: copy */}
           <div className="animate-fade-up">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground backdrop-blur">
+            <div className="inline-flex items-center gap-2 border-l border-accent bg-accent/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground backdrop-blur">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
@@ -152,7 +149,7 @@ export default async function Home({
             </div>
 
             {/* Headline */}
-            <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+            <h1 className="landing-display mt-8 text-[clamp(3.25rem,7vw,6.8rem)] font-semibold leading-[0.88]">
               {t("headline1")}
               <br />
               <span className="gradient-text-accent">{t("headline2")}</span>
@@ -161,15 +158,15 @@ export default async function Home({
             </h1>
 
             {/* Subheadline */}
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-8 max-w-xl border-l border-white/15 pl-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               {t("subheadline")}
             </p>
 
             {/* CTAs */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm"
+                className="btn-accent group inline-flex items-center justify-center gap-2 rounded-sm px-7 py-4 text-sm"
               >
                 {t("ctaPrimary")}
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
@@ -178,7 +175,7 @@ export default async function Home({
               </Link>
               <Link
                 href="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
+                className="inline-flex items-center justify-center gap-2 rounded-sm border border-white/15 bg-white/[0.02] px-7 py-4 text-sm font-medium text-foreground transition hover:border-accent/40 hover:bg-accent/[0.04]"
               >
                 {t("ctaSecondary")}
               </Link>
@@ -188,7 +185,7 @@ export default async function Home({
             </p>
 
             {/* Mini trust row */}
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/[0.07] pt-5 text-[11px] uppercase tracking-wider text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -211,7 +208,8 @@ export default async function Home({
           </div>
 
           {/* Right: terminal */}
-          <div className="animate-fade-up-delay-2">
+          <div className="relative animate-fade-up-delay-2 lg:translate-y-8">
+            <div className="absolute -left-8 -top-8 hidden font-mono text-[10px] uppercase tracking-[0.25em] text-accent/60 lg:block">01 / API request</div>
             <HeroTerminal />
           </div>
         </div>
@@ -220,15 +218,15 @@ export default async function Home({
       {/* ============================================================
           LOGO STRIP / PROVIDERS
           ============================================================ */}
-      <section className="border-y border-white/[0.05] bg-white/[0.015] py-8">
+      <section className="landing-section border-y border-white/[0.05] bg-[#b8ff45] py-6 text-[#101208]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-black/55">
               {t("providersLabel")}
             </span>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"].map((p) => (
-                <span key={p} className="text-sm font-semibold tracking-tight text-muted-foreground transition hover:text-foreground">
+                <span key={p} className="text-sm font-bold tracking-tight text-black/70 transition hover:text-black">
                   {p}
                 </span>
               ))}
@@ -240,13 +238,13 @@ export default async function Home({
       {/* ============================================================
           DEVELOPER INFRASTRUCTURE
           ============================================================ */}
-      <section id="platform" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+      <section id="platform" className="landing-section scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+            <span className="eyebrow-line text-[11px] font-semibold uppercase tracking-wider text-accent">
               {t("infraEyebrow")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
               {t("infraTitle")}
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
@@ -258,7 +256,7 @@ export default async function Home({
             {INFRA_FEATURES.map((f, i) => (
               <div
                 key={f.title}
-                className={`glass card-hover rounded-2xl p-6 ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
+                className={`glass card-hover rounded-sm p-6 ${i === 0 ? "sm:col-span-2 lg:col-span-1" : ""} ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
               >
                 <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
                   {f.icon}
@@ -278,14 +276,14 @@ export default async function Home({
       {/* ============================================================
           MODEL SHOWCASE
           ============================================================ */}
-      <section id="models" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+      <section id="models" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-24 sm:px-6 sm:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              <span className="eyebrow-line text-[11px] font-semibold uppercase tracking-wider text-accent">
                 {t("catalogEyebrow")}
               </span>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
                 {t("catalogTitle")}
               </h2>
               <p className="mt-4 text-base text-muted-foreground">
@@ -317,7 +315,7 @@ export default async function Home({
       {/* ============================================================
           PERFORMANCE METRICS
           ============================================================ */}
-      <section className="relative px-4 py-24 sm:px-6 sm:py-28">
+      <section className="landing-section relative px-4 py-24 sm:px-6 sm:py-28">
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{ background: "radial-gradient(60% 80% at 50% 50%, rgba(99,102,241,0.05), transparent 70%)" }}
@@ -328,7 +326,7 @@ export default async function Home({
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               Performa
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
               Dibangun untuk skala dan kecepatan
             </h2>
           </div>
@@ -341,13 +339,13 @@ export default async function Home({
       {/* ============================================================
           DEVELOPER EXPERIENCE
           ============================================================ */}
-      <section className="px-4 py-24 sm:px-6 sm:py-32">
+      <section className="landing-section px-4 py-24 sm:px-6 sm:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               {t("dxEyebrow")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
               {t("dxTitle")}
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
@@ -364,13 +362,13 @@ export default async function Home({
       {/* ============================================================
           PRICING
           ============================================================ */}
-      <section id="pricing" className="scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+      <section id="pricing" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-24 sm:px-6 sm:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               {t("pricingEyebrow")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
               {t("pricingTitle")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
@@ -417,7 +415,7 @@ export default async function Home({
       {/* ============================================================
           TRUST SECTION
           ============================================================ */}
-      <section className="relative px-4 py-24 sm:px-6 sm:py-32">
+      <section className="landing-section relative px-4 py-24 sm:px-6 sm:py-32">
         <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-40" aria-hidden />
         <div
           className="pointer-events-none absolute inset-0 -z-10"
@@ -429,7 +427,7 @@ export default async function Home({
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               {t("trustEyebrow")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
               {t("trustTitle")}
             </h2>
           </div>
@@ -471,9 +469,9 @@ export default async function Home({
       {/* ============================================================
           FINAL CTA
           ============================================================ */}
-      <section className="px-4 py-24 sm:px-6">
+      <section className="landing-section px-4 py-24 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <div className="glass relative overflow-hidden rounded-3xl p-12 text-center sm:p-20">
+          <div className="glass relative overflow-hidden rounded-sm border-accent/20 p-10 text-center sm:p-20">
             <div
               className="pointer-events-none absolute inset-0 -z-10"
               style={{
@@ -492,7 +490,7 @@ export default async function Home({
               {modelCount} model · Bayar per token · 1 TOKS = Rp1.000
             </div>
 
-            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="landing-display mt-6 text-4xl font-semibold sm:text-6xl">
               Hemat biaya AI mulai hari ini
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">

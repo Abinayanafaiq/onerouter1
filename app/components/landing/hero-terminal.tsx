@@ -105,11 +105,11 @@ export function HeroTerminal() {
         initial={{ opacity: 0, y: 24, rotateX: 8 }}
         animate={{ opacity: 1, y: 0, rotateX: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="glass relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
+        className="glass relative overflow-hidden rounded-sm border border-white/[0.12] shadow-2xl"
         style={{ transformPerspective: 1200 }}
       >
         {/* Title bar */}
-        <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
+        <div className="flex items-center gap-2 border-b border-white/[0.08] bg-[#151712] px-4 py-3">
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]/80" />
           <span className="h-3 w-3 rounded-full bg-[#febc2e]/80" />
           <span className="h-3 w-3 rounded-full bg-[#28c840]/80" />
@@ -126,7 +126,7 @@ export function HeroTerminal() {
         {/* Body */}
         <div
           ref={scrollRef}
-          className="h-[300px] overflow-y-auto bg-black/40 p-4 font-mono text-[12px] leading-relaxed sm:text-[13px]"
+          className="h-[320px] overflow-y-auto bg-[#090a08] p-5 font-mono text-[11px] leading-relaxed sm:h-[350px] sm:text-[13px]"
         >
           <AnimatePresence>
             {lines.map((line) => (
