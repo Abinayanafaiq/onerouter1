@@ -4,6 +4,7 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
 import { createTransaction, isPakasirConfigured } from "@/app/lib/pakasir";
+import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +14,20 @@ export async function POST(request: Request) {
     }
 
     const userId = (session.user as { id: string }).id;
+    const rl = checkOrderCreateLimit(userId);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rl.retryAfter),
+            "X-RateLimit-Limit": String(rl.limit),
+            "X-RateLimit-Remaining": "0",
+          },
+        },
+      );
+    }
     const body = (await request.json()) as { packageId: string; whatsapp?: string };
 
     if (!body.packageId) {
