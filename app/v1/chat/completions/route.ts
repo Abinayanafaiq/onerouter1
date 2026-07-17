@@ -259,6 +259,22 @@ export async function POST(request: Request) {
   const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
   console.log("[v1/chat] forwarding to:", upstreamUrl, "stream:", isStream);
 
+  // Inject stream_options.include_usage so the upstream sends a usage chunk
+  // at the end of the SSE stream. Without this, most OpenAI-compatible
+  // providers (incl. limitrouter) never emit a `usage` field in streaming
+  // mode, leaving prompt/completion tokens at 0 and triggering a full
+  // refund to the user — while the operator is still charged upstream.
+  let streamOptionsInjected = false;
+  if (isStream) {
+    const existing = body.stream_options;
+    body.stream_options = {
+      ...(typeof existing === "object" && existing !== null ? existing : {}),
+      include_usage: true,
+    };
+    streamOptionsInjected = true;
+    console.log("[v1/chat] injected stream_options.include_usage=true");
+  }
+
   const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
@@ -280,7 +296,7 @@ export async function POST(request: Request) {
       const maskedLog = usingEnvFallback ? "env-fallback" : maskForKeyLog(currentKey.plaintext);
       console.log(`[v1/chat] attempt ${attempt + 1}/${MAX_ATTEMPTS} with key ${maskedLog}`);
 
-      const upstream = await fetch(upstreamUrl, {
+      let upstream = await fetch(upstreamUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -290,6 +306,47 @@ export async function POST(request: Request) {
       });
 
       console.log("[v1/chat] upstream status:", upstream.status);
+
+      // Fallback: if the upstream rejects the injected stream_options
+      // (e.g. provider doesn't support include_usage and returns 400),
+      // strip it and retry once on the SAME key. This is a request-shape
+      // issue, not a key issue — don't burn a failover attempt for it.
+      // Only trigger when the 400 is specifically about stream_options;
+      // unrelated 400s (e.g. unsupported_content) must not waste a retry.
+      if (upstream.status === 400 && streamOptionsInjected) {
+        const probe = await upstream.text().catch(() => "");
+        const probeLower = probe.toLowerCase();
+        const isStreamOptionsError =
+          probeLower.includes("stream_options") ||
+          probeLower.includes("include_usage") ||
+          probeLower.includes("stream_option");
+        if (isStreamOptionsError) {
+          console.warn(
+            `[v1/chat] 400 stream_options rejected (key ${maskedLog}); stripping & retrying on same key. probe=${probe.slice(0, 200)}`,
+          );
+          delete body.stream_options;
+          streamOptionsInjected = false;
+          upstream = await fetch(upstreamUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${currentKey.plaintext}`,
+            },
+            body: JSON.stringify(body),
+          });
+          console.log("[v1/chat] retry without stream_options, status:", upstream.status);
+        } else {
+          // Unrelated 400 — re-wrap so the non-retryable handler below can
+          // still read the body (we already consumed it via .text() above).
+          console.log(
+            `[v1/chat] 400 unrelated to stream_options (probe=${probe.slice(0, 200)}); skipping fallback`,
+          );
+          upstream = new Response(probe, {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
 
       const isRetryable = !usingEnvFallback && (
         upstream.status === 401 ||
@@ -370,8 +427,13 @@ export async function POST(request: Request) {
                         streamPromptTokens = parsed.usage.prompt_tokens || 0;
                         streamCompletionTokens = parsed.usage.completion_tokens || 0;
                       }
-                    } catch {
-                      // skip non-JSON chunks
+                    } catch (e) {
+                      // skip non-JSON chunks, but log so malformed SSE is visible
+                      console.warn(
+                        "[v1/chat] malformed SSE chunk skipped:",
+                        data.slice(0, 200),
+                        e instanceof Error ? e.message : e,
+                      );
                     }
                   }
                   controller.enqueue(encoder.encode(line + "\n"));
@@ -380,6 +442,11 @@ export async function POST(request: Request) {
               if (buffer) controller.enqueue(encoder.encode(buffer));
             } finally {
               // Settle the reservation against actual usage
+              if (streamPromptTokens === 0 && streamCompletionTokens === 0) {
+                console.warn(
+                  `[v1/chat LEAK SUSPECT] settle 0/0 tokens after ${Date.now() - startedAt}ms — operator may be charged by upstream without user billing`,
+                );
+              }
               const settleResult = await settleReservation({
                 userId: apiKey.userId,
                 apiKeyId: apiKey.id,
@@ -451,6 +518,11 @@ export async function POST(request: Request) {
       const completionTokensResp = data.usage?.completion_tokens || 0;
 
       // Settle the reservation against actual usage
+      if (promptTokensResp === 0 && completionTokensResp === 0) {
+        console.warn(
+          `[v1/chat LEAK SUSPECT] non-stream settle 0/0 tokens after ${Date.now() - startedAt}ms — operator may be charged by upstream without user billing`,
+        );
+      }
       const settleResult = await settleReservation({
         userId: apiKey.userId,
         apiKeyId: apiKey.id,
