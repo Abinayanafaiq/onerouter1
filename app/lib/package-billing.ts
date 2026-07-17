@@ -81,8 +81,9 @@ export async function settlePackageTokens(params: {
         return { ok: false as const, error: "Reservation sudah diproses" };
       }
 
-      const actual = BigInt(Math.min(totalTokens, Number(reservation.reservedTokens)));
-      const refund = reservation.reservedTokens - actual;
+      const actual = BigInt(totalTokens);
+      const refund = actual < reservation.reservedTokens ? reservation.reservedTokens - actual : 0n;
+      const extra = actual > reservation.reservedTokens ? actual - reservation.reservedTokens : 0n;
       const claimed = await tx.tokenReservation.updateMany({
         where: { id: reservation.id, status: "RESERVED" },
         data: {
@@ -94,10 +95,24 @@ export async function settlePackageTokens(params: {
       });
       if (claimed.count !== 1) return { ok: false as const, error: "Settlement bersamaan terdeteksi" };
 
+      if (refund > 0n) {
+        await tx.apiKey.update({
+          where: { id: params.apiKeyId },
+          data: { tokenUsed: { decrement: refund } },
+        });
+      } else if (extra > 0n) {
+        // Usage reported by the vendor can exceed the local reservation
+        // estimate. Charge the overage without ever crossing tokenQuota.
+        await tx.$executeRaw`
+          UPDATE "ApiKey"
+          SET "tokenUsed" = LEAST("tokenQuota", "tokenUsed" + ${extra}),
+              "updatedAt" = NOW()
+          WHERE "id" = ${params.apiKeyId}
+        `;
+      }
       const key = await tx.apiKey.update({
         where: { id: params.apiKeyId },
         data: {
-          tokenUsed: { decrement: refund },
           requestCount: { increment: 1 },
           requestToday: { increment: 1 },
           lastRequestAt: new Date(),
