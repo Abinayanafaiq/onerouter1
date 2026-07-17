@@ -104,7 +104,7 @@ function BarChart({
       ) : (
         <div className="space-y-2.5">
           {data.map((d, i) => (
-            <div key={d.label}>
+            <div key={`${i}-${d.label}`}>
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <span className="truncate max-w-[60%]" title={d.label}>{d.label}</span>
                 <span className="font-mono text-muted-foreground">
