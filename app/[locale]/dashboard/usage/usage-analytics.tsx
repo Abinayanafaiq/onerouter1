@@ -67,13 +67,13 @@ function fmtDateTime(iso: string): string {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { cls: string; label: string }> = {
-    success: { cls: "bg-green-500/15 text-green-500", label: "Success" },
-    rejected: { cls: "bg-yellow-500/15 text-yellow-600", label: "Rejected" },
-    error: { cls: "bg-red-500/15 text-red-500", label: "Error" },
+    success: { cls: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300", label: "Berhasil" },
+    rejected: { cls: "border-amber-400/20 bg-amber-400/10 text-amber-300", label: "Ditolak" },
+    error: { cls: "border-red-400/20 bg-red-400/10 text-red-300", label: "Gagal" },
   };
   const s = map[status] || { cls: "bg-gray-500/15 text-gray-500", label: status };
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.cls}`}>
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${s.cls}`}>
       {s.label}
     </span>
   );
@@ -95,23 +95,23 @@ function BarChart({
 }) {
   const max = Math.max(...data.map((d) => d.value), 0);
   return (
-    <div className="border rounded-lg p-4">
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+    <div className="min-h-64 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+      <h3 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {title}
       </h3>
       {data.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-4 text-center">Belum ada data</p>
+        <div className="grid min-h-36 place-items-center rounded-lg border border-dashed border-white/10 text-xs text-muted-foreground">Belum ada data</div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {data.map((d, i) => (
             <div key={`${i}-${d.label}`}>
-              <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="truncate max-w-[60%]" title={d.label}>{d.label}</span>
-                <span className="font-mono text-muted-foreground">
+              <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
+                <span className="max-w-[60%] truncate font-medium text-foreground/90" title={d.label}>{d.label}</span>
+                <span className="whitespace-nowrap font-mono text-muted-foreground">
                   {d.value.toLocaleString("id-ID", { maximumFractionDigits: 4 })} {unit}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -247,11 +247,12 @@ export function UsageAnalytics({
   return (
     <div className="space-y-6">
       {/* Overview metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Saldo Kredit"
           value={summary ? `${summary.balanceToks.toLocaleString("id-ID", { maximumFractionDigits: 4 })} ${TOKS_LABEL}` : "…"}
           accent={summary && summary.balance <= 0 ? "text-red-500" : "text-green-500"}
+          tone="accent"
         />
         <MetricCard
           label="Total Terpakai"
@@ -274,47 +275,48 @@ export function UsageAnalytics({
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <BarChart
-          title="Usage by Model (requests)"
+          title="Request berdasarkan model"
           data={modelRows.map((m) => ({ label: m.modelName, value: m.requests }))}
-          unit="req"
+          unit="request"
         />
         <BarChart
-          title="Cost by Model"
+          title="Biaya berdasarkan model"
           data={modelRows.map((m) => ({ label: m.modelName, value: idrToToks(m.totalCost) }))}
           unit={TOKS_LABEL}
         />
         <BarChart
-          title="Token Consumption by Model"
+          title="Token berdasarkan model"
           data={modelRows.map((m) => ({ label: m.modelName, value: m.totalTokens }))}
           unit="tok"
         />
       </div>
 
       {/* Usage by model table */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Usage by Model
-        </h2>
-        <div className="border rounded-lg overflow-x-auto">
+      <section className="overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.015]">
+        <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-4 sm:px-5">
+          <div><h2 className="text-sm font-semibold">Ringkasan per model</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Perbandingan volume dan biaya setiap model</p></div>
+          <span className="rounded-full bg-white/[0.05] px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{modelRows.length} model</span>
+        </div>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
+            <thead className="border-b border-white/[0.07] bg-white/[0.025]">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Model</th>
                 <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Provider</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Requests</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Request</th>
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Input</th>
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Output</th>
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Total Token</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Total Cost</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Avg/Req</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Total Biaya</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Rata-rata</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-white/[0.05]">
               {modelRows.map((m) => (
-                <tr key={`${m.model}-${m.provider}`} className="hover:bg-muted/30 transition">
-                  <td className="px-3 py-2 font-medium">{m.modelName}</td>
+                <tr key={`${m.model}-${m.provider}`} className="transition hover:bg-white/[0.025]">
+                  <td className="px-3 py-3 font-medium text-foreground/90">{m.modelName}</td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{m.provider}</td>
                   <td className="px-3 py-2 text-right font-mono text-xs">{m.requests.toLocaleString("id-ID")}</td>
                   <td className="px-3 py-2 text-right font-mono text-xs">{m.inputTokens.toLocaleString("id-ID")}</td>
@@ -334,23 +336,21 @@ export function UsageAnalytics({
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       {/* Activity history */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Activity History
-        </h2>
+      <section className="space-y-3">
+        <div><h2 className="text-sm font-semibold">Riwayat aktivitas</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Telusuri setiap request dan penggunaan kredit</p></div>
 
         {/* Filters */}
-        <div className="border rounded-lg p-3 mb-3 grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+        <div className="grid grid-cols-1 items-end gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:grid-cols-2 lg:grid-cols-6">
           <div>
             <label className="text-[10px] text-muted-foreground block mb-1">Dari Tanggal</label>
             <input
               type="date"
               value={filters.from}
               onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-              className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
+              className="h-9 w-full rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs outline-none transition focus:border-accent/40"
             />
           </div>
           <div>
@@ -359,7 +359,7 @@ export function UsageAnalytics({
               type="date"
               value={filters.to}
               onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-              className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
+              className="h-9 w-full rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs outline-none transition focus:border-accent/40"
             />
           </div>
           <div>
@@ -367,7 +367,7 @@ export function UsageAnalytics({
             <select
               value={filters.model}
               onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
-              className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
+              className="h-9 w-full rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs outline-none transition focus:border-accent/40"
             >
               <option value="">Semua</option>
               {modelOptions.map((m) => (
@@ -380,7 +380,7 @@ export function UsageAnalytics({
             <select
               value={filters.provider}
               onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value }))}
-              className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
+              className="h-9 w-full rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs outline-none transition focus:border-accent/40"
             >
               <option value="">Semua</option>
               {providerOptions.map((p) => (
@@ -393,33 +393,33 @@ export function UsageAnalytics({
             <select
               value={filters.status}
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-              className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
+              className="h-9 w-full rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs outline-none transition focus:border-accent/40"
             >
               <option value="">Semua</option>
-              <option value="success">Success</option>
-              <option value="rejected">Rejected</option>
-              <option value="error">Error</option>
+              <option value="success">Berhasil</option>
+              <option value="rejected">Ditolak</option>
+              <option value="error">Gagal</option>
             </select>
           </div>
           <div className="flex gap-2">
             <button
               onClick={applyFilters}
-              className="flex-1 bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90"
+              className="h-9 flex-1 rounded-lg bg-accent px-3 text-xs font-semibold text-black transition hover:brightness-110"
             >
               Terapkan
             </button>
             <button
               onClick={resetFilters}
-              className="border px-3 py-1.5 rounded-md text-xs hover:bg-muted"
+              className="h-9 rounded-lg border border-white/10 px-3 text-xs text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
             >
               Reset
             </button>
           </div>
         </div>
 
-        <div className="border rounded-lg overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-white/[0.015]">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
+            <thead className="border-b border-white/[0.07] bg-white/[0.025]">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Waktu</th>
                 <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Model</th>
@@ -427,12 +427,12 @@ export function UsageAnalytics({
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Input</th>
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Output</th>
                 <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Total</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Cost</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Biaya</th>
                 <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground">Status</th>
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-white/[0.05]">
               {loading ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground text-sm">
@@ -447,7 +447,7 @@ export function UsageAnalytics({
                 </tr>
               ) : (
                 logs.map((l) => (
-                  <tr key={l.id} className="hover:bg-muted/30 transition">
+                  <tr key={l.id} className="transition hover:bg-white/[0.025]">
                     <td className="px-3 py-2 text-xs whitespace-nowrap">{fmtDateTime(l.createdAt)}</td>
                     <td className="px-3 py-2 text-xs font-medium">{l.modelName}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{l.provider}</td>
@@ -472,7 +472,7 @@ export function UsageAnalytics({
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between mt-3 text-xs">
+        <div className="flex flex-col items-start justify-between gap-3 text-xs sm:flex-row sm:items-center">
           <span className="text-muted-foreground">
             {total.toLocaleString("id-ID")} total · Halaman {page} / {totalPages}
           </span>
@@ -493,20 +493,23 @@ export function UsageAnalytics({
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Detail modal */}
       {detail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={() => setDetail(null)}
         >
           <div
-            className="bg-background border rounded-xl p-5 max-w-md w-full space-y-3"
+            className="glass w-full max-w-md space-y-4 rounded-2xl p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-bold">Request Detail</h3>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Request</div>
+                <h3 className="mt-1 font-semibold">Detail pemakaian</h3>
+              </div>
               <button
                 onClick={() => setDetail(null)}
                 className="text-muted-foreground hover:text-foreground text-lg leading-none"
@@ -515,15 +518,15 @@ export function UsageAnalytics({
               </button>
             </div>
             <dl className="space-y-2 text-sm">
-              <DetailRow label="Timestamp" value={fmtDateTime(detail.createdAt)} />
+              <DetailRow label="Waktu" value={fmtDateTime(detail.createdAt)} />
               <DetailRow label="Model" value={detail.modelName} />
               <DetailRow label="Provider" value={detail.provider} />
               <DetailRow label="Status" value={<StatusBadge status={detail.status} />} />
-              <DetailRow label="Input Tokens" value={detail.inputTokens.toLocaleString("id-ID")} mono />
-              <DetailRow label="Output Tokens" value={detail.outputTokens.toLocaleString("id-ID")} mono />
-              <DetailRow label="Total Tokens" value={detail.totalTokens.toLocaleString("id-ID")} mono />
+              <DetailRow label="Token Input" value={detail.inputTokens.toLocaleString("id-ID")} mono />
+              <DetailRow label="Token Output" value={detail.outputTokens.toLocaleString("id-ID")} mono />
+              <DetailRow label="Total Token" value={detail.totalTokens.toLocaleString("id-ID")} mono />
               <DetailRow
-                label="Total Cost"
+                label="Total Biaya"
                 value={`${toks(detail.totalCost, 6)} ${TOKS_LABEL}`}
                 mono
                 accent="text-red-500"
@@ -536,7 +539,7 @@ export function UsageAnalytics({
               />
             </dl>
             <p className="text-[10px] text-muted-foreground border-t pt-2">
-              Isi prompt tidak disimpan demi privasi (kecuali diaktifkan oleh admin).
+              Isi prompt tidak disimpan demi menjaga privasi, kecuali diaktifkan oleh admin.
             </p>
           </div>
         </div>
@@ -545,13 +548,13 @@ export function UsageAnalytics({
       {summary && summary.balance <= 0 && (
         <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-4 text-center">
           <p className="text-sm text-red-500 font-medium">
-            Insufficient credits. Please top up your wallet balance to continue using AI services.
+            Kredit tidak mencukupi. Isi ulang saldo untuk melanjutkan penggunaan layanan AI.
           </p>
           <Link
             href="/dashboard/wallet"
             className="inline-block mt-2 bg-foreground text-background px-4 py-2 rounded-md text-xs font-medium hover:opacity-90"
           >
-            Top Up Credits
+            Isi Ulang Kredit
           </Link>
         </div>
       )}
@@ -559,11 +562,14 @@ export function UsageAnalytics({
   );
 }
 
-function MetricCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function MetricCard({ label, value, accent, tone }: { label: string; value: string; accent?: string; tone?: "accent" }) {
   return (
-    <div className="border rounded-lg p-4">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={`text-lg font-bold mt-1 ${accent ?? ""}`}>{value}</div>
+    <div className={`relative overflow-hidden rounded-xl border p-4 sm:p-5 ${tone === "accent" ? "border-accent/20 bg-accent/[0.055]" : "border-white/[0.08] bg-white/[0.02]"}`}>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{label}</div>
+        <span className={`h-1.5 w-1.5 rounded-full ${tone === "accent" ? "bg-accent shadow-[0_0_10px_var(--accent-glow)]" : "bg-white/25"}`} />
+      </div>
+      <div className={`text-xl font-semibold tracking-tight ${accent ?? ""}`}>{value}</div>
     </div>
   );
 }
