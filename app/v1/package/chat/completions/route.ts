@@ -4,10 +4,9 @@ import {
   errorResponse,
   estimatePromptTokens,
   getClientIp,
-  isModelAllowed,
-  resolveMasterModel,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
+import { resolvePackageModel } from "@/app/lib/package-models";
 import {
   releasePackageTokens,
   reservePackageTokens,
@@ -88,13 +87,13 @@ export async function POST(request: Request) {
 
   const requestedModel = typeof body.model === "string" ? body.model : "";
   if (!requestedModel) return apiError("Model wajib diisi.", 400, "invalid_request_error", "model_required");
-  const model = await resolveMasterModel(requestedModel);
+  const model = await resolvePackageModel(requestedModel);
   if (!model) return apiError(`Model '${requestedModel}' tidak didukung.`, 400, "invalid_request_error", "model_not_found");
-  if (!model.enabled || model.maintenanceMode) {
+  if (!model.enabled) {
     return apiError(`Model '${requestedModel}' sedang tidak tersedia.`, 503, "model_unavailable", "model_unavailable");
   }
-  if (!isModelAllowed(apiKey, model)) {
-    return apiError(`Model '${requestedModel}' tidak diizinkan untuk key ini.`, 403, "invalid_request_error", "model_not_allowed");
+  if (body.stream === true && !model.supportsStreaming) {
+    return apiError(`Model '${requestedModel}' tidak mendukung streaming.`, 400, "invalid_request_error", "streaming_not_supported");
   }
 
   const promptEstimate = estimatePromptTokens(body.messages);
@@ -107,7 +106,7 @@ export async function POST(request: Request) {
     return apiError("Kuota paket tidak mencukupi. Silakan beli paket baru.", 402, "insufficient_quota", "package_quota_exhausted");
   }
 
-  body.model = model.masterId;
+  body.model = model.upstreamId;
   const isStream = body.stream === true;
   if (isStream) {
     const existing = body.stream_options;

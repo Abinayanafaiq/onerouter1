@@ -1,5 +1,5 @@
 import { authenticateRequest, errorResponse, getClientIp } from "@/app/lib/proxy-utils";
-import { getAvailableModels } from "@/app/lib/models";
+import { getEnabledPackageModels } from "@/app/lib/package-models";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return errorResponse("Kuota paket telah habis. Silakan beli paket baru.", 402, "insufficient_quota", "package_quota_exhausted");
   }
 
-  const models = await getAvailableModels();
+  const models = await getEnabledPackageModels();
   const now = Math.floor(Date.now() / 1000);
   return Response.json({
     object: "list",

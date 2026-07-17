@@ -1,8 +1,10 @@
 import { getAllModels } from "@/app/lib/models";
 import { ModelEditor } from "./model-editor";
+import { getAllPackageModels } from "@/app/lib/package-models";
+import { PackageModelEditor } from "./package-model-editor";
 
 export default async function AdminModelsPage() {
-  const models = await getAllModels();
+  const [models, packageModels] = await Promise.all([getAllModels(), getAllPackageModels()]);
 
   return (
     <div className="space-y-4">
@@ -32,6 +34,29 @@ export default async function AdminModelsPage() {
               enabled: m.enabled,
               maintenanceMode: m.maintenanceMode,
               sort: m.sort,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="border-t border-neutral-800 pt-6">
+        <h2 className="text-lg font-bold text-neutral-100">Model Paket Token</h2>
+        <p className="mt-1 text-xs text-neutral-500">
+          Katalog terpisah untuk endpoint /v1/package. ID publik tidak memakai prefix wz/.
+        </p>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {packageModels.map((model) => (
+          <PackageModelEditor
+            key={model.id}
+            model={{
+              id: model.id,
+              modelId: model.modelId,
+              upstreamId: model.upstreamId,
+              name: model.name,
+              provider: model.provider,
+              enabled: model.enabled,
+              supportsStreaming: model.supportsStreaming,
             }}
           />
         ))}

@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma";
-import type { ResolvedModel } from "./models";
 import type { RequestMeta } from "./wallet";
+
+type PackageBillableModel = {
+  modelId: string;
+  provider: string;
+};
 
 export type PackageUsage = {
   inputTokens: number;
@@ -61,7 +65,7 @@ export async function settlePackageTokens(params: {
   reservationId: string;
   apiKeyId: string;
   userId: string;
-  resolvedModel: ResolvedModel;
+  resolvedModel: PackageBillableModel;
   inputTokens: number;
   outputTokens: number;
   requestMeta: RequestMeta;
@@ -105,7 +109,6 @@ export async function settlePackageTokens(params: {
         data: {
           apiKeyId: params.apiKeyId,
           userId: params.userId,
-          modelId: params.resolvedModel.id,
           model: params.resolvedModel.modelId,
           provider: params.resolvedModel.provider,
           status: "success",

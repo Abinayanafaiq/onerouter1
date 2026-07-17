@@ -46,6 +46,21 @@ model AIModel {
   usageLogs             UsageLog[]
 }
 
+model PackageModel {
+  id                String   @id @default(cuid())
+  modelId           String   @unique
+  upstreamId        String   @unique
+  name              String
+  provider          String   @default("WeizeRouter")
+  enabled           Boolean  @default(true)
+  supportsStreaming Boolean  @default(true)
+  sort              Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([enabled, sort])
+}
+
 model Wallet {
   id           String             @id @default(cuid())
   userId       String             @unique
