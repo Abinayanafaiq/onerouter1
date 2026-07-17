@@ -385,6 +385,25 @@ export function ApiKeyManager({
                       {k.ipWhitelist.length > 0 && <span>· IP whitelist ({k.ipWhitelist.length})</span>}
                       {k.allowedModels.length > 0 && <span>· Models: {k.allowedModels.join(", ")}</span>}
                     </div>
+                    {k.billingMode === "TOKEN_PACKAGE" && (
+                      <div className="mt-3 rounded-lg border border-accent/20 bg-accent/[0.05] p-3">
+                        <div className="flex items-center justify-between gap-3 text-[11px]">
+                          <span className="font-medium text-accent">Paket token</span>
+                          <span className="font-mono text-muted-foreground">
+                            {k.remainingTokens.toLocaleString("id-ID")} / {k.tokenQuota.toLocaleString("id-ID")} tersisa
+                          </span>
+                        </div>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                          <div
+                            className="h-full rounded-full bg-accent"
+                            style={{ width: `${k.tokenQuota > 0 ? Math.max(0, Math.min(100, (k.remainingTokens / k.tokenQuota) * 100)) : 0}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 text-[10px] text-muted-foreground">
+                          Base URL: <code className="text-foreground">https://9inference.cloud/v1/package</code>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                     <button

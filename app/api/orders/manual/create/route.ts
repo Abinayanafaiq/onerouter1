@@ -56,6 +56,9 @@ export async function POST(request: Request) {
           whatsapp,
           paymentMethod: "MANUAL",
           status: "PENDING",
+          productTypeSnapshot: pkg.productType,
+          tokenQuotaSnapshot: pkg.tokenQuota,
+          durationHoursSnapshot: pkg.durationDays * 24,
         },
       });
 

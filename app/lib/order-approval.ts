@@ -53,10 +53,13 @@ export async function approvePaidOrder(
 
     const now = new Date();
     const isWalletTopUp = order.packageId === WALLET_TOPUP_PACKAGE_ID;
+    const isTokenPackage = pkg.productType === "TOKEN_PACKAGE";
 
     // Pre-generate API key material for package orders (outside the tx is fine;
     // it's only persisted if the tx commits).
-    const expiresAt = new Date(now.getTime() + pkg.durationDays * 24 * 60 * 60 * 1000);
+    const quota = order.tokenQuotaSnapshot ?? pkg.tokenQuota;
+    const durationHours = order.durationHoursSnapshot ?? pkg.durationDays * 24;
+    const expiresAt = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
     const generated = isWalletTopUp ? null : generateApiKey();
 
     const result = await prisma.$transaction(async (tx) => {
@@ -64,14 +67,53 @@ export async function approvePaidOrder(
       //    PENDING -> APPROVED; concurrent/duplicate calls get count === 0.
       const claim = await tx.order.updateMany({
         where: { id: order.id, status: "PENDING" },
-        data: { status: "APPROVED", activatedAt: now },
+        data: {
+          status: "APPROVED",
+          activatedAt: now,
+          fulfilledAt: now,
+          productTypeSnapshot: order.productTypeSnapshot ?? pkg.productType,
+          tokenQuotaSnapshot: order.tokenQuotaSnapshot ?? pkg.tokenQuota,
+          durationHoursSnapshot: order.durationHoursSnapshot ?? pkg.durationDays * 24,
+        },
       });
       if (claim.count === 0) {
         console.log(`[approvePaidOrder] lost idempotency race, already claimed: ${orderId}`);
         return { alreadyProcessed: true as const, newBalance: null };
       }
 
-      // 2. Ensure a wallet exists for the user (exactly one, keyed by userId).
+      // Token packages grant quota only. They must never credit the PAYG wallet.
+      if (isTokenPackage && generated) {
+        const apiKey = await tx.apiKey.create({
+          data: {
+            userId: order.userId,
+            key: generated.key,
+            keyHash: generated.keyHash,
+            prefix: generated.prefix,
+            last4: generated.last4,
+            masterApiKey: null,
+            name: pkg.name,
+            label: `${pkg.name} - ${paymentMethodLabel}`,
+            enabled: true,
+            tokenQuota: quota,
+            tokenUsed: 0,
+            billingMode: "TOKEN_PACKAGE",
+            expiresAt,
+            isActive: true,
+            lastResetDay: now,
+          },
+        });
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            expiresAt,
+            apiKeyId: apiKey.id,
+            adminNote: `Paket token diaktifkan via ${paymentMethodLabel}`,
+          },
+        });
+        return { alreadyProcessed: false as const, newBalance: null };
+      }
+
+      // Legacy packages retain their historical wallet-credit behavior.
       const wallet = await tx.wallet.upsert({
         where: { userId: order.userId },
         update: {},
@@ -117,7 +159,8 @@ export async function approvePaidOrder(
             name: `${pkg.name}`,
             label: `${pkg.name} - ${paymentMethodLabel}`,
             enabled: true,
-            tokenQuota: pkg.tokenQuota,
+             tokenQuota: quota,
+             billingMode: "LEGACY",
             expiresAt,
             isActive: true,
             lastResetDay: now,

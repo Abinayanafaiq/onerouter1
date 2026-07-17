@@ -64,6 +64,9 @@ export async function POST(request: Request) {
           cryptoAmount: amountResult.usdtAmount,
           cryptoExpectedAmount: amountResult.usdtAmount,
           status: "PENDING",
+          productTypeSnapshot: pkg.productType,
+          tokenQuotaSnapshot: pkg.tokenQuota,
+          durationHoursSnapshot: pkg.durationDays * 24,
         },
       });
       await tx.package.update({

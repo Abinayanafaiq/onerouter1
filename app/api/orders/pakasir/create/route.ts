@@ -61,6 +61,9 @@ export async function POST(request: Request) {
         paymentMethod: "PAKASIR",
         pakasirMethod: "qris",
         status: "PENDING",
+        productTypeSnapshot: pkg.productType,
+        tokenQuotaSnapshot: pkg.tokenQuota,
+        durationHoursSnapshot: pkg.durationDays * 24,
       },
     });
 

@@ -60,6 +60,9 @@ export async function POST(request: Request) {
           paymentMethod: "CRYPTO",
           cryptoChain: chainDef.chain,
           status: "PENDING",
+          productTypeSnapshot: pkg.productType,
+          tokenQuotaSnapshot: pkg.tokenQuota,
+          durationHoursSnapshot: pkg.durationDays * 24,
         },
       });
 

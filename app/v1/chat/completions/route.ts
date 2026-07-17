@@ -65,6 +65,14 @@ export async function POST(request: Request) {
     return errorResponse("Invalid API key or key expired", 401, "authentication_error");
   }
   console.log("[v1/chat] auth ok, keyId:", apiKey.id);
+  if (apiKey.billingMode === "TOKEN_PACKAGE") {
+    return errorResponse(
+      "API key paket hanya dapat digunakan melalui /v1/package/chat/completions.",
+      403,
+      "invalid_api_key_mode",
+      "package_endpoint_required",
+    );
+  }
 
   // 2. Rate limit (per API key)
   const keyRateLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);

@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SiteHeader } from "@/app/components/site-header";
 import { ModelPricingTable } from "@/app/components/model-pricing-table";
 import { FaqJsonLd } from "@/app/components/faq-json-ld";
+import { getAllPackages } from "@/app/lib/packages";
 
 export const dynamic = "force-dynamic";
 
@@ -159,6 +160,7 @@ export default async function PricingPage({
   setRequestLocale(locale);
   const t = await getTranslations("Pricing");
   const tc = await getTranslations("Common");
+  const tokenPackages = await getAllPackages();
 
   return (
     <div className="min-h-screen">
@@ -248,6 +250,39 @@ export default async function PricingPage({
           <p className="mt-4 text-[12px] text-muted-foreground">
             Tanpa kartu kredit · Batal kapan saja · Jaminan refund 14 hari
           </p>
+        </div>
+      </section>
+
+      <section className="px-4 py-16 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-10 text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Paket Token 24 Jam</span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Kuota besar, harga tetap</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Setiap pembelian menghasilkan API key khusus. Kuota menghitung token input dan output, aktif selama 24 jam, dan tidak memakai saldo PAYG.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {tokenPackages.map((pkg) => (
+              <article key={pkg.id} className={`glass relative overflow-hidden rounded-2xl p-6 ${pkg.highlight ? "border-accent/30" : ""}`}>
+                {pkg.highlight && <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">Paling hemat</span>}
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{pkg.name}</div>
+                <div className="mt-5 text-3xl font-bold tracking-tight">Rp{pkg.price.toLocaleString("id-ID")}</div>
+                <div className="mt-1 text-xs text-muted-foreground">sekali bayar · aktif 24 jam</div>
+                <div className="mt-6 border-y border-white/[0.07] py-4">
+                  <div className="text-2xl font-semibold text-accent">{Number(pkg.tokenQuota / 1_000_000n)} juta</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">token input + output</div>
+                </div>
+                <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
+                  {pkg.features.map((feature) => <li key={feature} className="flex gap-2"><span className="text-accent">✓</span>{feature}</li>)}
+                </ul>
+                <Link href={`/checkout/${pkg.id}`} className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${pkg.highlight ? "bg-accent text-black hover:brightness-110" : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"}`}>
+                  Beli {pkg.name}
+                </Link>
+              </article>
+            ))}
+          </div>
+          <p className="mt-5 text-center text-[11px] text-muted-foreground">Saat kuota habis atau masa aktif berakhir, API key berhenti dan tidak otomatis memakai saldo PAYG.</p>
         </div>
       </section>
 

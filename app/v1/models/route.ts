@@ -32,6 +32,9 @@ export async function GET(request: Request) {
   if (!apiKey) {
     return errorResponse("Invalid API key", 401, "authentication_error");
   }
+  if (apiKey.billingMode === "TOKEN_PACKAGE") {
+    return errorResponse("Gunakan /v1/package/models untuk API key paket.", 403, "invalid_api_key_mode", "package_endpoint_required");
+  }
 
   const models = await getAvailableModels();
 

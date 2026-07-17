@@ -21,6 +21,10 @@ export type ApiKeyView = {
   rateLimit: number | null;
   allowedModels: string[];
   requestCount: number;
+  billingMode: string;
+  tokenQuota: number;
+  tokenUsed: number;
+  remainingTokens: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -56,6 +60,10 @@ export function toApiKeyView(k: ApiKeyRow): ApiKeyView {
     rateLimit: k.rateLimit ?? null,
     allowedModels: k.allowedModels ?? [],
     requestCount: k.requestCount,
+    billingMode: k.billingMode,
+    tokenQuota: Number(k.tokenQuota),
+    tokenUsed: Number(k.tokenUsed),
+    remainingTokens: Number(k.tokenQuota > k.tokenUsed ? k.tokenQuota - k.tokenUsed : 0n),
     createdAt: k.createdAt.toISOString(),
     updatedAt: k.updatedAt.toISOString(),
   };
