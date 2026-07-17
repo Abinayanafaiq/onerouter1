@@ -177,7 +177,9 @@
     "errorConfirm": "Password confirmation does not match",
     "errorEmailTaken": "Email already registered, please sign in",
     "errorInvalid": "Invalid email or password",
-    "errorBotCheck": "Security verification failed. Please reload the page and try again."
+    "errorBotCheck": "Security verification failed. Please reload the page and try again.",
+    "errorRateLimitLogin": "Too many login attempts. Try again in {minutes} minutes.",
+    "errorRateLimitRegister": "Too many registrations from this device (max {count} per hour). Try again in {minutes} minutes."
   },
   "Dashboard": {
     "overview": "Overview",
