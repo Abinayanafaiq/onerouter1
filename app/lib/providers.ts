@@ -19,7 +19,8 @@ export const PROVIDER_MODEL_MAP = {
   DeepSeek: ["deepseek-v4-flash", "deepseek-v4-pro"],
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast"],
   MiniMax: ["minimax-m3"],
-  "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast"],
+  "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast", "kimi-k3"],
+  Xiaomi: ["mimo-v2.5-pro"],
 } as const;
 
 export type ProviderName = keyof typeof PROVIDER_MODEL_MAP;
@@ -193,5 +194,29 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 10,
+  },
+  {
+    modelId: "kimi-k3",
+    masterId: "kimi-k3",
+    name: "Kimi K3",
+    provider: "Moonshot AI",
+    description: "Kimi K3 oleh Moonshot AI untuk reasoning dan general task",
+    contextWindow: "256K",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 11,
+  },
+  {
+    modelId: "mimo-v2.5-pro",
+    masterId: "mimo-v2.5-pro",
+    name: "MiMo V2.5 Pro",
+    provider: "Xiaomi",
+    description: "MiMo V2.5 Pro oleh Xiaomi untuk reasoning dan coding",
+    contextWindow: "256K",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 12,
   },
 ];
