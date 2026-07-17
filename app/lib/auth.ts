@@ -6,6 +6,7 @@ import { prisma } from "./prisma";
 import { ADMIN_EMAIL } from "./constants";
 import { checkLoginRateLimit } from "./rate-limit";
 import { getClientIp } from "./proxy-utils";
+import { getAdmin2FASettings, verifyAdmin2FAAnswer } from "./admin-2fa";
 
 /**
  * Custom error thrown by `authorize` when the per-IP or per-email brute-force
@@ -24,6 +25,42 @@ class RateLimitError extends CredentialsSignin {
   code = "rate_limited";
 }
 
+/**
+ * Thrown when an admin user has 2FA configured but no `securityAnswer`
+ * credential was supplied with the sign-in attempt. The login server action
+ * catches this to transition the client form from "step 1: password" to
+ * "step 2: security question" — it surfaces the question text to the user
+ * and re-submits with the answer included.
+ *
+ * This error does NOT consume a rate-limit slot by itself: the credential
+ * check (password) succeeded, so we don't want to penalize the admin for
+ * the normal 2-step flow. The slot is consumed only when the answer is
+ * actually checked (and potentially fails) — see Admin2FAFailedError.
+ *
+ * The question text is attached via `cause` rather than `code` to avoid
+ * putting it in the URL (it could be long or contain spaces). The server
+ * action reads it via `(err as Admin2FARequiredError).question`.
+ */
+class Admin2FARequiredError extends CredentialsSignin {
+  code = "admin_2fa_required";
+  question: string;
+  constructor(question: string) {
+    super();
+    this.question = question;
+  }
+}
+
+/**
+ * Thrown when the admin provided a security answer that does NOT match the
+ * stored hash. This DOES consume a rate-limit slot (counted in the authorize
+ * flow before this is thrown) — so repeated wrong answers hit the same 5/10
+ * minute per-email bucket as wrong passwords, locking the admin out after
+ * 5 combined failures.
+ */
+class Admin2FAFailedError extends CredentialsSignin {
+  code = "admin_2fa_failed";
+}
+
 export const authConfig: NextAuthConfig = {
   providers: [
     Credentials({
@@ -31,6 +68,9 @@ export const authConfig: NextAuthConfig = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        // Optional: only supplied at step 2 of the admin 2FA flow.
+        // For normal user login and admin step-1, this is undefined.
+        securityAnswer: { label: "Security Answer", type: "text" },
       },
       async authorize(credentials, request) {
         const email = credentials?.email;
@@ -50,6 +90,11 @@ export const authConfig: NextAuthConfig = {
         //   - NextAuth's default sign-in page (if any) -> this callback.
         // Rate-limiting only in the server action would leave the direct API
         // path unprotected. Putting it here closes that gap.
+        //
+        // Every call to authorize — including the admin 2FA step-2 retry with
+        // a wrong answer — consumes a slot. This is intentional: a wrong
+        // answer is just as much of a "failed sign-in attempt" as a wrong
+        // password from a brute-force perspective.
         const clientIp = getClientIp(request.headers) || "unknown";
         const rl = checkLoginRateLimit(clientIp, normalizedEmail);
         if (!rl.allowed) {
@@ -63,6 +108,35 @@ export const authConfig: NextAuthConfig = {
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
+
+        // Admin 2FA gate. Only applies to ADMIN role AND only when the admin
+        // has configured a security question + answer via /admin/settings.
+        // Until configured, admin login proceeds without 2FA (the "opsional
+        // sampai di-set" semantics agreed with the operator).
+        if (user.role === "ADMIN") {
+          const settings = await getAdmin2FASettings();
+          if (settings.enabled) {
+            const providedAnswer = credentials?.securityAnswer;
+            // Step 1 of admin login: no answer supplied yet. Tell the client
+            // to prompt for the security question. This does NOT count as a
+            // failure — we throw Admin2FARequiredError BEFORE any sensitive
+            // state change. But the rate-limit slot was already consumed at
+            // the top of this function; that's acceptable: the legitimate
+            // admin reaches this point exactly once per login session, then
+            // supplies the answer, and the second authorize call consumes
+            // a second slot. Two slots per legit admin login is fine.
+            if (typeof providedAnswer !== "string" || !providedAnswer.trim()) {
+              throw new Admin2FARequiredError(settings.question);
+            }
+            // Step 2: verify the answer. A wrong answer is a real failed
+            // attempt — the rate-limit slot consumed at the top of this
+            // function counts toward the 5/10-minute per-email lockout.
+            const ok = await verifyAdmin2FAAnswer(providedAnswer);
+            if (!ok) {
+              throw new Admin2FAFailedError();
+            }
+          }
+        }
 
         return {
           id: user.id,
@@ -116,4 +190,4 @@ export async function isAdmin(): Promise<boolean> {
   return session?.user?.role === "ADMIN";
 }
 
-export { RateLimitError };
+export { RateLimitError, Admin2FARequiredError, Admin2FAFailedError };

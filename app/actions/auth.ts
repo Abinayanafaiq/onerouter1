@@ -5,7 +5,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/app/lib/prisma";
-import { signIn, RateLimitError } from "@/app/lib/auth";
+import {
+  signIn,
+  RateLimitError,
+  Admin2FARequiredError,
+  Admin2FAFailedError,
+} from "@/app/lib/auth";
 import { verifyTurnstile } from "@/app/lib/turnstile";
 import { checkRegisterRateLimit, peekLoginRateLimit } from "@/app/lib/rate-limit";
 import { getClientIp } from "@/app/lib/proxy-utils";
@@ -77,12 +82,26 @@ export async function registerAction(formData: FormData) {
   redirect({ href: "/dashboard", locale });
 }
 
-export async function loginAction(formData: FormData) {
+/**
+ * Result shape for the login server action. The login form's useActionState
+ * inspects this to decide whether to render the step-1 (email+password) form
+ * or the step-2 (security question) form for admin 2FA.
+ */
+export type LoginActionResult =
+  | { error: string }
+  | { needs2FA: true; question: string }
+  | null;
+
+export async function loginAction(formData: FormData): Promise<LoginActionResult> {
   const t = await getTranslations("Auth");
   const locale = await getLocale();
   const email = (formData.get("email") as string | null)?.toLowerCase().trim();
   const password = formData.get("password") as string | null;
   const turnstileToken = formData.get("cf-turnstile-response") as string | null;
+  // The securityAnswer field is only populated at step 2 of the admin 2FA
+  // flow. On step 1 (normal user login, or admin login before the question
+  // is shown) it is absent / empty.
+  const securityAnswer = (formData.get("securityAnswer") as string | null) || "";
   if (!email || !password) return { error: t("errorRequired") };
 
   const ts = await verifyTurnstile(turnstileToken, await headers());
@@ -101,23 +120,30 @@ export async function loginAction(formData: FormData) {
   // catch it below and peek the (already-incremented) counter to surface a
   // "try again in N minutes" message to the user. The peek is read-only so
   // it doesn't double-count.
+  //
+  // Admin 2FA also lives inside `authorize`: step 1 throws
+  // `Admin2FARequiredError` (with the question attached), step 2 throws
+  // `Admin2FAFailedError` on a wrong answer. We catch both here and shape
+  // the response so the client form can transition between steps.
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     const path = user?.role === "ADMIN" ? "/admin" : "/dashboard";
     await signIn("credentials", {
       email,
       password,
+      // Pass through the securityAnswer if present. For non-admin users and
+      // for admin step 1, this is an empty string — authorize ignores it.
+      // Authorize only checks it when the user is ADMIN AND 2FA is enabled.
+      securityAnswer,
       redirectTo: `/${locale}${path}`,
     });
   } catch (e) {
     const digest = (e as { digest?: string })?.digest;
     if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) throw e;
 
-    // Surface a specific "rate limited" message when authorize threw
-    // RateLimitError. We re-derive the retry-after from the counter state
-    // (read-only peek) so the user knows how long to wait. Without this,
-    // they'd see the generic "invalid credentials" message even though the
-    // real reason is throttling — frustrating and confusing.
+    // Rate-limited (too many failed attempts, either wrong passwords or
+    // wrong 2FA answers — they share the same per-email bucket by design).
+    // Peek the counter to surface a retry-after hint to the user.
     if (e instanceof RateLimitError) {
       const reqHeaders = await headers();
       const clientIp = getClientIp(reqHeaders) || "unknown";
@@ -126,6 +152,25 @@ export async function loginAction(formData: FormData) {
       return { error: t("errorRateLimitLogin", { minutes }) };
     }
 
+    // Admin 2FA step 1: password was correct, user is ADMIN with 2FA
+    // configured, but no securityAnswer was supplied. Surface the question
+    // to the client so it can render the step-2 form. This is NOT an error
+    // from the user's perspective — it's a normal flow transition.
+    if (e instanceof Admin2FARequiredError) {
+      return { needs2FA: true, question: e.question };
+    }
+
+    // Admin 2FA step 2: the supplied answer was wrong. Show a generic
+    // "invalid" message — we deliberately do NOT say "wrong answer" vs
+    // "wrong password" to avoid leaking which step the attacker is on.
+    // The rate-limit slot consumed inside authorize counts toward the
+    // shared 5/10-minute per-email lockout.
+    if (e instanceof Admin2FAFailedError) {
+      return { error: t("errorInvalid") };
+    }
+
     return { error: t("errorInvalid") };
   }
+
+  return null;
 }

@@ -179,7 +179,10 @@
     "errorInvalid": "Email atau password salah",
     "errorBotCheck": "Verifikasi keamanan gagal. Silakan muat ulang halaman lalu coba lagi.",
     "errorRateLimitLogin": "Terlalu banyak percobaan masuk. Coba lagi dalam {minutes} menit.",
-    "errorRateLimitRegister": "Terlalu banyak pendaftaran dari perangkat ini (maksimal {count} per jam). Coba lagi dalam {minutes} menit."
+    "errorRateLimitRegister": "Terlalu banyak pendaftaran dari perangkat ini (maksimal {count} per jam). Coba lagi dalam {minutes} menit.",
+    "admin2FAHeader": "Verifikasi Tambahan Admin",
+    "admin2FAAnswerLabel": "Jawaban",
+    "admin2FAVerifyButton": "Verifikasi"
   },
   "Dashboard": {
     "overview": "Overview",

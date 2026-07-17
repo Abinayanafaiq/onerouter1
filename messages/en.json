@@ -179,7 +179,10 @@
     "errorInvalid": "Invalid email or password",
     "errorBotCheck": "Security verification failed. Please reload the page and try again.",
     "errorRateLimitLogin": "Too many login attempts. Try again in {minutes} minutes.",
-    "errorRateLimitRegister": "Too many registrations from this device (max {count} per hour). Try again in {minutes} minutes."
+    "errorRateLimitRegister": "Too many registrations from this device (max {count} per hour). Try again in {minutes} minutes.",
+    "admin2FAHeader": "Admin Additional Verification",
+    "admin2FAAnswerLabel": "Answer",
+    "admin2FAVerifyButton": "Verify"
   },
   "Dashboard": {
     "overview": "Overview",

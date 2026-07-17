@@ -1,15 +1,18 @@
 import { getPakasirSettings } from "@/app/lib/pakasir";
 import { getBscSettings } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
+import { getAdmin2FASettings } from "@/app/lib/admin-2fa";
 import { PakasirForm } from "./pakasir-form";
 import { BscForm } from "./bsc-form";
 import { TelegramForm } from "./telegram-form";
+import { Admin2FAForm } from "./admin-2fa-form";
 
 export default async function AdminSettingsPage() {
-  const [settings, bscSettings, telegramUrl] = await Promise.all([
+  const [settings, bscSettings, telegramUrl, admin2FA] = await Promise.all([
     getPakasirSettings(),
     getBscSettings(),
     getTelegramGroupUrl(),
+    getAdmin2FASettings(),
   ]);
   const maskedApiKey = settings.apiKey
     ? `${settings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, settings.apiKey.length - 8))}${settings.apiKey.slice(-4)}`
@@ -23,6 +26,13 @@ export default async function AdminSettingsPage() {
           Konfigurasi payment gateway & integrasi
         </p>
       </div>
+      <Admin2FAForm
+        initial={{
+          enabled: admin2FA.enabled,
+          question: admin2FA.question,
+          answerSet: !!admin2FA.answerHash,
+        }}
+      />
       <PakasirForm
         initial={{
           slug: settings.slug,
