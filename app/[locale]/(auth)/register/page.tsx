@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { registerAction } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
+import { TurnstileWidget } from "@/app/components/turnstile-widget";
 
 export default function RegisterPage() {
   const t = useTranslations("Auth");
@@ -76,6 +77,7 @@ export default function RegisterPage() {
             className="w-full px-3 py-2 border rounded-md bg-background text-sm"
           />
         </div>
+        <TurnstileWidget className="flex justify-center" />
         {state?.error && (
           <p className="text-sm text-red-600">{state.error}</p>
         )}

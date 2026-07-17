@@ -176,7 +176,8 @@
     "errorMinPassword": "Password must be at least 6 characters",
     "errorConfirm": "Password confirmation does not match",
     "errorEmailTaken": "Email already registered, please sign in",
-    "errorInvalid": "Invalid email or password"
+    "errorInvalid": "Invalid email or password",
+    "errorBotCheck": "Security verification failed. Please reload the page and try again."
   },
   "Dashboard": {
     "overview": "Overview",

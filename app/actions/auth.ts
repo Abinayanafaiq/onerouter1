@@ -2,9 +2,11 @@
 
 import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/app/lib/prisma";
 import { signIn } from "@/app/lib/auth";
+import { verifyTurnstile } from "@/app/lib/turnstile";
 
 export async function registerAction(formData: FormData) {
   const t = await getTranslations("Auth");
@@ -13,6 +15,7 @@ export async function registerAction(formData: FormData) {
   const email = (formData.get("email") as string | null)?.toLowerCase().trim();
   const password = formData.get("password") as string | null;
   const confirm = formData.get("confirm") as string | null;
+  const turnstileToken = formData.get("cf-turnstile-response") as string | null;
 
   if (!email || !password) {
     return { error: t("errorRequired") };
@@ -22,6 +25,11 @@ export async function registerAction(formData: FormData) {
   }
   if (password !== confirm) {
     return { error: t("errorConfirm") };
+  }
+
+  const ts = await verifyTurnstile(turnstileToken, await headers());
+  if (!ts.success) {
+    return { error: t("errorBotCheck") };
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -52,7 +60,14 @@ export async function loginAction(formData: FormData) {
   const locale = await getLocale();
   const email = (formData.get("email") as string | null)?.toLowerCase().trim();
   const password = formData.get("password") as string | null;
+  const turnstileToken = formData.get("cf-turnstile-response") as string | null;
   if (!email || !password) return { error: t("errorRequired") };
+
+  const ts = await verifyTurnstile(turnstileToken, await headers());
+  if (!ts.success) {
+    return { error: t("errorBotCheck") };
+  }
+
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     const path = user?.role === "ADMIN" ? "/admin" : "/dashboard";

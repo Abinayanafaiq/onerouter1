@@ -176,7 +176,8 @@
     "errorMinPassword": "Password minimal 6 karakter",
     "errorConfirm": "Konfirmasi password tidak cocok",
     "errorEmailTaken": "Email sudah terdaftar, silakan login",
-    "errorInvalid": "Email atau password salah"
+    "errorInvalid": "Email atau password salah",
+    "errorBotCheck": "Verifikasi keamanan gagal. Silakan muat ulang halaman lalu coba lagi."
   },
   "Dashboard": {
     "overview": "Overview",
