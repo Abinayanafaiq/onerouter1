@@ -5,27 +5,36 @@ import { PublicShell } from "@/app/components/public-shell";
 import { BreadcrumbJsonLd } from "@/app/components/breadcrumb-json-ld";
 import { getAllPosts, getPostBySlug } from "@/app/lib/blog-posts";
 import { getSiteUrl } from "@/app/lib/site";
+import { serializeJsonLd } from "@/app/lib/json-ld";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }> };
 
 export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return { title: "Artikel tidak ditemukan" };
   return {
     title: post.title,
     description: post.description,
     keywords: post.keywords,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: {
+      canonical: `/${locale}/blog/${post.slug}`,
+      languages: {
+        "id-ID": `/id/blog/${post.slug}`,
+        "en-US": `/en/blog/${post.slug}`,
+        "x-default": `/id/blog/${post.slug}`,
+      },
+    },
     openGraph: {
       title: post.title,
       description: post.description,
       type: "article",
-      url: `/blog/${post.slug}`,
+      url: `/${locale}/blog/${post.slug}`,
+      locale: locale === "en" ? "en_US" : "id_ID",
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
     },
@@ -38,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
@@ -58,23 +67,23 @@ export default async function BlogPostPage({ params }: Props) {
       name: "9inference",
       url: base,
     },
-    mainEntityOfPage: `${base}/blog/${post.slug}`,
+    mainEntityOfPage: `${base}/${locale}/blog/${post.slug}`,
     keywords: post.keywords.join(", "),
-    inLanguage: "id-ID",
+    inLanguage: locale === "en" ? "en-US" : "id-ID",
   };
 
   return (
     <PublicShell>
       <BreadcrumbJsonLd
         items={[
-          { name: "Beranda", path: "/" },
-          { name: "Blog", path: "/blog" },
-          { name: post.title, path: `/blog/${post.slug}` },
+          { name: "Beranda", path: `/${locale}` },
+          { name: "Blog", path: `/${locale}/blog` },
+          { name: post.title, path: `/${locale}/blog/${post.slug}` },
         ]}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleLd) }}
       />
 
       <article className="px-4 pb-20 pt-28 sm:px-6">

@@ -62,14 +62,6 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  alternates: {
-    canonical: "/",
-    languages: {
-      "id-ID": "/id",
-      "en-US": "/en",
-      "x-default": "/id",
-    },
-  },
   openGraph: {
     type: "website",
     locale: "id_ID",

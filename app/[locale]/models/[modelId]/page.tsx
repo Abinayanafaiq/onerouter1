@@ -6,16 +6,17 @@ import { BreadcrumbJsonLd } from "@/app/components/breadcrumb-json-ld";
 import { getEnabledModels, getModelByModelId } from "@/app/lib/models";
 import { toModelCardData } from "@/app/lib/model-card-data";
 import { getSiteUrl } from "@/app/lib/site";
+import { serializeJsonLd } from "@/app/lib/json-ld";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ modelId: string }> };
+type Props = { params: Promise<{ locale: string; modelId: string }> };
 
 const TOKS_TO_RP = 1000;
 const TOKS_TO_USD = 0.0553;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { modelId: raw } = await params;
+  const { locale, modelId: raw } = await params;
   const modelId = decodeURIComponent(raw);
   const model = await getModelByModelId(modelId);
   if (!model || !model.enabled) {
@@ -35,17 +36,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "harga token AI",
       m.modelId,
     ],
-    alternates: { canonical: `/models/${encodeURIComponent(m.modelId)}` },
+    alternates: {
+      canonical: `/${locale}/models/${encodeURIComponent(m.modelId)}`,
+      languages: {
+        "id-ID": `/id/models/${encodeURIComponent(m.modelId)}`,
+        "en-US": `/en/models/${encodeURIComponent(m.modelId)}`,
+        "x-default": `/id/models/${encodeURIComponent(m.modelId)}`,
+      },
+    },
     openGraph: {
       title: `${title} | 9inference`,
       description,
-      url: `/models/${encodeURIComponent(m.modelId)}`,
+      url: `/${locale}/models/${encodeURIComponent(m.modelId)}`,
+      locale: locale === "en" ? "en_US" : "id_ID",
     },
   };
 }
 
 export default async function PublicModelDetailPage({ params }: Props) {
-  const { modelId: raw } = await params;
+  const { locale, modelId: raw } = await params;
   const modelId = decodeURIComponent(raw);
   const model = await getModelByModelId(modelId);
   if (!model || !model.enabled) notFound();
@@ -65,7 +74,7 @@ export default async function PublicModelDetailPage({ params }: Props) {
     name: `${m.name} API`,
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web",
-    url: `${base}/models/${encodeURIComponent(m.modelId)}`,
+    url: `${base}/${locale}/models/${encodeURIComponent(m.modelId)}`,
     description:
       m.description ||
       `API ${m.name} murah via 9inference. Bayar per token, kompatibel OpenAI.`,
@@ -92,14 +101,14 @@ export default async function PublicModelDetailPage({ params }: Props) {
     <PublicShell>
       <BreadcrumbJsonLd
         items={[
-          { name: "Beranda", path: "/" },
-          { name: "Model AI", path: "/models" },
-          { name: m.name, path: `/models/${encodeURIComponent(m.modelId)}` },
+          { name: "Beranda", path: `/${locale}` },
+          { name: "Model AI", path: `/${locale}/models` },
+          { name: m.name, path: `/${locale}/models/${encodeURIComponent(m.modelId)}` },
         ]}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productLd) }}
       />
 
       <article className="px-4 pb-20 pt-28 sm:px-6">

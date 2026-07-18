@@ -7,6 +7,11 @@ import { redirect, Link } from "@/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { CheckoutForm } from "./form";
 
+export const metadata: Metadata = {
+  title: "Checkout",
+  robots: { index: false, follow: false },
+};
+
 export default async function CheckoutPage({
   params,
 }: {
@@ -58,3 +63,4 @@ export default async function CheckoutPage({
     </div>
   );
 }
+import type { Metadata } from "next";

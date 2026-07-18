@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 
 export const metadata: Metadata = {
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: true },
 };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {

@@ -8,27 +8,22 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
-  const now = new Date();
-
-  const staticPaths = ["", "/pricing", "/models", "/blog", "/register", "/login"];
+  const staticPaths = ["", "/pricing", "/models", "/blog"];
   const priorities: Record<string, number> = {
     "": 1,
     "/pricing": 0.95,
     "/models": 0.95,
     "/blog": 0.9,
-    "/register": 0.75,
-    "/login": 0.4,
   };
 
   const staticRoutes: MetadataRoute.Sitemap = locales.flatMap((locale) =>
     staticPaths.map((path) => ({
       url: `${base}/${locale}${path}`,
-      lastModified: now,
       changeFrequency: path === "" || path === "/models" ? ("daily" as const) : ("weekly" as const),
       priority: priorities[path] ?? 0.5,
       alternates: {
         languages: Object.fromEntries(
-          locales.map((l) => [l, `${base}/${l}${path}`]),
+          [...locales.map((l) => [l, `${base}/${l}${path}`]), ["x-default", `${base}/id${path}`]],
         ),
       },
     })),
@@ -40,9 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     modelRoutes = locales.flatMap((locale) =>
       models.map((m) => ({
         url: `${base}/${locale}/models/${encodeURIComponent(m.modelId)}`,
-        lastModified: now,
         changeFrequency: "weekly" as const,
         priority: 0.85,
+        alternates: {
+          languages: Object.fromEntries([
+            ...locales.map((l) => [l, `${base}/${l}/models/${encodeURIComponent(m.modelId)}`]),
+            ["x-default", `${base}/id/models/${encodeURIComponent(m.modelId)}`],
+          ]),
+        },
       })),
     );
   } catch {
@@ -55,6 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(p.updatedAt),
       changeFrequency: "monthly" as const,
       priority: 0.8,
+      alternates: {
+        languages: Object.fromEntries([
+          ...locales.map((l) => [l, `${base}/${l}/blog/${p.slug}`]),
+          ["x-default", `${base}/id/blog/${p.slug}`],
+        ]),
+      },
     })),
   );
 

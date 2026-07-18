@@ -4,6 +4,7 @@ import {
   SITE_NAME,
   SITE_TAGLINE,
 } from "@/app/lib/site";
+import { serializeJsonLd } from "@/app/lib/json-ld";
 
 export function JsonLd() {
   const base = getSiteUrl();
@@ -11,6 +12,7 @@ export function JsonLd() {
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${base}/#organization`,
     name: SITE_NAME,
     url: base,
     logo: `${base}/icon`,
@@ -21,11 +23,13 @@ export function JsonLd() {
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${base}/#website`,
     name: SITE_NAME,
     alternateName: SITE_TAGLINE,
     url: base,
     description: SITE_DESCRIPTION,
     inLanguage: "id-ID",
+    publisher: { "@id": `${base}/#organization` },
   };
 
   const software = {
@@ -36,12 +40,6 @@ export function JsonLd() {
     operatingSystem: "Web",
     url: base,
     description: SITE_DESCRIPTION,
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "IDR",
-      description: "Daftar gratis, API model AI murah bayar per token",
-    },
     keywords: "API model murah, DeepSeek API, token AI murah, OpenAI compatible",
   };
 
@@ -49,15 +47,15 @@ export function JsonLd() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(organization) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(website) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(software) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(software) }}
       />
     </>
   );
