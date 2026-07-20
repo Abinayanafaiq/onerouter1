@@ -7,7 +7,10 @@ const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 
 export class InvalidImageError extends Error {}
 
-export async function normalizeUploadedImage(file: File): Promise<string> {
+export async function normalizeUploadedImage(
+  file: File,
+  maxDimension = MAX_IMAGE_DIMENSION,
+): Promise<string> {
   if (file.size === 0) {
     throw new InvalidImageError("File gambar kosong");
   }
@@ -35,8 +38,8 @@ export async function normalizeUploadedImage(file: File): Promise<string> {
     const normalized = await image
       .rotate()
       .resize({
-        width: MAX_IMAGE_DIMENSION,
-        height: MAX_IMAGE_DIMENSION,
+        width: maxDimension,
+        height: maxDimension,
         fit: "inside",
         withoutEnlargement: true,
       })

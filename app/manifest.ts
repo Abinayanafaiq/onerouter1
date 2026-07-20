@@ -14,14 +14,14 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["developer", "productivity", "utilities"],
     icons: [
       {
-        src: "/icon",
-        sizes: "32x32",
+        src: "/api/site/favicon",
+        sizes: "any",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/apple-icon",
-        sizes: "180x180",
+        src: "/api/site/favicon",
+        sizes: "any",
         type: "image/png",
         purpose: "any",
       },
