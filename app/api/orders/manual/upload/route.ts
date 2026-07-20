@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { InvalidImageError, normalizeUploadedImage } from "@/app/lib/image-upload";
 
 export async function POST(request: Request) {
   try {
@@ -21,13 +22,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Order ID dan file diperlukan" }, { status: 400 });
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ success: false, error: "File terlalu besar (max 5MB)" }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
-
     // Verify the order belongs to the authenticated user (ownership check).
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 
@@ -43,6 +37,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Order sudah diproses" }, { status: 400 });
     }
 
+    const base64 = await normalizeUploadedImage(file);
+
     await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -52,6 +48,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    if (e instanceof InvalidImageError) {
+      return NextResponse.json({ success: false, error: e.message }, { status: 400 });
+    }
     console.error("[manual/upload] exception:", e);
     return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
   }

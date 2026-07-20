@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { InvalidImageError, normalizeUploadedImage } from "@/app/lib/image-upload";
 
 export async function GET() {
   try {
@@ -38,12 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "File QRIS diperlukan" }, { status: 400 });
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ success: false, error: "File terlalu besar (max 5MB)" }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+    const base64 = await normalizeUploadedImage(file);
 
     await prisma.setting.upsert({
       where: { key: "qris_image" },
@@ -53,6 +49,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    if (e instanceof InvalidImageError) {
+      return NextResponse.json({ success: false, error: e.message }, { status: 400 });
+    }
     console.error("[admin/settings/qris POST] exception:", e);
     return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
   }
