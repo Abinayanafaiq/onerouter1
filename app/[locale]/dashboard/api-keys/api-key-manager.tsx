@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "@/i18n/navigation";
 import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
 import type { ApiKeyView, ApiKeyStats } from "@/app/lib/api-keys";
 
@@ -110,6 +111,11 @@ export function ApiKeyManager({
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // Block generation when the wallet has no credit. The server enforces this
+  // too (402 insufficient_balance), so this is a UX hint, not the security
+  // boundary. remainingBalance is null until /api/keys/usage resolves.
+  const balanceBlocked = remainingBalance !== null && remainingBalance <= 0;
+
   const flash = (msg: string | null, isErr = false) => {
     if (isErr) {
       setError(msg);
@@ -200,6 +206,10 @@ export function ApiKeyManager({
   async function createKey() {
     if (!form.name.trim()) {
       flash("Name is required", true);
+      return;
+    }
+    if (balanceBlocked) {
+      flash("Isi saldo terlebih dahulu untuk membuat API key.", true);
       return;
     }
     setBusy(true);
@@ -339,11 +349,26 @@ export function ApiKeyManager({
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90"
+          disabled={busy || balanceBlocked}
+          title={balanceBlocked ? "Isi saldo dulu untuk membuat API key" : undefined}
+          className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           + Generate Key
         </button>
       </div>
+
+      {/* Zero-balance gate notice */}
+      {balanceBlocked && (
+        <div className="border border-red-500/30 bg-red-500/10 text-red-600 rounded-md p-3 text-xs flex items-center justify-between gap-3 flex-wrap">
+          <span>Saldo Anda 0. Isi saldo terlebih dahulu untuk membuat atau regenerate API key.</span>
+          <Link
+            href="/dashboard/wallet"
+            className="border border-red-500/40 px-3 py-1.5 rounded-md font-medium hover:bg-red-500/10"
+          >
+            Isi Saldo
+          </Link>
+        </div>
+      )}
 
       {/* Keys list */}
       {keys.length === 0 ? (
@@ -408,8 +433,9 @@ export function ApiKeyManager({
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                     <button
                       onClick={() => regenerate(k.id, k.name)}
-                      disabled={busy}
-                      className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40"
+                      disabled={busy || balanceBlocked}
+                      title={balanceBlocked ? "Isi saldo dulu untuk regenerate" : undefined}
+                      className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Regenerate
                     </button>

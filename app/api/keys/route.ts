@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { listApiKeys, createApiKey } from "@/app/lib/api-keys";
+import { getWalletBalance } from "@/app/lib/wallet";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,23 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: `Maximum of ${MAX_KEYS_PER_USER} API keys reached` },
         { status: 400 },
+      );
+    }
+
+    // Security: block key generation for accounts with no credit balance.
+    // A zero balance means the user has never topped up (or has exhausted
+    // their credit). Requiring balance > 0 prevents free accounts from
+    // minting usable API keys. This is a read-only wallet check — it never
+    // creates or mutates the wallet row.
+    const balance = await getWalletBalance(userId);
+    if (balance <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Isi saldo terlebih dahulu untuk membuat API key.",
+          code: "insufficient_balance",
+        },
+        { status: 402 },
       );
     }
 
