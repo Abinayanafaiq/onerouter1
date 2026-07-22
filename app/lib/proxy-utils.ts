@@ -324,3 +324,33 @@ export function errorResponse(
     { status },
   );
 }
+
+/**
+ * Map an upstream provider error into a generic, provider-agnostic client
+ * response. The raw upstream body (which may name the real provider or leak
+ * its internal billing/quota state) must NEVER be forwarded to the client —
+ * callers should keep the original text in server logs only. Returns the
+ * sanitized message plus a safe HTTP status to emit to the client.
+ */
+export function sanitizeUpstreamError(status: number): { message: string; status: number } {
+  switch (status) {
+    case 400:
+      return { message: "Permintaan tidak valid. Periksa parameter request Anda.", status: 400 };
+    case 401:
+    case 403:
+    case 402:
+      // 402/401/403 from upstream indicate upstream-side billing/auth trouble.
+      // Mask as a generic temporary outage so the client never infers that the
+      // upstream account is out of credit or which provider is behind the gateway.
+      return { message: "Layanan sementara tidak tersedia. Silakan coba lagi nanti.", status: 503 };
+    case 408:
+      return { message: "Permintaan melebihi batas waktu. Silakan coba lagi.", status: 504 };
+    case 429:
+      return { message: "Terlalu banyak permintaan. Silakan coba lagi sebentar.", status: 429 };
+    default:
+      if (status >= 500) {
+        return { message: "Layanan sementara tidak tersedia. Silakan coba lagi nanti.", status: 502 };
+      }
+      return { message: "Gagal memproses permintaan. Silakan coba lagi.", status: 502 };
+  }
+}

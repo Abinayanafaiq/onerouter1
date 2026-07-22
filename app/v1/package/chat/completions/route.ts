@@ -4,6 +4,7 @@ import {
   errorResponse,
   estimatePromptTokens,
   getClientIp,
+  sanitizeUpstreamError,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -134,13 +135,12 @@ export async function POST(request: Request) {
 
   if (!upstream.ok) {
     const upstreamMessage = await upstream.text().catch(() => "");
+    console.error("[v1/package/chat] upstream error:", upstream.status, upstreamMessage.slice(0, 500));
     await releasePackageTokens(reservation.id);
-    return apiError(
-      `Upstream paket menolak request (${upstream.status})${upstreamMessage ? `: ${upstreamMessage.slice(0, 300)}` : ""}`,
-      upstream.status,
-      "api_error",
-      "upstream_error",
-    );
+    // Sanitize: never forward the upstream body — it may name the real
+    // provider or leak upstream billing/quota state.
+    const safe = sanitizeUpstreamError(upstream.status);
+    return apiError(safe.message, safe.status, "api_error", "upstream_error");
   }
 
   if (isStream && upstream.body) {

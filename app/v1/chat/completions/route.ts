@@ -12,6 +12,7 @@ import {
   isModelAllowed,
   getClientIp,
   errorResponse,
+  sanitizeUpstreamError,
   type BillingInfo,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
@@ -392,11 +393,10 @@ export async function POST(request: Request) {
           status: "error",
           requestMeta: buildMeta(upstream.status),
         });
-        return errorResponse(
-          `Upstream error: ${upstream.status} ${text.slice(0, 500)}`,
-          upstream.status,
-          "api_error",
-        );
+        // Sanitize: never forward the upstream body to the client — it may
+        // name the real provider or leak upstream billing/quota state.
+        const safe = sanitizeUpstreamError(upstream.status);
+        return errorResponse(safe.message, safe.status, "api_error");
       }
 
       if (!usingEnvFallback) {
@@ -566,7 +566,7 @@ export async function POST(request: Request) {
     }
 
     // All attempts exhausted
-    console.error(`[v1/chat] all ${MAX_ATTEMPTS} attempts failed, last status: ${lastUpstreamStatus}`);
+    console.error(`[v1/chat] all ${MAX_ATTEMPTS} attempts failed, last status: ${lastUpstreamStatus}, last body: ${lastUpstreamText.slice(0, 500)}`);
     await releaseReservation({
       walletId: reservation.walletId,
       reservedAmount: reservation.reservedAmount,
@@ -583,11 +583,9 @@ export async function POST(request: Request) {
       status: "error",
       requestMeta: buildMeta(lastUpstreamStatus),
     });
-    return errorResponse(
-      `Upstream error: ${lastUpstreamStatus} ${lastUpstreamText.slice(0, 500)}`,
-      lastUpstreamStatus,
-      "api_error",
-    );
+    // Sanitize: never forward upstream body to the client.
+    const safe = sanitizeUpstreamError(lastUpstreamStatus);
+    return errorResponse(safe.message, safe.status, "api_error");
   } catch (e) {
     console.error("[v1/chat/completions] proxy error:", e);
 
