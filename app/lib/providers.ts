@@ -16,7 +16,7 @@
 
 export const PROVIDER_MODEL_MAP = {
   Alibaba: ["qwen3.7-plus", "qwen3-coder-next"],
-  DeepSeek: ["deepseek-v4-flash", "deepseek-v4-pro"],
+  DeepSeek: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-3.2"],
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast"],
   MiniMax: ["minimax-m3"],
   "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast", "kimi-k3"],
@@ -218,5 +218,17 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 12,
+  },
+  {
+    modelId: "deepseek-3.2",
+    masterId: "deepseek-3.2",
+    name: "DeepSeek 3.2",
+    provider: "DeepSeek",
+    description: "DeepSeek 3.2 — model ringan cepat untuk tugas harian",
+    contextWindow: "128K",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 13,
   },
 ];
