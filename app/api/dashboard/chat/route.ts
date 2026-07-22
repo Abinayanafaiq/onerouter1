@@ -230,6 +230,14 @@ export async function POST(request: Request) {
   body.model = resolvedModel.masterId;
   const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
 
+  // Kimi K3 is a reasoning model that rejects `temperature` with HTTP 400.
+  // Strip it before forwarding so clients that always send temperature don't
+  // get a generic "Permintaan tidak valid" error.
+  if (resolvedModel.masterId === "kimi-k3" && "temperature" in body) {
+    delete body.temperature;
+    console.log("[api/dashboard/chat] stripped temperature for kimi-k3 (reasoning model)");
+  }
+
   const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";

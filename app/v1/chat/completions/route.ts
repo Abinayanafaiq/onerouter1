@@ -284,6 +284,16 @@ export async function POST(request: Request) {
     console.log("[v1/chat] injected stream_options.include_usage=true");
   }
 
+  // Kimi K3 is a reasoning model that rejects `temperature` with HTTP 400.
+  // Strip it before forwarding so clients (e.g. opencode) that always send
+  // temperature don't get a generic "Permintaan tidak valid" error. Other
+  // sampling params (top_p, presence/frequency_penalty) are accepted by the
+  // upstream and left untouched.
+  if (resolvedModel.masterId === "kimi-k3" && "temperature" in body) {
+    delete body.temperature;
+    console.log("[v1/chat] stripped temperature for kimi-k3 (reasoning model)");
+  }
+
   const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
