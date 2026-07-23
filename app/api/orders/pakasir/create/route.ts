@@ -8,6 +8,7 @@ import {
   isPakasirConfigured,
 } from "@/app/lib/pakasir";
 import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { getSiteUrl } from "@/app/lib/site";
 
 export async function POST(request: Request) {
   try {
@@ -119,11 +120,10 @@ export async function POST(request: Request) {
       },
     });
 
-    const origin = new URL(request.url).origin;
     const urlResult = await buildPaymentUrl({
       orderId: order.id,
       amount: pkg.price,
-      redirectUrl: `${origin}/dashboard`,
+      redirectUrl: `${getSiteUrl()}/dashboard`,
       qrisOnly: true,
     });
 

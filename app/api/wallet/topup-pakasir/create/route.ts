@@ -7,6 +7,7 @@ import {
   isPakasirConfigured,
 } from "@/app/lib/pakasir";
 import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { getSiteUrl } from "@/app/lib/site";
 
 const WALLET_TOPUP_PACKAGE_ID = "wallet-topup";
 const MIN_TOPUP = 1000;
@@ -113,11 +114,10 @@ export async function POST(request: Request) {
       },
     });
 
-    const origin = new URL(request.url).origin;
     const urlResult = await buildPaymentUrl({
       orderId: order.id,
       amount: roundedAmount,
-      redirectUrl: `${origin}/dashboard/wallet`,
+      redirectUrl: `${getSiteUrl()}/dashboard/wallet`,
       qrisOnly: true,
     });
 
