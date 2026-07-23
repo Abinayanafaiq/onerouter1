@@ -173,6 +173,50 @@ export async function getTransactionDetail(params: {
   }
 }
 
+/**
+ * Fallback untuk mendeteksi apakah transaksi URL-integration sudah completed.
+ *
+ * Pakasir's transactiondetail API tidak bisa menemukan transaksi yang dibuat
+ * via URL integration (returns 404). Tapi transactioncreate API bisa detect
+ * bahwa transaksi sudah ada dengan return "Transaction already completed".
+ *
+ * Function ini memanggil transactioncreate dengan order_id yang sudah ada.
+ * Jika response mengandung "already completed", transaksi sudah dibayar.
+ */
+export async function checkTransactionCompletedViaCreate(params: {
+  orderId: string;
+  amount: number;
+}): Promise<{ completed: boolean; error?: string }> {
+  const { slug, apiKey } = await getPakasirSettings();
+  if (!slug || !apiKey) {
+    return { completed: false, error: "Pakasir belum dikonfigurasi" };
+  }
+  try {
+    const res = await fetch(`${PAKASIR_BASE_URL}/api/transactioncreate/qris`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project: slug,
+        order_id: params.orderId,
+        amount: params.amount,
+        api_key: apiKey,
+      }),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return { completed: false };
+    }
+    const text = await res.text();
+    if (text.includes("already completed")) {
+      return { completed: true };
+    }
+    return { completed: false };
+  } catch (e) {
+    console.error("[pakasir] checkTransactionCompletedViaCreate exception:", e);
+    return { completed: false, error: "Koneksi ke Pakasir gagal" };
+  }
+}
+
 export async function cancelTransaction(params: {
   orderId: string;
   amount: number;
@@ -231,6 +275,31 @@ export async function simulatePayment(params: {
     console.error("[pakasir] simulatePayment exception:", e);
     return { ok: false, error: "Koneksi ke Pakasir gagal" };
   }
+}
+
+export type PakasirPaymentUrlResult =
+  | { ok: true; url: string }
+  | { ok: false; error: string };
+
+export async function buildPaymentUrl(params: {
+  orderId: string;
+  amount: number;
+  redirectUrl?: string;
+  qrisOnly?: boolean;
+}): Promise<PakasirPaymentUrlResult> {
+  const { slug } = await getPakasirSettings();
+  if (!slug) {
+    return { ok: false, error: "Pakasir belum dikonfigurasi. Isi slug di pengaturan admin." };
+  }
+  const url = new URL(`${PAKASIR_BASE_URL}/pay/${slug}/${params.amount}`);
+  url.searchParams.set("order_id", params.orderId);
+  if (params.redirectUrl) {
+    url.searchParams.set("redirect", params.redirectUrl);
+  }
+  if (params.qrisOnly) {
+    url.searchParams.set("qris_only", "1");
+  }
+  return { ok: true, url: url.toString() };
 }
 
 export type PakasirWebhookPayload = {

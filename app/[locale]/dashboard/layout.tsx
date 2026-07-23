@@ -6,6 +6,7 @@ import { getWalletBalance } from "@/app/lib/wallet";
 import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { DashboardShell } from "@/app/components/dashboard-shell";
+import { PakasirPendingVerifier } from "@/app/components/pending-verifier";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
         await signOut({ redirectTo: "/" });
       }}
     >
+      <PakasirPendingVerifier />
       {children}
     </DashboardShell>
   );

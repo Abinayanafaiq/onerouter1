@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import QRCode from "qrcode";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
-import { createTransaction, isPakasirConfigured } from "@/app/lib/pakasir";
+import {
+  createTransaction,
+  buildPaymentUrl,
+  isPakasirConfigured,
+} from "@/app/lib/pakasir";
 import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -77,62 +80,65 @@ export async function POST(request: Request) {
       data: { stock: { decrement: 1 } },
     });
 
-    const result = await createTransaction({
+    // Hybrid: buat transaksi via API supaya transactiondetail bisa cek status,
+    // lalu bangun URL Pakasir untuk user bayar di halaman Pakasir.
+    const createResult = await createTransaction({
       method: "qris",
       orderId: order.id,
       amount: pkg.price,
     });
 
-    if (!result.ok) {
+    if (!createResult.ok) {
+      // Jika "Transaction already completed" → transaksi URL sebelumnya sudah dibayar
+      if (createResult.error.includes("already completed")) {
+        return NextResponse.json(
+          { success: false, error: "Invoice ini sudah dibayar sebelumnya. Saldo akan masuk otomatis." },
+          { status: 409 },
+        );
+      }
       await prisma.order.update({
         where: { id: order.id },
-        data: { status: "CANCELLED", adminNote: result.error },
+        data: { status: "CANCELLED", adminNote: createResult.error },
       });
       await prisma.package.update({
         where: { id: body.packageId },
         data: { stock: { increment: 1 } },
       });
-      return NextResponse.json({ success: false, error: result.error }, { status: 502 });
+      return NextResponse.json({ success: false, error: createResult.error }, { status: 502 });
     }
 
-    const expiredAt = result.payment.expired_at ? new Date(result.payment.expired_at) : null;
+    const expiredAt = createResult.payment.expired_at
+      ? new Date(createResult.payment.expired_at)
+      : null;
 
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        pakasirPaymentNumber: result.payment.payment_number,
+        pakasirPaymentNumber: createResult.payment.payment_number,
         pakasirExpiredAt: expiredAt,
       },
     });
 
-    let qrDataUrl = "";
-    try {
-      qrDataUrl = await QRCode.toDataURL(result.payment.payment_number, {
-        margin: 1,
-        width: 320,
-        errorCorrectionLevel: "M",
-      });
-    } catch (e) {
-      console.error("[pakasir/create] QR generation failed:", e);
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { status: "CANCELLED", adminNote: "QR generation failed" },
-      });
-      await prisma.package.update({
-        where: { id: body.packageId },
-        data: { stock: { increment: 1 } },
-      });
-      return NextResponse.json(
-        { success: false, error: "Gagal membuat gambar QR" },
-        { status: 500 },
-      );
+    const origin = new URL(request.url).origin;
+    const urlResult = await buildPaymentUrl({
+      orderId: order.id,
+      amount: pkg.price,
+      redirectUrl: `${origin}/dashboard`,
+      qrisOnly: true,
+    });
+
+    if (!urlResult.ok) {
+      // URL build gagal — transaksi sudah dibuat di Pakasir, tapi user tidak
+      // bisa diarahkan ke halaman Pakasir. Tetap return sukses supaya polling
+      // jalan, user bisa cek status nanti.
+      console.error("[pakasir/create] buildPaymentUrl failed:", urlResult.error);
     }
 
     return NextResponse.json({
       success: true,
       orderId: order.id,
-      qrImage: qrDataUrl,
-      totalPayment: result.payment.total_payment,
+      checkoutLink: urlResult.ok ? urlResult.url : null,
+      totalPayment: createResult.payment.total_payment,
       expiredAt: expiredAt?.toISOString() ?? null,
     });
   } catch (e) {

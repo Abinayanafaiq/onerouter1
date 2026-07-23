@@ -8,7 +8,7 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
 type Chain = { id: string; label: string; chain: string };
 
 type PakasirResult = {
-  qrImage: string;
+  checkoutLink: string | null;
   totalPayment: number;
   expiredAt: string | null;
   orderId: string;
@@ -189,14 +189,14 @@ export function CheckoutForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        qrImage?: string;
+        checkoutLink?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
       };
-      if (data.success && data.qrImage && data.orderId) {
+      if (data.success && data.orderId) {
         setPakasirResult({
-          qrImage: data.qrImage,
+          checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? amount,
           expiredAt: data.expiredAt ?? null,
           orderId: data.orderId,
@@ -443,13 +443,26 @@ export function CheckoutForm({
           {pakasirResult ? (
             <>
               <div className="text-center">
-                <p className="text-sm font-medium mb-3">Scan QRIS untuk bayar</p>
-                <img
-                  src={pakasirResult.qrImage}
-                  alt="QRIS"
-                  className="mx-auto max-w-[280px] w-full rounded-lg border bg-white p-2"
-                />
+                <p className="text-sm font-medium mb-3">Invoice QRIS Dibuat</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Klik tombol di bawah untuk membayar via QRIS di halaman Pakasir.
+                </p>
               </div>
+
+              {pakasirResult.checkoutLink ? (
+                <a
+                  href={pakasirResult.checkoutLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-foreground text-background py-2.5 rounded-md font-medium hover:opacity-90 text-center"
+                >
+                  Bayar Sekarang
+                </a>
+              ) : (
+                <p className="text-sm text-amber-600 text-center">
+                  Link pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
+                </p>
+              )}
 
               <div className="bg-muted rounded-md p-3 text-sm space-y-1">
                 <p>
@@ -491,7 +504,7 @@ export function CheckoutForm({
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                Pembayaran diverifikasi otomatis. Tidak perlu upload bukti.
+                Pembayaran diverifikasi otomatis via API. Tidak perlu upload bukti.
               </p>
             </>
           ) : (

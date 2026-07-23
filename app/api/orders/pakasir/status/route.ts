@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
-import { getTransactionDetail } from "@/app/lib/pakasir";
+import {
+  getTransactionDetail,
+  checkTransactionCompletedViaCreate,
+} from "@/app/lib/pakasir";
 import { approvePaidOrder } from "@/app/lib/order-approval";
 
 export async function GET(request: Request) {
@@ -35,6 +38,23 @@ export async function GET(request: Request) {
 
     const detail = await getTransactionDetail({ orderId: order.id, amount: order.amount });
     if (!detail.ok) {
+      // Fallback: transactiondetail returns 404 untuk URL-integration transactions.
+      // Cek via createTransaction — jika "already completed", transaksi sudah dibayar.
+      const fallback = await checkTransactionCompletedViaCreate({
+        orderId: order.id,
+        amount: order.amount,
+      });
+      if (fallback.completed) {
+        console.log(`[pakasir/status] payment completed (fallback), crediting order=${order.id}`);
+        const approved = await approvePaidOrder(
+          order.id,
+          `Pakasir/${order.pakasirMethod || "qris"}`,
+        );
+        if (!approved.ok) {
+          return NextResponse.json({ success: true, status: "PENDING", note: approved.error });
+        }
+        return NextResponse.json({ success: true, status: "APPROVED" });
+      }
       return NextResponse.json({ success: true, status: "PENDING", note: detail.error });
     }
 

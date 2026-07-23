@@ -7,7 +7,7 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 type PakasirResult = {
   orderId: string;
-  qrImage: string;
+  checkoutLink: string | null;
   totalPayment: number;
   expiredAt: string | null;
   toks: number;
@@ -229,15 +229,15 @@ export function WalletTopUpForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        qrImage?: string;
+        checkoutLink?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
       };
-      if (data.success && data.qrImage && data.orderId) {
+      if (data.success && data.orderId) {
         setPakasirResult({
           orderId: data.orderId,
-          qrImage: data.qrImage,
+          checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? idrAmount,
           expiredAt: data.expiredAt ?? null,
           toks,
@@ -442,17 +442,26 @@ export function WalletTopUpForm({
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent">
               <QrIcon className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold">Scan QRIS untuk bayar</h3>
+            <h3 className="text-base font-semibold">Invoice QRIS Dibuat</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Buka e-wallet atau m-banking, scan kode di bawah.
+              Klik tombol di bawah untuk membayar via QRIS di halaman Pakasir.
             </p>
           </div>
 
-          <img
-            src={pakasirResult.qrImage}
-            alt="QRIS"
-            className="mx-auto w-full max-w-[280px] rounded-xl border border-white/[0.08] bg-white p-3"
-          />
+          {pakasirResult.checkoutLink ? (
+            <a
+              href={pakasirResult.checkoutLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition hover:opacity-90"
+            >
+              Bayar Sekarang
+            </a>
+          ) : (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-xs text-amber-400">
+              Link pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
+            </p>
+          )}
 
           <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 text-sm space-y-2">
             <div className="flex items-center justify-between">
@@ -485,7 +494,7 @@ export function WalletTopUpForm({
               </>
             )}
             {paymentStatus === "CANCELLED" && (
-              <span className="text-red-500">QR kadaluarsa. Buat invoice baru.</span>
+              <span className="text-red-500">Invoice kadaluarsa. Buat invoice baru.</span>
             )}
           </div>
 
@@ -499,7 +508,7 @@ export function WalletTopUpForm({
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            Pembayaran diverifikasi otomatis. Saldo langsung masuk setelah bayar.
+            Pembayaran diverifikasi otomatis via API. Saldo langsung masuk setelah bayar.
           </p>
         </div>
       </div>

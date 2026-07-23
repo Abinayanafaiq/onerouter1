@@ -3,6 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import {
   verifyWebhookSignature,
   getTransactionDetail,
+  checkTransactionCompletedViaCreate,
   getPakasirSettings,
   type PakasirWebhookPayload,
 } from "@/app/lib/pakasir";
@@ -65,22 +66,31 @@ export async function POST(request: Request) {
     }
 
     // 3. Server-side re-verification via the detail API (never trust the
-    //    webhook body alone).
+    //    webhook body alone). Fallback: jika transactiondetail 404 (terjadi
+    //    untuk URL-integration transactions), cek via createTransaction.
     const detail = await getTransactionDetail({ orderId: order.id, amount: order.amount });
     if (!detail.ok || detail.transaction.status !== "completed") {
-      console.error(
-        "[pakasir/webhook] verification via detail API failed:",
-        detail.ok ? detail.transaction.status : detail.error,
-      );
-      return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+      const fallback = await checkTransactionCompletedViaCreate({
+        orderId: order.id,
+        amount: order.amount,
+      });
+      if (!fallback.completed) {
+        console.error(
+          "[pakasir/webhook] verification failed:",
+          detail.ok ? detail.transaction.status : detail.error,
+        );
+        return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+      }
+      console.log(`[pakasir/webhook] payment verified (fallback) for order=${order.id}`);
+    } else {
+      console.log(`[pakasir/webhook] payment verified for order=${order.id}`);
     }
-    console.log(`[pakasir/webhook] payment verified for order=${order.id}`);
 
     // 4. Credit atomically & idempotently.
-    const approved = await approvePaidOrder(
-      order.id,
-      `Pakasir/${event.payment_method || detail.transaction.payment_method}`,
-    );
+    const paymentMethodLabel = detail.ok
+      ? `Pakasir/${event.payment_method || detail.transaction.payment_method}`
+      : `Pakasir/${event.payment_method || order.pakasirMethod || "qris"}`;
+    const approved = await approvePaidOrder(order.id, paymentMethodLabel);
     if (!approved.ok) {
       // Do NOT report success — let Pakasir retry the webhook.
       return NextResponse.json({ error: approved.error }, { status: 500 });
