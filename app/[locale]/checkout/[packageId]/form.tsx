@@ -56,6 +56,7 @@ export function CheckoutForm({
   const [pakasirError, setPakasirError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -67,6 +68,22 @@ export function CheckoutForm({
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
+
+  const view: "approved" | "crypto" | "bsc" | "pakasir" | "input" =
+    paymentStatus === "APPROVED" || bscStatus === "APPROVED"
+      ? "approved"
+      : cryptoResult?.ok
+        ? "crypto"
+        : bscResult
+          ? "bsc"
+          : pakasirResult
+            ? "pakasir"
+            : "input";
+
+  useEffect(() => {
+    if (view === "input") return;
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [view]);
 
   const startPolling = useCallback(
     (orderId: string, isBsc: boolean) => {
@@ -213,7 +230,7 @@ export function CheckoutForm({
 
   if (paymentStatus === "APPROVED" || bscStatus === "APPROVED") {
     return (
-      <div className="border rounded-lg p-6 space-y-4 text-center">
+      <div ref={rootRef} className="scroll-mt-20 border rounded-lg p-6 space-y-4 text-center">
         <div className="w-12 h-12 mx-auto rounded-full bg-green-500/15 text-green-500 flex items-center justify-center">
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 12 5 5L20 6" /></svg>
         </div>
@@ -233,7 +250,7 @@ export function CheckoutForm({
 
   if (cryptoResult?.ok) {
     return (
-      <div className="border rounded-lg p-6 space-y-4 text-center">
+      <div ref={rootRef} className="scroll-mt-20 border rounded-lg p-6 space-y-4 text-center">
         <div className="w-12 h-12 mx-auto rounded-full border border-foreground/20 text-foreground flex items-center justify-center">
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 12 5 5L20 6" /></svg>
         </div>
@@ -262,7 +279,7 @@ export function CheckoutForm({
   const showPakasirTab = pakasirConfigured;
 
   return (
-    <div className="space-y-4">
+    <div ref={rootRef} className="scroll-mt-20 space-y-4">
       <div>
         <label className="text-sm font-medium block mb-1.5">
           Nomor WhatsApp

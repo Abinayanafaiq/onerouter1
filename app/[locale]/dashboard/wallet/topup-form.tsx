@@ -159,6 +159,7 @@ export function WalletTopUpForm({
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const [bscConfirmations, setBscConfirmations] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -168,6 +169,20 @@ export function WalletTopUpForm({
   }, []);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
+
+  const view: "approved" | "bsc" | "pakasir" | "input" =
+    paymentStatus === "APPROVED"
+      ? "approved"
+      : bscResult
+        ? "bsc"
+        : pakasirResult
+          ? "pakasir"
+          : "input";
+
+  useEffect(() => {
+    if (view === "input") return;
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [view]);
 
   const startPolling = useCallback(
     (orderId: string, isBsc: boolean) => {
@@ -325,7 +340,7 @@ export function WalletTopUpForm({
   /* ---------------- SUCCESS state ---------------- */
   if (paymentStatus === "APPROVED") {
     return (
-      <div className="rounded-2xl border border-green-500/30 bg-green-500/[0.06] p-8 text-center animate-fade-up">
+      <div ref={rootRef} className="scroll-mt-20 rounded-2xl border border-green-500/30 bg-green-500/[0.06] p-8 text-center animate-fade-up">
         <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-green-500/15 text-green-400 shadow-[0_0_24px_-4px_var(--accent-glow)]">
           <CheckIcon className="h-7 w-7" />
         </div>
@@ -346,7 +361,7 @@ export function WalletTopUpForm({
   /* ---------------- BSC invoice state ---------------- */
   if (bscResult) {
     return (
-      <div className="space-y-4 animate-fade-up">
+      <div ref={rootRef} className="scroll-mt-20 space-y-4 animate-fade-up">
         <div className="rounded-2xl border border-white/[0.08] bg-card p-6 space-y-4">
           <div className="text-center">
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-amber-500/15 text-amber-400">
@@ -436,7 +451,7 @@ export function WalletTopUpForm({
   /* ---------------- QRIS invoice state ---------------- */
   if (pakasirResult) {
     return (
-      <div className="space-y-4 animate-fade-up">
+      <div ref={rootRef} className="scroll-mt-20 space-y-4 animate-fade-up">
         <div className="rounded-2xl border border-white/[0.08] bg-card p-6 space-y-4">
           <div className="text-center">
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent">
