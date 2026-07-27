@@ -16,13 +16,20 @@ export async function POST(request: Request) {
       id: string;
       stock?: number;
       isActive?: boolean;
+      price?: number;
     };
 
-    const { id, stock, isActive } = body;
+    const { id, stock, isActive, price } = body;
 
     const data: Record<string, unknown> = {};
-    if (typeof stock === "number") data.stock = Math.max(0, stock);
+    if (typeof stock === "number") data.stock = Math.max(0, Math.floor(stock));
     if (typeof isActive === "boolean") data.isActive = isActive;
+    if (typeof price === "number") {
+      if (!Number.isFinite(price) || price < 0) {
+        return NextResponse.json({ success: false, error: "Harga tidak valid" }, { status: 400 });
+      }
+      data.price = Math.floor(price);
+    }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ success: false, error: "Tidak ada perubahan" }, { status: 400 });

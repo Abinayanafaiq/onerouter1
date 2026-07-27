@@ -14,6 +14,7 @@ type PackageItem = {
 export function PackageStockEditor({ pkg }: { pkg: PackageItem }) {
   const router = useRouter();
   const [stock, setStock] = useState(String(pkg.stock));
+  const [price, setPrice] = useState(String(pkg.price));
   const [isActive, setIsActive] = useState(pkg.isActive);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export function PackageStockEditor({ pkg }: { pkg: PackageItem }) {
         body: JSON.stringify({
           id: pkg.id,
           stock: parseInt(stock, 10) || 0,
+          price: Math.max(0, parseInt(price, 10) || 0),
           isActive,
         }),
       });
@@ -46,14 +48,9 @@ export function PackageStockEditor({ pkg }: { pkg: PackageItem }) {
   }
 
   return (
-    <div className="border border-neutral-800 rounded-lg p-3 bg-neutral-900">
+    <div className="border border-neutral-800 rounded-lg p-3 bg-neutral-900 space-y-2">
       <div className="flex items-center justify-between">
-        <div>
-          <span className="font-medium text-sm text-neutral-200">{pkg.name}</span>
-          <span className="text-xs text-neutral-500 ml-2">
-            Rp{pkg.price.toLocaleString("id-ID")}
-          </span>
-        </div>
+        <span className="font-medium text-sm text-neutral-200">{pkg.name}</span>
         <label className="flex items-center gap-1.5 text-xs text-neutral-400">
           <input
             type="checkbox"
@@ -64,8 +61,20 @@ export function PackageStockEditor({ pkg }: { pkg: PackageItem }) {
           Aktif
         </label>
       </div>
-      <div className="flex items-center gap-2 mt-2">
-        <label className="text-xs text-neutral-500 shrink-0">Stok</label>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-neutral-500 shrink-0 w-12">Harga</label>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-neutral-500">Rp</span>
+          <input
+            type="number"
+            min={0}
+            step={1000}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-28 px-2 py-1 border border-neutral-700 rounded-md bg-neutral-950 text-sm text-neutral-200"
+          />
+        </div>
+        <label className="text-xs text-neutral-500 shrink-0 ml-2">Stok</label>
         <input
           type="number"
           min={0}
