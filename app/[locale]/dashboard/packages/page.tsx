@@ -118,9 +118,6 @@ export default async function PackagesPage() {
                 {packageModels.length} model aktif
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Gunakan ID model berikut tanpa prefix <code className="text-foreground/80">wz/</code> pada endpoint paket.
-            </p>
           </div>
           <div className="shrink-0 rounded-lg border border-white/[0.07] bg-black/20 px-3 py-2">
             <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Contoh model</span>
