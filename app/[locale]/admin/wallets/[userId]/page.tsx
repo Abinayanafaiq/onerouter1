@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { WalletAdjustForm } from "./adjust-form";
 import { RateLimitForm } from "./rate-limit-form";
 import { WhatsAppForm } from "./whatsapp-form";
+import { DeleteUserForm } from "./delete-user-form";
 
 export default async function AdminWalletDetailPage({
   params,
@@ -15,7 +16,7 @@ export default async function AdminWalletDetailPage({
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, whatsapp: true, rateLimit: true },
+    select: { id: true, email: true, name: true, whatsapp: true, rateLimit: true, role: true },
   });
   if (!user) notFound();
 
@@ -81,6 +82,9 @@ export default async function AdminWalletDetailPage({
 
       {/* Adjust balance */}
       <WalletAdjustForm userId={userId} currentBalance={balance} />
+
+      {/* Delete user (danger zone) — hanya untuk non-admin */}
+      {user.role !== "ADMIN" && <DeleteUserForm userId={userId} email={user.email} />}
 
       {/* Transactions */}
       <div>
