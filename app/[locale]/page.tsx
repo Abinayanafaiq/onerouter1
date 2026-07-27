@@ -4,6 +4,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
 import { getEnabledModels } from "@/app/lib/models";
 import { toModelCardData, type ModelCardData } from "@/app/lib/model-card-data";
+import { getSiteUrl } from "@/app/lib/site";
+import { serializeJsonLd } from "@/app/lib/json-ld";
 import { LandingHeader } from "@/app/components/landing/landing-header";
 import { HeroTerminal } from "@/app/components/landing/hero-terminal";
 import { AnimatedStats } from "@/app/components/landing/animated-stats";
@@ -115,8 +117,42 @@ export default async function Home({
     { name: t("audienceEngineer"), desc: t("audienceEngineerDesc") },
   ];
 
+  const isEn = locale === "en";
+  const FAQS = isEn
+    ? [
+        { q: "What is 9inference?", a: "9inference is an affordable AI model API gateway from Indonesia. One OpenAI-compatible endpoint gives you access to DeepSeek, GLM, Qwen, Kimi, MiniMax and more — pay per token (TOKS), transparent pricing in rupiah, no subscription." },
+        { q: "How much does 9inference cost?", a: "Pricing is pay-per-token in rupiah. 1 TOKS = Rp1,000. You only pay for the tokens you actually use, with no monthly commitment or hidden fees." },
+        { q: "Is 9inference compatible with the OpenAI SDK?", a: "Yes. Point your existing OpenAI client to the 9inference base URL, use your 9inference API key, and keep your code unchanged. It works with the official openai SDK, LangChain, and any OpenAI-compatible tool." },
+        { q: "Which AI models are available?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax and more. New models are added regularly and can be used with a single API key." },
+        { q: "How do I start using 9inference?", a: "Register for free, top up your balance, get an instant API key, then call the chat completions endpoint. You can start building in minutes." },
+        { q: "Do I need a credit card or subscription?", a: "No. 9inference is prepaid. Top up your credit via QRIS or crypto and pay only per token — there is no recurring subscription." },
+      ]
+    : [
+        { q: "Apa itu 9inference?", a: "9inference adalah gateway API model AI murah dari Indonesia. Satu endpoint kompatibel OpenAI untuk mengakses DeepSeek, GLM, Qwen, Kimi, MiniMax & lainnya — bayar per token (TOKS), harga transparan dalam rupiah, tanpa langganan." },
+        { q: "Berapa harga API di 9inference?", a: "Harga dihitung bayar per token dalam rupiah. 1 TOKS = Rp1.000. Anda hanya membayar token yang benar-benar dipakai, tanpa komitmen bulanan atau biaya tersembunyi." },
+        { q: "Apakah 9inference kompatibel dengan OpenAI SDK?", a: "Ya. Cukup arahkan client OpenAI Anda ke base URL 9inference, pakai API key 9inference, dan kode tidak perlu diubah. Mendukung SDK openai resmi, LangChain, dan tool lain yang kompatibel OpenAI." },
+        { q: "Model AI apa saja yang tersedia?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax, dan lainnya. Model baru ditambahkan berkala dan bisa dipakai dengan satu API key." },
+        { q: "Bagaimana cara mulai pakai 9inference?", a: "Daftar gratis, isi saldo, dapatkan API key instan, lalu panggil endpoint chat completions. Anda bisa langsung membangun dalam hitungan menit." },
+        { q: "Apakah perlu kartu kredit atau langganan?", a: "Tidak. 9inference bersifat prabayar. Isi saldo lewat QRIS atau crypto lalu bayar hanya per token — tidak ada langganan berulang." },
+      ];
+
+  const baseUrl = getSiteUrl();
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
   return (
     <div className="landing-shell relative min-h-screen overflow-hidden bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
+      />
       <LandingHeader isAuthed={isAuthed} />
 
       {/* ============================================================
@@ -462,6 +498,48 @@ export default async function Home({
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          FAQ — keyword-rich content + FAQPage schema
+          ============================================================ */}
+      <section className="landing-section px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <div className="text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              {isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
+            </span>
+            <h2 className="landing-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              {isEn ? "Affordable AI Model API, answered" : "API Model AI Murah, dijawab"}
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
+              {isEn
+                ? "Everything you need to know about pricing, OpenAI compatibility, and getting started."
+                : "Semua yang perlu Anda ketahui soal harga, kompatibilitas OpenAI, dan cara mulai."}
+            </p>
+          </div>
+
+          <div className="mt-10 space-y-3">
+            {FAQS.map((f) => (
+              <details
+                key={f.q}
+                className="group glass overflow-hidden rounded-xl transition open:border-white/[0.14]"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-foreground transition hover:text-accent [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+                  >
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </summary>
+                <p className="px-5 pb-4 text-[13px] leading-relaxed text-muted-foreground">{f.a}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

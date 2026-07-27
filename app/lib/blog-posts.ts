@@ -215,6 +215,383 @@ export const BLOG_POSTS: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: "cara-pakai-api-openai-compatible",
+    title: "Cara Pakai API Kompatibel OpenAI: Setup 5 Menit",
+    description:
+      "Panduan lengkap cara pakai API kompatibel OpenAI: ganti base URL, pakai OpenAI SDK, dan contoh kode Python & Node.js yang bisa langsung jalan.",
+    keywords: [
+      "API kompatibel OpenAI",
+      "OpenAI compatible API",
+      "cara pakai API AI",
+      "OpenAI SDK",
+      "chat completions API",
+    ],
+    publishedAt: "2026-07-18",
+    updatedAt: "2026-07-18",
+    category: "Tutorial",
+    readingMinutes: 7,
+    sections: [
+      {
+        heading: "Apa itu API kompatibel OpenAI?",
+        paragraphs: [
+          "API kompatibel OpenAI adalah endpoint yang mengikuti format request dan response yang sama dengan OpenAI (chat completions, streaming, dan daftar model). Artinya, kode yang sudah memakai OpenAI SDK bisa langsung dipakai tanpa menulis ulang logika.",
+          "Keuntungannya besar: Anda bisa berpindah provider atau memakai gateway multi-model hanya dengan mengganti base URL dan API key.",
+        ],
+      },
+      {
+        heading: "Langkah setup di 9inference",
+        paragraphs: [
+          "Pertama, daftar akun 9inference lalu buat API key dari dashboard. Kedua, salin base URL endpoint 9inference. Ketiga, pilih ID model dari katalog, misalnya DeepSeek, GLM, atau Qwen.",
+          "Tidak ada konfigurasi rumit. Jika Anda sudah pernah memakai OpenAI, pola yang sama persis berlaku di sini.",
+        ],
+      },
+      {
+        heading: "Contoh kode Python",
+        paragraphs: [
+          "Dengan library openai resmi, cukup set base_url ke endpoint 9inference dan api_key ke key Anda, lalu panggil client.chat.completions.create dengan model pilihan.",
+          "Karena formatnya sama, fitur seperti streaming, system prompt, dan parameter temperature berfungsi normal.",
+        ],
+      },
+      {
+        heading: "Contoh kode Node.js",
+        paragraphs: [
+          "Untuk Node.js, inisialisasi OpenAI dengan baseURL 9inference. Panggil endpoint yang sama seperti biasa. Anda bisa mengganti model hanya dengan mengubah satu string.",
+          "Tips: simpan API key di environment variable dan jangan commit ke repository publik.",
+        ],
+      },
+      {
+        heading: "Produksi: yang perlu diperhatikan",
+        paragraphs: [
+          "Pisahkan API key untuk staging dan production, aktifkan rate limit, dan pantau pemakaian token di dashboard agar biaya tetap terkendali.",
+          "Dengan satu key multi-model, Anda bisa A/B test beberapa model tanpa mengelola banyak kredensial.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "qwen-api-murah-cara-pakai",
+    title: "Qwen API Murah: Cara Pakai & Keunggulannya",
+    description:
+      "Pakai Qwen API murah lewat 9inference. Kenali keunggulan Qwen, cara setup, dan tips memilih varian yang tepat untuk workload Anda.",
+    keywords: [
+      "Qwen API murah",
+      "Qwen API",
+      "Alibaba Qwen API",
+      "harga Qwen",
+      "API Qwen Indonesia",
+    ],
+    publishedAt: "2026-07-20",
+    updatedAt: "2026-07-20",
+    category: "Tutorial",
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: "Kenapa Qwen layak dipakai?",
+        paragraphs: [
+          "Qwen dari Alibaba dikenal kuat di tugas multilingual, penalaran, dan coding. Varian yang beragam membuatnya fleksibel: dari model kecil yang cepat hingga model besar untuk tugas kompleks.",
+          "Bagi tim di Indonesia, Qwen menarik karena kualitas tinggi dengan harga token yang kompetitif dibanding model frontier lain.",
+        ],
+      },
+      {
+        heading: "Cara pakai Qwen lewat 9inference",
+        paragraphs: [
+          "Daftar akun, buat API key, lalu pilih ID model Qwen dari katalog 9inference. Karena endpoint kompatibel OpenAI, integrasi hampir instan.",
+          "Anda bisa mengganti model Qwen dengan model lain kapan saja tanpa mengubah struktur kode — cukup ganti nama model.",
+        ],
+      },
+      {
+        heading: "Memilih varian Qwen yang tepat",
+        paragraphs: [
+          "Untuk chatbot ringan dan klasifikasi, varian kecil sudah cukup dan jauh lebih hemat. Untuk analisis dokumen panjang atau coding kompleks, pilih varian yang lebih besar.",
+          "Bandingkan tarif input/output per 1 juta token di halaman pricing sebelum memutuskan, karena output biasanya lebih mahal daripada input.",
+        ],
+      },
+      {
+        heading: "Tips hemat biaya Qwen",
+        paragraphs: [
+          "Batasi max_tokens, ringkas konteks, dan gunakan prompt yang spesifik agar output tidak bertele-tele. Pantau usage per model di dashboard untuk menemukan bottleneck biaya.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "kimi-api-murah-cara-pakai",
+    title: "Kimi API Murah: Cara Pakai Moonshot AI",
+    description:
+      "Pakai Kimi API murah dari Moonshot AI lewat 9inference. Panduan setup, keunggulan konteks panjang, dan tips penggunaan untuk production.",
+    keywords: [
+      "Kimi API murah",
+      "Kimi API",
+      "Moonshot AI API",
+      "Kimi k2 API",
+      "API Kimi Indonesia",
+    ],
+    publishedAt: "2026-07-22",
+    updatedAt: "2026-07-22",
+    category: "Tutorial",
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: "Keunggulan Kimi dari Moonshot AI",
+        paragraphs: [
+          "Kimi terkenal dengan kemampuan konteks panjang dan kualitas penalaran yang solid, terutama untuk tugas membaca dokumen, ringkasan, dan coding.",
+          "Lewat 9inference, Anda bisa memakai Kimi tanpa mengelola akun provider terpisah — cukup satu API key untuk semua model.",
+        ],
+      },
+      {
+        heading: "Setup Kimi dalam 5 menit",
+        paragraphs: [
+          "Buat API key di dashboard 9inference, set base URL ke endpoint 9inference, lalu pilih ID model Kimi dari katalog. Kode OpenAI SDK Anda langsung berfungsi.",
+          "Cocok untuk yang ingin migrasi cepat dari provider lain tanpa menulis ulang integrasi.",
+        ],
+      },
+      {
+        heading: "Kapan memakai Kimi?",
+        paragraphs: [
+          "Gunakan Kimi untuk workload yang butuh konteks panjang: ringkasan dokumen legal, analisis kode besar, atau agen yang membaca banyak referensi sekaligus.",
+          "Untuk tugas sederhana bervolume tinggi, kombinasikan dengan model yang lebih murah agar biaya bulanan tetap rendah.",
+        ],
+      },
+      {
+        heading: "Kontrol biaya",
+        paragraphs: [
+          "Konteks panjang berarti token input besar. Selalu pangkas konteks yang tidak perlu dan hitung estimasi biaya sebelum mengirim dokumen besar.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "glm-api-murah-cara-pakai",
+    title: "GLM API Murah: Cara Pakai & Kapan Menggunakannya",
+    description:
+      "Pakai GLM API murah lewat 9inference. Kenali kekuatan GLM untuk penalaran dan coding, cara setup, dan strategi hemat token.",
+    keywords: [
+      "GLM API murah",
+      "GLM API",
+      "cara pakai GLM",
+      "harga GLM API",
+      "API GLM Indonesia",
+    ],
+    publishedAt: "2026-07-24",
+    updatedAt: "2026-07-24",
+    category: "Tutorial",
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: "Apa itu GLM dan kelebihannya?",
+        paragraphs: [
+          "GLM adalah keluarga model AI yang kuat di penalaran logis, matematika, dan coding. Banyak tim memakai GLM untuk asisten coding, analisis data, dan agen multi-step.",
+          "Dengan harga token yang kompetitif, GLM menjadi pilihan menarik untuk production yang sensitif biaya.",
+        ],
+      },
+      {
+        heading: "Cara pakai GLM lewat 9inference",
+        paragraphs: [
+          "Prosesnya sama dengan model lain: buat API key, arahkan base URL ke 9inference, lalu pilih ID model GLM dari katalog. Kompatibel penuh dengan OpenAI SDK.",
+          "Anda dapat berpindah antar model GLM dan model lain hanya dengan mengganti nama model di request.",
+        ],
+      },
+      {
+        heading: "Use case yang cocok",
+        paragraphs: [
+          "GLM bersinar untuk tugas penalaran: chain-of-thought, debugging kode, dan pertanyaan analitis. Untuk tugas kreatif ringan, model lain bisa lebih hemat.",
+          "Uji beberapa model dengan prompt nyata Anda, lalu pilih berdasarkan kualitas output per rupiah.",
+        ],
+      },
+      {
+        heading: "Strategi hemat token",
+        paragraphs: [
+          "Gunakan streaming untuk UX yang responsif, batasi max_tokens, dan cache jawaban untuk pertanyaan berulang. Pantau tarif input/output di halaman pricing.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "chatbot-whatsapp-ai-murah",
+    title: "Cara Membuat Chatbot WhatsApp AI Murah",
+    description:
+      "Bangun chatbot WhatsApp AI murah dengan API model AI. Pelajari arsitektur, cara integrasi, dan tips menekan biaya token per percakapan.",
+    keywords: [
+      "chatbot WhatsApp AI",
+      "chatbot AI murah",
+      "buat chatbot WhatsApp",
+      "API chatbot",
+      "bot WhatsApp AI",
+    ],
+    publishedAt: "2026-07-26",
+    updatedAt: "2026-07-26",
+    category: "Use Case",
+    readingMinutes: 8,
+    sections: [
+      {
+        heading: "Kenapa chatbot WhatsApp penting untuk bisnis?",
+        paragraphs: [
+          "WhatsApp adalah kanal komunikasi terbesar di Indonesia. Chatbot AI di WhatsApp bisa menjawab pelanggan 24/7, kualifikasi lead, dan mengurangi beban tim CS.",
+          "Kunci suksesnya adalah biaya per percakapan yang rendah — di sinilah API model AI murah berperan.",
+        ],
+      },
+      {
+        heading: "Arsitektur dasar chatbot WhatsApp AI",
+        paragraphs: [
+          "Alurnya: pesan masuk dari webhook WhatsApp → server Anda memanggil API model AI → balasan dikirim kembali ke pengguna. Model AI bertugas memahami pertanyaan dan menyusun jawaban.",
+          "Gunakan endpoint kompatibel OpenAI agar integrasi cepat. 9inference menyediakan satu API key untuk banyak model, cocok untuk eksperimen kualitas jawaban.",
+        ],
+      },
+      {
+        heading: "Menekan biaya token per percakapan",
+        paragraphs: [
+          "Jangan kirim seluruh riwayat chat setiap pesan — ringkas konteks atau simpan hanya beberapa giliran terakhir. Gunakan system prompt yang ringkas dan to-the-point.",
+          "Pilih model murah untuk FAQ umum, dan model lebih pintar hanya untuk pertanyaan kompleks. Strategi routing ini bisa memangkas biaya hingga 50% lebih.",
+        ],
+      },
+      {
+        heading: "Tips production",
+        paragraphs: [
+          "Sediakan fallback jawaban jika API timeout, batasi panjang jawaban, dan log setiap percakapan untuk evaluasi kualitas. Pisahkan API key untuk tiap environment.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "ai-agent-coding-api-murah",
+    title: "Membangun AI Coding Agent dengan API Murah",
+    description:
+      "Buat AI coding agent yang kuat tanpa boros. Pelajari cara kerja coding agent, memilih model untuk tool calling, dan mengontrol biaya token.",
+    keywords: [
+      "AI coding agent",
+      "coding assistant AI",
+      "AI agent API",
+      "tool calling AI",
+      "API AI untuk coding",
+    ],
+    publishedAt: "2026-07-28",
+    updatedAt: "2026-07-28",
+    category: "Use Case",
+    readingMinutes: 8,
+    sections: [
+      {
+        heading: "Apa itu AI coding agent?",
+        paragraphs: [
+          "AI coding agent adalah sistem yang tidak hanya menjawab, tapi juga bertindak: membaca file, menulis kode, menjalankan perintah, dan memperbaiki error secara iteratif.",
+          "Agen semacam ini bisa memanggil model berkali-kali dalam satu tugas, sehingga efisiensi token sangat menentukan biaya akhir.",
+        ],
+      },
+      {
+        heading: "Memilih model untuk coding agent",
+        paragraphs: [
+          "Pilih model yang kuat di coding dan penalaran, misalnya DeepSeek atau GLM. Untuk langkah sederhana (parsing, validasi), gunakan model yang lebih murah agar loop agen tidak boros.",
+          "Dengan 9inference, Anda bisa mengganti model per langkah dalam satu API key — tidak perlu kredensial terpisah per provider.",
+        ],
+      },
+      {
+        heading: "Mengontrol biaya loop agen",
+        paragraphs: [
+          "Batasi jumlah iterasi maksimal, pangkas output tool yang panjang, dan gunakan ringkasan daripada menempelkan seluruh log. Setiap token yang dihemat berlipat ganda dalam loop.",
+          "Pantau usage per request di dashboard untuk menemukan langkah agen yang paling mahal.",
+        ],
+      },
+      {
+        heading: "Praktik production",
+        paragraphs: [
+          "Sandbox eksekusi perintah agen, validasi output sebelum diterapkan, dan sediakan mode dry-run. Keamanan sama pentingnya dengan efisiensi biaya.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "rag-api-murah-panduan",
+    title: "RAG dengan API AI Murah: Panduan Praktis",
+    description:
+      "Bangun sistem RAG (Retrieval-Augmented Generation) yang hemat biaya. Pelajari cara kerja RAG, strategi chunking, dan menekan biaya token retrieval.",
+    keywords: [
+      "RAG AI",
+      "retrieval augmented generation",
+      "RAG murah",
+      "AI knowledge base",
+      "chatbot dokumen",
+    ],
+    publishedAt: "2026-07-30",
+    updatedAt: "2026-07-30",
+    category: "Use Case",
+    readingMinutes: 9,
+    sections: [
+      {
+        heading: "Apa itu RAG dan kenapa penting?",
+        paragraphs: [
+          "RAG (Retrieval-Augmented Generation) menggabungkan pencarian dokumen dengan model AI. Alih-alih menghafal, model menjawab berdasarkan dokumen relevan yang diambil saat itu juga.",
+          "Ini ideal untuk chatbot knowledge base, asisten internal perusahaan, dan Q&A atas dokumen pribadi — tanpa fine-tuning mahal.",
+        ],
+      },
+      {
+        heading: "Alur kerja RAG sederhana",
+        paragraphs: [
+          "Pertama, dokumen dipecah menjadi potongan (chunk) lalu disimpan di vector database. Saat pengguna bertanya, sistem mengambil chunk paling relevan, lalu mengirimnya ke model AI bersama pertanyaan.",
+          "Model AI kemudian menjawab berdasarkan konteks tersebut. Endpoint kompatibel OpenAI di 9inference memudahkan langkah generasi ini.",
+        ],
+      },
+      {
+        heading: "Menekan biaya token di RAG",
+        paragraphs: [
+          "Biaya RAG didominasi token konteks yang dikirim ke model. Batasi jumlah chunk yang diambil (misalnya 3–5 teratas) dan pangkas chunk yang terlalu panjang.",
+          "Gunakan model murah untuk menjawab pertanyaan sederhana, dan model premium hanya untuk pertanyaan yang butuh penalaran mendalam.",
+        ],
+      },
+      {
+        heading: "Kesalahan umum yang harus dihindari",
+        paragraphs: [
+          "Chunk terlalu besar membuat konteks tidak fokus dan boros token. Chunk terlalu kecil kehilangan makna. Eksperimen dengan ukuran chunk dan jumlah retrieval untuk kualitas terbaik per rupiah.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "cara-menghitung-biaya-token-ai",
+    title: "Cara Menghitung Biaya Token AI untuk Budgeting",
+    description:
+      "Panduan menghitung biaya token AI secara akurat: rumus input/output, estimasi workload bulanan, dan tips menghemat budget API.",
+    keywords: [
+      "biaya token AI",
+      "harga token AI",
+      "cara hitung token",
+      "budget API AI",
+      "estimasi biaya AI",
+    ],
+    publishedAt: "2026-08-01",
+    updatedAt: "2026-08-01",
+    category: "Bisnis",
+    readingMinutes: 7,
+    sections: [
+      {
+        heading: "Memahami input dan output token",
+        paragraphs: [
+          "Setiap request AI terdiri dari token input (prompt + konteks) dan token output (jawaban model). Keduanya biasanya punya tarif berbeda, dan output sering lebih mahal.",
+          "Di 9inference, tarif ditampilkan dalam rupiah per 1 juta token, sehingga mudah dihitung untuk budgeting.",
+        ],
+      },
+      {
+        heading: "Rumus dasar menghitung biaya",
+        paragraphs: [
+          "Biaya per request = (token input ÷ 1.000.000 × tarif input) + (token output ÷ 1.000.000 × tarif output). Kalikan dengan jumlah request per hari untuk estimasi harian, lalu per bulan.",
+          "Contoh: 1.000 request/hari dengan rata-rata 1.000 token input dan 500 output akan jauh lebih murah di model ekonomis dibanding model premium.",
+        ],
+      },
+      {
+        heading: "Estimasi workload nyata",
+        paragraphs: [
+          "Ukur rata-rata token dari sampel request nyata Anda, bukan tebakan. Jalankan beberapa hari di staging, catat usage, lalu ekstrapolasi.",
+          "Selalu tambahkan buffer 20–30% untuk lonjakan traffic dan variasi panjang jawaban.",
+        ],
+      },
+      {
+        heading: "Tips menghemat budget",
+        paragraphs: [
+          "Pangkas system prompt, batasi max_tokens, cache jawaban berulang, dan gunakan model termurah yang masih memenuhi standar kualitas Anda.",
+          "Pantau usage per model di dashboard 9inference agar Anda tahu persis ke mana anggaran mengalir.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getAllPosts(): BlogPost[] {
