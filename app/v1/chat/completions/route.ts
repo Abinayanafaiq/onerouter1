@@ -13,6 +13,9 @@ import {
   getClientIp,
   errorResponse,
   sanitizeUpstreamError,
+  fetchUpstream,
+  UPSTREAM_RETRY_BACKOFF_MS,
+  sleep,
   type BillingInfo,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
@@ -315,7 +318,7 @@ export async function POST(request: Request) {
       const maskedLog = usingEnvFallback ? "env-fallback" : maskForKeyLog(currentKey.plaintext);
       console.log(`[v1/chat] attempt ${attempt + 1}/${MAX_ATTEMPTS} with key ${maskedLog}`);
 
-      let upstream = await fetch(upstreamUrl, {
+      let upstream = await fetchUpstream(upstreamUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -345,7 +348,7 @@ export async function POST(request: Request) {
           );
           delete body.stream_options;
           streamOptionsInjected = false;
-          upstream = await fetch(upstreamUrl, {
+          upstream = await fetchUpstream(upstreamUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -367,19 +370,37 @@ export async function POST(request: Request) {
         }
       }
 
-      const isRetryable = !usingEnvFallback && (
+      // 401/403/429 = credential/quota problem on THIS key: mark it errored so
+      // the cooldown skips it and the next attempt rotates to another key.
+      // 5xx = origin SERVER problem, not the key's fault: do NOT cooldown the
+      // key — otherwise a single upstream blip (e.g. Cloudflare 502/520 from
+      // the origin) marks every key errored and turns into a full 60s outage
+      // where requests fail instantly without even trying upstream.
+      const isKeyError =
         upstream.status === 401 ||
         upstream.status === 403 ||
-        upstream.status === 429 ||
-        upstream.status >= 500
-      );
+        upstream.status === 429;
+      const isRetryable = !usingEnvFallback && (isKeyError || upstream.status >= 500);
 
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
-        console.error(`[v1/chat] upstream error (retryable): ${upstream.status}, marking key ${maskedLog} errored`);
-        await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
+        if (isKeyError) {
+          console.error(`[v1/chat] upstream key error: ${upstream.status}, marking key ${maskedLog} errored`);
+          await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
+        } else {
+          console.error(`[v1/chat] upstream server error (retryable): ${upstream.status}, key ${maskedLog} kept active (origin issue, no cooldown)`);
+        }
         lastUpstreamStatus = upstream.status;
         lastUpstreamText = text;
+        // Brief backoff before the next attempt so we don't hammer an
+        // already-struggling origin with back-to-back retries.
+        if (attempt + 1 < MAX_ATTEMPTS) {
+          await sleep(
+            UPSTREAM_RETRY_BACKOFF_MS[
+              Math.min(attempt, UPSTREAM_RETRY_BACKOFF_MS.length - 1)
+            ],
+          );
+        }
         continue;
       }
 

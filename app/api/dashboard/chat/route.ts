@@ -14,6 +14,9 @@ import {
   getClientIp,
   errorResponse,
   sanitizeUpstreamError,
+  fetchUpstream,
+  UPSTREAM_RETRY_BACKOFF_MS,
+  sleep,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { MASTER_API_URL, MASTER_API_KEY } from "@/app/lib/constants";
@@ -253,7 +256,7 @@ export async function POST(request: Request) {
         currentKey = next;
       }
 
-      const upstream = await fetch(upstreamUrl, {
+      const upstream = await fetchUpstream(upstreamUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -262,18 +265,34 @@ export async function POST(request: Request) {
         body: JSON.stringify(body),
       });
 
-      const isRetryable = !usingEnvFallback && (
+      // Same policy as /v1/chat/completions: 401/403/429 mark the key errored
+      // (cooldown + rotate to another key), but 5xx is an origin SERVER
+      // problem — don't cooldown the key, or a single upstream blip turns
+      // into a full 60s outage for every request.
+      const isKeyError =
         upstream.status === 401 ||
         upstream.status === 403 ||
-        upstream.status === 429 ||
-        upstream.status >= 500
-      );
+        upstream.status === 429;
+      const isRetryable = !usingEnvFallback && (isKeyError || upstream.status >= 500);
 
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
-        await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
+        if (isKeyError) {
+          console.error(`[api/dashboard/chat] upstream key error: ${upstream.status}, marking key errored`);
+          await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
+        } else {
+          console.error(`[api/dashboard/chat] upstream server error (retryable): ${upstream.status}, key kept active (origin issue, no cooldown)`);
+        }
         lastUpstreamStatus = upstream.status;
         lastUpstreamText = text;
+        // Brief backoff before the next attempt (don't hammer a struggling origin).
+        if (attempt + 1 < MAX_ATTEMPTS) {
+          await sleep(
+            UPSTREAM_RETRY_BACKOFF_MS[
+              Math.min(attempt, UPSTREAM_RETRY_BACKOFF_MS.length - 1)
+            ],
+          );
+        }
         continue;
       }
 

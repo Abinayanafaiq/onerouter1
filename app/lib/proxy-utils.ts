@@ -18,6 +18,35 @@ import { createApiRequestLog } from "./api-request-log";
 export type { RequestMeta, ReserveResult, SettleResult };
 export { logNonBilledUsage, reserveCredits, settleUsage, releaseReservation };
 
+/**
+ * Max time to wait for the upstream to start responding (connect +
+ * time-to-first-byte). The timer is cleared as soon as response headers
+ * arrive, so long-running SSE streams are NOT cut off — only genuinely
+ * hung upstream connections are aborted.
+ */
+export const UPSTREAM_RESPONSE_TIMEOUT_MS = 90_000;
+
+/** Backoff between upstream retry attempts (ms). Indexed by attempt number. */
+export const UPSTREAM_RETRY_BACKOFF_MS = [400, 900];
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * fetch() wrapper that aborts if the upstream takes longer than
+ * UPSTREAM_RESPONSE_TIMEOUT_MS to return response headers. Without this, a
+ * hung origin connection can hold a request (and its wallet reservation)
+ * open almost indefinitely.
+ */
+export function fetchUpstream(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_RESPONSE_TIMEOUT_MS);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timer),
+  );
+}
+
 export type AuthenticatedApiKey = Awaited<ReturnType<typeof authenticateRequest>>;
 
 /**
