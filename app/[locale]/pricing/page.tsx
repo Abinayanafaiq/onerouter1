@@ -268,9 +268,13 @@ export default async function PricingPage({
                 {pkg.highlight && <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">Paling hemat</span>}
                 <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{pkg.name}</div>
                 <div className="mt-5 text-3xl font-bold tracking-tight">Rp{pkg.price.toLocaleString("id-ID")}</div>
-                <div className="mt-1 text-xs text-muted-foreground">sekali bayar · aktif 24 jam</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  sekali bayar · {pkg.durationDays === 1 ? "aktif 24 jam" : `aktif ${pkg.durationDays} hari`}
+                </div>
                 <div className="mt-6 border-y border-white/[0.07] py-4">
-                  <div className="text-2xl font-semibold text-accent">{Number(pkg.tokenQuota / 1_000_000n)} juta</div>
+                  <div className="text-2xl font-semibold text-accent">
+                    {(Number(pkg.tokenQuota) / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} juta
+                  </div>
                   <div className="mt-1 text-[11px] text-muted-foreground">token input + output</div>
                 </div>
                 <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
