@@ -1,6 +1,7 @@
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
+import { CopyChip } from "@/app/components/copy-chip";
 import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
@@ -78,10 +79,10 @@ export default async function PackagesPage() {
     key.enabled && key.isActive && (!key.expiresAt || key.expiresAt > now) && key.tokenUsed < key.tokenQuota,
   );
   const totalRemaining = activeKeys.reduce((sum, key) => sum + (key.tokenQuota - key.tokenUsed), 0n);
-  const modelsByProvider = packageModels.reduce<Record<string, typeof packageModels>>((groups, model) => {
-    (groups[model.provider] ??= []).push(model);
-    return groups;
-  }, {});
+  // Flat list sorted by provider (stable sort keeps the admin-defined `sort`
+  // order within each provider) so the grid renders uniform, tidy cells.
+  const sortedModels = [...packageModels].sort((a, b) => a.provider.localeCompare(b.provider));
+  const providerCount = new Set(packageModels.map((model) => model.provider)).size;
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -110,19 +111,16 @@ export default async function PackagesPage() {
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.015]">
-        <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] px-5 py-5 sm:flex-row sm:items-center sm:px-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold">Model yang tersedia</h2>
-              <span className="rounded-full border border-accent/15 bg-accent/[0.07] px-2 py-0.5 font-mono text-[10px] text-accent">
-                {packageModels.length} model aktif
-              </span>
-            </div>
+        <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] px-5 py-5 sm:px-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold">Model yang tersedia</h2>
+            <span className="rounded-full border border-accent/15 bg-accent/[0.07] px-2 py-0.5 font-mono text-[10px] text-accent">
+              {packageModels.length} model aktif
+            </span>
           </div>
-          <div className="shrink-0 rounded-lg border border-white/[0.07] bg-black/20 px-3 py-2">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Contoh model</span>
-            <code className="ml-2 text-[11px] text-accent">gemini-2.5-flash-lite</code>
-          </div>
+          <span className="shrink-0 text-[10px] text-muted-foreground">
+            {providerCount} provider
+          </span>
         </div>
 
         {packageModels.length === 0 ? (
@@ -130,28 +128,29 @@ export default async function PackagesPage() {
             Belum ada model paket yang aktif. Silakan hubungi admin.
           </div>
         ) : (
-          <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2 xl:grid-cols-3">
-            {Object.entries(modelsByProvider).map(([provider, models]) => (
-              <div key={provider} className="bg-[#090a08] p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
-                    <h3 className="text-xs font-semibold">{provider}</h3>
-                  </div>
-                  <span className="font-mono text-[9px] text-muted-foreground">{models.length} model</span>
+          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
+            {sortedModels.map((model) => (
+              <div
+                key={model.id}
+                className="group flex flex-col rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-accent/25 hover:bg-accent/[0.03]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-0.5 text-[10px] font-medium text-foreground/80">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
+                    <span className="truncate">{model.provider}</span>
+                  </span>
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${model.supportsStreaming ? "bg-emerald-400/10 text-emerald-300" : "bg-white/[0.05] text-muted-foreground"}`}>
+                    {model.supportsStreaming ? "stream" : "non-stream"}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {models.map((model) => (
-                    <div key={model.id} className="group rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition hover:border-accent/20 hover:bg-accent/[0.035]">
-                      <div className="flex items-center justify-between gap-3">
-                        <code className="min-w-0 truncate text-[11px] text-foreground/90" title={model.modelId}>{model.modelId}</code>
-                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${model.supportsStreaming ? "bg-emerald-400/10 text-emerald-300" : "bg-white/[0.05] text-muted-foreground"}`}>
-                          {model.supportsStreaming ? "stream" : "non-stream"}
-                        </span>
-                      </div>
-                      <div className="mt-1 truncate text-[9px] text-muted-foreground" title={model.name}>{model.name}</div>
-                    </div>
-                  ))}
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <code className="min-w-0 truncate font-mono text-[12px] text-foreground/90" title={model.modelId}>
+                    {model.modelId}
+                  </code>
+                  <CopyChip text={model.modelId} />
+                </div>
+                <div className="mt-1 truncate text-[10px] text-muted-foreground" title={model.name}>
+                  {model.name}
                 </div>
               </div>
             ))}
