@@ -47,6 +47,109 @@ export function fetchUpstream(url: string, init: RequestInit): Promise<Response>
   );
 }
 
+export type AggregatedCompletion = {
+  id: string;
+  object: "chat.completion";
+  created: number;
+  model: string;
+  choices: {
+    index: number;
+    message: { role: "assistant"; content: string };
+    finish_reason: string;
+  }[];
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+};
+
+/**
+ * Read an upstream SSE stream (requested with stream=true) and fold it back
+ * into a standard non-streaming chat.completion object. Only assistant
+ * `content` deltas are aggregated — reasoning deltas are ignored. Returns
+ * null on transport failure.
+ *
+ * Workaround helper: the upstream origin crashes (Cloudflare 520) on
+ * non-streaming chat completions, so routes always request a stream upstream
+ * and use this to serve clients that asked for a regular JSON response.
+ */
+export async function aggregateUpstreamStream(
+  upstream: Response,
+): Promise<AggregatedCompletion | null> {
+  if (!upstream.body) return null;
+
+  const decoder = new TextDecoder();
+  const reader = upstream.body.getReader();
+  let buffer = "";
+  let content = "";
+  let finishReason = "stop";
+  let id = "";
+  let created = 0;
+  let model = "";
+  let promptTokens = 0;
+  let completionTokens = 0;
+
+  function handleLine(line: string) {
+    if (!line.startsWith("data: ")) return;
+    const payload = line.slice(6).trim();
+    if (!payload || payload === "[DONE]") return;
+    try {
+      const chunk = JSON.parse(payload) as {
+        id?: string;
+        created?: number;
+        model?: string;
+        choices?: {
+          delta?: { content?: string };
+          finish_reason?: string | null;
+        }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+      };
+      if (chunk.id) id = chunk.id;
+      if (chunk.created) created = chunk.created;
+      if (chunk.model) model = chunk.model;
+      const choice = chunk.choices?.[0];
+      if (choice?.delta?.content) content += choice.delta.content;
+      if (choice?.finish_reason) finishReason = choice.finish_reason;
+      if (chunk.usage) {
+        promptTokens = chunk.usage.prompt_tokens || 0;
+        completionTokens = chunk.usage.completion_tokens || 0;
+      }
+    } catch {
+      // Skip malformed SSE chunks.
+    }
+  }
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) handleLine(line);
+    }
+    if (buffer) handleLine(buffer);
+  } catch {
+    return null;
+  }
+
+  return {
+    id: id || `chatcmpl-${Date.now()}`,
+    object: "chat.completion",
+    created: created || Math.floor(Date.now() / 1000),
+    model,
+    choices: [
+      { index: 0, message: { role: "assistant", content }, finish_reason: finishReason },
+    ],
+    ...(promptTokens > 0 || completionTokens > 0
+      ? {
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            total_tokens: promptTokens + completionTokens,
+          },
+        }
+      : {}),
+  };
+}
+
 export type AuthenticatedApiKey = Awaited<ReturnType<typeof authenticateRequest>>;
 
 /**

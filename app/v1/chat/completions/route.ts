@@ -14,6 +14,7 @@ import {
   errorResponse,
   sanitizeUpstreamError,
   fetchUpstream,
+  aggregateUpstreamStream,
   UPSTREAM_RETRY_BACKOFF_MS,
   sleep,
   type BillingInfo,
@@ -267,25 +268,30 @@ export async function POST(request: Request) {
 
   // 9. Forward to upstream provider with failover
   body.model = resolvedModel.masterId;
-  const isStream = body.stream === true;
+  const clientWantsStream = body.stream === true;
   const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
-  console.log("[v1/chat] forwarding to:", upstreamUrl, "stream:", isStream);
+  console.log("[v1/chat] forwarding to:", upstreamUrl, "client stream:", clientWantsStream);
 
+  // WORKAROUND: the upstream origin crashes (Cloudflare 520) on NON-streaming
+  // chat completions — verified across all models — while streaming works
+  // fine. Always request a stream upstream; for clients that asked for a
+  // regular JSON response, the SSE chunks are aggregated back into a
+  // chat.completion object below (transparent to the client).
+  body.stream = true;
   // Inject stream_options.include_usage so the upstream sends a usage chunk
   // at the end of the SSE stream. Without this, most OpenAI-compatible
   // providers (incl. limitrouter) never emit a `usage` field in streaming
   // mode, leaving prompt/completion tokens at 0 and triggering a full
   // refund to the user — while the operator is still charged upstream.
-  let streamOptionsInjected = false;
-  if (isStream) {
-    const existing = body.stream_options;
-    body.stream_options = {
-      ...(typeof existing === "object" && existing !== null ? existing : {}),
-      include_usage: true,
-    };
-    streamOptionsInjected = true;
-    console.log("[v1/chat] injected stream_options.include_usage=true");
-  }
+  const existingStreamOptions = body.stream_options;
+  body.stream_options = {
+    ...(typeof existingStreamOptions === "object" && existingStreamOptions !== null
+      ? existingStreamOptions
+      : {}),
+    include_usage: true,
+  };
+  let streamOptionsInjected = true;
+  console.log("[v1/chat] forced stream=true upstream, injected stream_options.include_usage=true");
 
   // Kimi K3 is a reasoning model that rejects `temperature` with HTTP 400.
   // Strip it before forwarding so clients (e.g. opencode) that always send
@@ -434,8 +440,8 @@ export async function POST(request: Request) {
         await markKeySuccess(currentKey.id);
       }
 
-      // --- Streaming response ---
-      if (isStream && upstream.body) {
+      // --- Streaming response (client asked for SSE: pass through) ---
+      if (clientWantsStream && upstream.body) {
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();
         const reader = upstream.body.getReader();
@@ -525,13 +531,12 @@ export async function POST(request: Request) {
         });
       }
 
-      // --- Non-streaming response ---
-      const rawText = await upstream.text();
-      let data: { usage?: { prompt_tokens?: number; completion_tokens?: number } };
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        console.error("[v1/chat] JSON parse failed. Raw (first 500):", rawText.slice(0, 500));
+      // --- Non-streaming client: aggregate upstream SSE back into JSON ---
+      // (The upstream was forced to stream=true above because its origin
+      // crashes with 520 on non-streaming requests.)
+      const data = await aggregateUpstreamStream(upstream);
+      if (!data) {
+        console.error("[v1/chat] failed to aggregate upstream stream");
 
         // Release reservation — no valid response to bill
         await releaseReservation({
@@ -539,7 +544,7 @@ export async function POST(request: Request) {
           reservedAmount: reservation.reservedAmount,
           description: resolvedModel.modelId,
         });
-        console.log("[v1/chat] reservation released (non-JSON response)");
+        console.log("[v1/chat] reservation released (invalid upstream stream)");
 
         await logNonBilledUsage({
           userId: apiKey.userId,
@@ -550,7 +555,7 @@ export async function POST(request: Request) {
           status: "error",
           requestMeta: buildMeta(502),
         });
-        return errorResponse("Upstream returned a non-JSON response", 502, "api_error");
+        return errorResponse("Upstream returned an invalid response", 502, "api_error");
       }
 
       const promptTokensResp = data.usage?.prompt_tokens || 0;
