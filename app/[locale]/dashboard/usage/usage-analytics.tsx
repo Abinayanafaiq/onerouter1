@@ -314,8 +314,8 @@ export function UsageAnalytics({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
-              {modelRows.map((m) => (
-                <tr key={`${m.model}-${m.provider}`} className="transition hover:bg-white/[0.025]">
+              {modelRows.map((m, i) => (
+                <tr key={`${m.model}-${m.provider}-${m.modelId ?? "null"}-${i}`} className="transition hover:bg-white/[0.025]">
                   <td className="px-3 py-3 font-medium text-foreground/90">{m.modelName}</td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{m.provider}</td>
                   <td className="px-3 py-2 text-right font-mono text-xs">{m.requests.toLocaleString("id-ID")}</td>

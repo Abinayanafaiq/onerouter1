@@ -20,6 +20,8 @@ export const PROVIDER_MODEL_MAP = {
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast"],
   MiniMax: ["minimax-m3"],
   "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast", "kimi-k3"],
+  NVIDIA: ["nemotron-3-ultra"],
+  OpenAI: ["gpt-oss-120b"],
   Xiaomi: ["mimo-v2.5-pro"],
 } as const;
 
@@ -230,5 +232,29 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 13,
+  },
+  {
+    modelId: "nemotron-3-ultra",
+    masterId: "nemotron-3-ultra",
+    name: "Nemotron 3 Ultra",
+    provider: "NVIDIA",
+    description: "Nemotron 3 Ultra oleh NVIDIA untuk reasoning dan general task",
+    contextWindow: "1M",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 14,
+  },
+  {
+    modelId: "gpt-oss-120b",
+    masterId: "gpt-oss-120b",
+    name: "GPT-OSS 120B",
+    provider: "OpenAI",
+    description: "GPT-OSS 120B oleh OpenAI — model open-source untuk reasoning dan general task",
+    contextWindow: "128K",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 15,
   },
 ];

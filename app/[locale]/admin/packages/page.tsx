@@ -1,33 +1,33 @@
 import { prisma } from "@/app/lib/prisma";
-import { PackageStockEditor } from "./stock-editor";
+import { PackagesManager } from "./packages-manager";
 
 export default async function AdminPackagesPage() {
   const packages = await prisma.package.findMany({
     orderBy: { sort: "asc" },
   });
 
+  const data = packages.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    tokenQuota: p.tokenQuota.toString(),
+    price: p.price,
+    durationDays: p.durationDays,
+    sort: p.sort,
+    stock: p.stock,
+    productType: p.productType,
+    isActive: p.isActive,
+  }));
+
   return (
-    <div className="space-y-4 max-w-lg">
+    <div className="space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-xl font-bold text-neutral-100">Paket & Stok</h1>
+        <h1 className="text-xl font-bold text-neutral-100">Paket &amp; Stok</h1>
         <p className="text-xs text-neutral-500 mt-0.5">
-          Stok 0 = tidak bisa dibeli
+          Tambah, edit, atau hapus paket. Paket yang sudah punya pesanan tidak bisa dihapus — nonaktifkan saja.
         </p>
       </div>
-      <div className="space-y-2">
-        {packages.map((p) => (
-          <PackageStockEditor
-            key={p.id}
-            pkg={{
-              id: p.id,
-              name: p.name,
-              price: p.price,
-              stock: p.stock,
-              isActive: p.isActive,
-            }}
-          />
-        ))}
-      </div>
+      <PackagesManager packages={data} />
     </div>
   );
 }
