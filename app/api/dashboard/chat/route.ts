@@ -241,6 +241,20 @@ export async function POST(request: Request) {
     console.log("[api/dashboard/chat] stripped temperature for kimi-k3 (reasoning model)");
   }
 
+  // WORKAROUND: the upstream origin currently crashes (Cloudflare 520) on
+  // NON-streaming chat completions — verified across all models — while
+  // streaming works fine. Always request a stream upstream and aggregate
+  // the chunks back into a standard non-streaming JSON response for the
+  // playground browser client (which expects a single JSON body).
+  body.stream = true;
+  const existingStreamOptions = body.stream_options;
+  body.stream_options = {
+    ...(typeof existingStreamOptions === "object" && existingStreamOptions !== null
+      ? existingStreamOptions
+      : {}),
+    include_usage: true,
+  };
+
   const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
@@ -325,12 +339,9 @@ export async function POST(request: Request) {
         await markKeySuccess(currentKey.id);
       }
 
-      const rawText = await upstream.text();
-      let data: { usage?: { prompt_tokens?: number; completion_tokens?: number } };
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        console.error("[api/dashboard/chat] JSON parse failed. Raw (first 500):", rawText.slice(0, 500));
+      const data = await aggregateUpstreamStream(upstream);
+      if (!data) {
+        console.error("[api/dashboard/chat] failed to aggregate upstream stream");
 
         // Release reservation — no valid response to bill
         await releaseReservation({
@@ -338,7 +349,7 @@ export async function POST(request: Request) {
           reservedAmount: reservation.reservedAmount,
           description: resolvedModel.modelId,
         });
-        console.log("[api/dashboard/chat] reservation released (non-JSON response)");
+        console.log("[api/dashboard/chat] reservation released (invalid upstream stream)");
 
         await logNonBilledUsage({
           userId,
@@ -349,7 +360,7 @@ export async function POST(request: Request) {
           status: "error",
           requestMeta: buildMeta(502),
         });
-        return errorResponse("Upstream returned a non-JSON response", 502, "api_error");
+        return errorResponse("Upstream returned an invalid response", 502, "api_error");
       }
 
       const inputTokens = data.usage?.prompt_tokens || 0;
@@ -431,4 +442,101 @@ export async function POST(request: Request) {
     });
     return errorResponse("Failed to reach upstream API", 502, "api_error");
   }
+}
+
+type AggregatedCompletion = {
+  id: string;
+  object: "chat.completion";
+  created: number;
+  model: string;
+  choices: {
+    index: number;
+    message: { role: "assistant"; content: string };
+    finish_reason: string;
+  }[];
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+};
+
+/**
+ * Read an upstream SSE stream (requested with stream=true) and fold it back
+ * into a standard non-streaming chat.completion object. Only assistant
+ * `content` deltas are aggregated — reasoning deltas are ignored, matching
+ * what the playground displays. Returns null on transport failure.
+ */
+async function aggregateUpstreamStream(upstream: Response): Promise<AggregatedCompletion | null> {
+  if (!upstream.body) return null;
+
+  const decoder = new TextDecoder();
+  const reader = upstream.body.getReader();
+  let buffer = "";
+  let content = "";
+  let finishReason = "stop";
+  let id = "";
+  let created = 0;
+  let model = "";
+  let promptTokens = 0;
+  let completionTokens = 0;
+
+  function handleLine(line: string) {
+    if (!line.startsWith("data: ")) return;
+    const payload = line.slice(6).trim();
+    if (!payload || payload === "[DONE]") return;
+    try {
+      const chunk = JSON.parse(payload) as {
+        id?: string;
+        created?: number;
+        model?: string;
+        choices?: {
+          delta?: { content?: string };
+          finish_reason?: string | null;
+        }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+      };
+      if (chunk.id) id = chunk.id;
+      if (chunk.created) created = chunk.created;
+      if (chunk.model) model = chunk.model;
+      const choice = chunk.choices?.[0];
+      if (choice?.delta?.content) content += choice.delta.content;
+      if (choice?.finish_reason) finishReason = choice.finish_reason;
+      if (chunk.usage) {
+        promptTokens = chunk.usage.prompt_tokens || 0;
+        completionTokens = chunk.usage.completion_tokens || 0;
+      }
+    } catch {
+      // Skip malformed SSE chunks.
+    }
+  }
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) handleLine(line);
+    }
+    if (buffer) handleLine(buffer);
+  } catch {
+    return null;
+  }
+
+  return {
+    id: id || `chatcmpl-${Date.now()}`,
+    object: "chat.completion",
+    created: created || Math.floor(Date.now() / 1000),
+    model,
+    choices: [
+      { index: 0, message: { role: "assistant", content }, finish_reason: finishReason },
+    ],
+    ...(promptTokens > 0 || completionTokens > 0
+      ? {
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            total_tokens: promptTokens + completionTokens,
+          },
+        }
+      : {}),
+  };
 }
