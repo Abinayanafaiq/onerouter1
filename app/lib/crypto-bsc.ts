@@ -180,13 +180,38 @@ export type BscPaymentCheck = {
   error?: string;
 };
 
-export async function checkPaymentOnChain(orderId: string): Promise<BscPaymentCheck> {
-  const { walletAddress, rpcUrl, confirmations: requiredConf } = await getBscSettings();
-  if (!walletAddress) return { found: false, error: "Wallet belum dikonfigurasi" };
+// Cache hasil query log Transfer ke wallet. Semua order membaca log yang sama,
+// jadi cukup 1x hit RPC per TTL berapa pun jumlah order yang pending.
+// Melindungi RPC publik dari rate limit akibat polling frontend tiap 5 detik.
+type TransferLogsCache = {
+  wallet: string;
+  latestBlock: number;
+  logs: RpcLog[];
+  ts: number;
+};
+let transferLogsCache: TransferLogsCache | null = null;
+const LOGS_CACHE_TTL_MS = 10_000;
+let rpcBackoffUntil = 0;
+const RPC_BACKOFF_MS = 20_000;
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) return { found: false, error: "Order tidak ditemukan" };
-  if (!order.cryptoExpectedAmount) return { found: false, error: "Expected amount tidak ada" };
+async function fetchTransferLogs(
+  rpcUrl: string,
+  walletAddress: string,
+): Promise<{ latestBlock: number; logs: RpcLog[] }> {
+  const now = Date.now();
+  const walletKey = walletAddress.toLowerCase();
+
+  if (
+    transferLogsCache &&
+    transferLogsCache.wallet === walletKey &&
+    now - transferLogsCache.ts < LOGS_CACHE_TTL_MS
+  ) {
+    return { latestBlock: transferLogsCache.latestBlock, logs: transferLogsCache.logs };
+  }
+
+  if (now < rpcBackoffUntil) {
+    throw new Error("RPC backoff: rate limited, retry otomatis");
+  }
 
   try {
     const latestBlockHex = (await rpcCall(rpcUrl, "eth_blockNumber", [])) as string;
@@ -201,6 +226,25 @@ export async function checkPaymentOnChain(orderId: string): Promise<BscPaymentCh
         toBlock: latestBlockHex,
       },
     ])) as RpcLog[];
+
+    transferLogsCache = { wallet: walletKey, latestBlock, logs, ts: now };
+    return { latestBlock, logs };
+  } catch (e) {
+    rpcBackoffUntil = Date.now() + RPC_BACKOFF_MS;
+    throw e;
+  }
+}
+
+export async function checkPaymentOnChain(orderId: string): Promise<BscPaymentCheck> {
+  const { walletAddress, rpcUrl, confirmations: requiredConf } = await getBscSettings();
+  if (!walletAddress) return { found: false, error: "Wallet belum dikonfigurasi" };
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) return { found: false, error: "Order tidak ditemukan" };
+  if (!order.cryptoExpectedAmount) return { found: false, error: "Expected amount tidak ada" };
+
+  try {
+    const { latestBlock, logs } = await fetchTransferLogs(rpcUrl, walletAddress);
 
     if (!logs || logs.length === 0) return { found: false };
 
