@@ -170,7 +170,10 @@ export async function regenerateApiKey(
   const updated = await prisma.apiKey.update({
     where: { id: keyId },
     data: {
-      key: null,
+      // Token-package keys are short-lived purchased products whose owners
+      // must be able to view/copy them anytime — keep the plaintext, exactly
+      // like order-issued package keys. PAYG keys stay hash-only.
+      key: existing.billingMode === "TOKEN_PACKAGE" ? generated.key : null,
       keyHash: generated.keyHash,
       prefix: generated.prefix,
       last4: generated.last4,
@@ -179,6 +182,18 @@ export async function regenerateApiKey(
     },
   });
   return { view: toApiKeyView(updated), plaintext: generated.key };
+}
+
+/** Lightweight billing-mode lookup for ownership-scoped route guards. */
+export async function getOwnedKeyBillingMode(
+  userId: string,
+  keyId: string,
+): Promise<string | null> {
+  const key = await prisma.apiKey.findFirst({
+    where: { id: keyId, userId },
+    select: { billingMode: true },
+  });
+  return key?.billingMode ?? null;
 }
 
 export async function setApiKeyEnabled(
