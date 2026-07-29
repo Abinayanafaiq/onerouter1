@@ -2,6 +2,7 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { CopyChip } from "@/app/components/copy-chip";
+import { RevealKey } from "../reveal-key";
 import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
@@ -194,9 +195,7 @@ export default async function PackagesPage() {
                       <code className="mt-1 block text-[11px] text-muted-foreground">{key.prefix || "sk_live_"}••••••{key.last4 || "••••"}</code>
                     </div>
                     <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span>
-                  </div>
-
-                  <div className="p-5">
+                  </div>                  <div className="p-5">
                     <div className="flex items-end justify-between gap-4">
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">Sisa kuota</div>
@@ -218,6 +217,23 @@ export default async function PackagesPage() {
                       <Info label="Total request" value={key.requestCount.toLocaleString("id-ID")} mono />
                       <Info label="Terakhir digunakan" value={key.lastUsedAt ? formatDate(key.lastUsedAt) : "Belum pernah"} />
                     </dl>
+
+                    <div className="mt-4 rounded-lg border border-white/[0.07] bg-black/20 p-3">
+                      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">API Key</div>
+                      <div className="mt-1.5">
+                        {key.key ? (
+                          <RevealKey
+                            rawKey={key.key}
+                            isExpired={key.expiresAt ? key.expiresAt <= now : false}
+                            labels={{ show: "Tampilkan", hide: "Sembunyikan", copy: "Salin" }}
+                          />
+                        ) : (
+                          <code className="text-[11px] text-muted-foreground">
+                            {key.prefix || "sk_live_"}••••••{key.last4 || "••••"} — hubungi admin untuk melihat key ini
+                          </code>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="mt-4 rounded-lg border border-white/[0.07] bg-black/20 p-3">
                       <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Base URL paket</div>

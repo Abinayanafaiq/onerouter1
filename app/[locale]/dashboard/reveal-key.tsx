@@ -3,7 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { maskKey } from "@/app/lib/apikey";
 
-export function RevealKey({ rawKey, isExpired }: { rawKey: string; isExpired: boolean }) {
+export function RevealKey({
+  rawKey,
+  isExpired,
+  labels = { show: "Show", hide: "Hide", copy: "Copy" },
+}: {
+  rawKey: string;
+  isExpired: boolean;
+  labels?: { show: string; hide: string; copy: string };
+}) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,14 +57,14 @@ export function RevealKey({ rawKey, isExpired }: { rawKey: string; isExpired: bo
         type="button"
         className="text-[10px] text-muted-foreground hover:text-foreground transition shrink-0 border px-1.5 py-0.5 rounded"
       >
-        {revealed ? "Hide" : "Show"}
+        {revealed ? labels.hide : labels.show}
       </button>
       <button
         onClick={copy}
         type="button"
         className="text-[10px] text-muted-foreground hover:text-foreground transition shrink-0 border px-1.5 py-0.5 rounded"
       >
-        {copied ? "✓" : "Copy"}
+        {copied ? "✓" : labels.copy}
       </button>
     </div>
   );
