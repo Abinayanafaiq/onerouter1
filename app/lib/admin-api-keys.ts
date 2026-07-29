@@ -42,6 +42,75 @@ export async function adminDeleteApiKey(keyId: string): Promise<boolean> {
   return true;
 }
 
+export type AdminUserPackageStatus = "active" | "depleted" | "expired" | "disabled";
+
+export type AdminUserPackageView = AdminApiKeyView & {
+  status: AdminUserPackageStatus;
+  usedPercent: number;
+};
+
+export type AdminUserPackagesSummary = {
+  totalPackages: number;
+  activePackages: number;
+  depletedPackages: number;
+  expiredPackages: number;
+  totalRemainingTokens: number;
+  totalUsedTokens: number;
+};
+
+/**
+ * All TOKEN_PACKAGE API keys ever issued to users (i.e. purchased token
+ * packages), enriched with owner email, computed status, and remaining
+ * quota — plus aggregate totals for the admin overview cards.
+ */
+export async function listUserTokenPackages(): Promise<{
+  packages: AdminUserPackageView[];
+  summary: AdminUserPackagesSummary;
+}> {
+  const keys = await prisma.apiKey.findMany({
+    where: { billingMode: "TOKEN_PACKAGE" },
+    include: { user: { select: { email: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const packages: AdminUserPackageView[] = keys.map((k) => {
+    const view = toApiKeyView(k);
+    const status: AdminUserPackageStatus =
+      !k.enabled || !k.isActive
+        ? "disabled"
+        : view.isExpired
+          ? "expired"
+          : view.tokenUsed >= view.tokenQuota
+            ? "depleted"
+            : "active";
+    return {
+      ...view,
+      userEmail: k.user.email,
+      userId: k.userId,
+      status,
+      usedPercent:
+        view.tokenQuota > 0
+          ? Math.min(100, (view.tokenUsed / view.tokenQuota) * 100)
+          : 100,
+    };
+  });
+
+  const active = packages.filter((p) => p.status === "active");
+  const summary: AdminUserPackagesSummary = {
+    totalPackages: packages.length,
+    activePackages: active.length,
+    depletedPackages: packages.filter((p) => p.status === "depleted").length,
+    expiredPackages: packages.filter((p) => p.status === "expired").length,
+    totalRemainingTokens: active.reduce(
+      (sum, p) => sum + Math.max(0, p.tokenQuota - p.tokenUsed),
+      0,
+    ),
+    totalUsedTokens: packages.reduce((sum, p) => sum + p.tokenUsed, 0),
+  };
+
+  return { packages, summary };
+}
+
 export type AdminKeyAnalytics = {
   totals: {
     totalKeys: number;
