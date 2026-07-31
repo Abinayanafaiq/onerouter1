@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { useRouter } from "next/navigation";
 import type {
   AdminUserPackageStatus,
   AdminUserPackageView,
@@ -31,6 +32,64 @@ export function UserPackagesTable({
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const router = useRouter();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [expand, setExpand] = useState<{ id: string; mode: "extend" | "quota" } | null>(null);
+  const [amount, setAmount] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function doAction(id: string, payload: Record<string, unknown>): Promise<boolean> {
+    setBusyId(id);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/admin/user-packages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as { success: boolean; error?: string };
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Gagal memproses aksi");
+        return false;
+      }
+      router.refresh();
+      return true;
+    } catch {
+      setErrorMsg("Koneksi gagal");
+      return false;
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleToggle(p: AdminUserPackageView) {
+    if (p.enabled && !window.confirm(`Matikan paket "${p.name}" milik ${p.userEmail}? User tidak akan bisa memakai key ini.`)) {
+      return;
+    }
+    await doAction(p.id, { action: "setEnabled", enabled: !p.enabled });
+  }
+
+  function openExpand(p: AdminUserPackageView, mode: "extend" | "quota") {
+    setErrorMsg(null);
+    setAmount("");
+    setExpand((cur) => (cur && cur.id === p.id && cur.mode === mode ? null : { id: p.id, mode }));
+  }
+
+  async function handleExpandSubmit(p: AdminUserPackageView) {
+    const n = parseInt(amount, 10);
+    if (!Number.isInteger(n) || n < 1) {
+      setErrorMsg(expand?.mode === "extend" ? "Jumlah hari harus bilangan bulat >= 1" : "Jumlah token harus bilangan bulat >= 1");
+      return;
+    }
+    const ok = await doAction(
+      p.id,
+      expand?.mode === "extend" ? { action: "extend", days: n } : { action: "addQuota", tokens: n },
+    );
+    if (ok) {
+      setExpand(null);
+      setAmount("");
+    }
+  }
 
   const filtered = packages.filter((p) => {
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
@@ -77,7 +136,7 @@ export function UserPackagesTable({
 
       {/* Packages table */}
       <div className="border border-neutral-800 rounded-lg overflow-x-auto bg-neutral-900">
-        <table className="w-full text-sm min-w-[860px]">
+        <table className="w-full text-sm min-w-[1020px]">
           <thead className="bg-neutral-900 border-b border-neutral-800">
             <tr>
               <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Paket</th>
@@ -87,12 +146,13 @@ export function UserPackagesTable({
               <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Status</th>
               <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Berakhir</th>
               <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Terakhir Dipakai</th>
+              <th className="text-left px-3 py-2.5 font-medium text-neutral-500 text-xs">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-neutral-500 text-sm">
+                <td colSpan={8} className="px-3 py-6 text-center text-neutral-500 text-sm">
                   Tidak ada paket yang cocok
                 </td>
               </tr>
@@ -100,43 +160,134 @@ export function UserPackagesTable({
               filtered.map((p) => {
                 const meta = STATUS_META[p.status];
                 const remaining = Math.max(0, p.tokenQuota - p.tokenUsed);
+                const isBusy = busyId === p.id;
+                const expanded = expand?.id === p.id ? expand : null;
                 return (
-                  <tr key={p.id} className="hover:bg-neutral-800/50 transition">
-                    <td className="px-3 py-2.5">
-                      <div className="font-medium text-neutral-200 text-xs">{p.name}</div>
-                      <code className="text-[10px] font-mono text-neutral-500">{p.maskedKey}</code>
-                    </td>
-                    <td className="px-3 py-2.5 text-neutral-300 text-xs">{p.userEmail}</td>
-                    <td className="px-3 py-2.5">
-                      <div className="w-44">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-mono text-xs text-neutral-200">{num(remaining)}</span>
-                          <span className="font-mono text-[10px] text-neutral-500">/ {num(p.tokenQuota)}</span>
+                  <Fragment key={p.id}>
+                    <tr className="hover:bg-neutral-800/50 transition">
+                      <td className="px-3 py-2.5">
+                        <div className="font-medium text-neutral-200 text-xs">{p.name}</div>
+                        <code className="text-[10px] font-mono text-neutral-500">{p.maskedKey}</code>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-300 text-xs">{p.userEmail}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="w-44">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="font-mono text-xs text-neutral-200">{num(remaining)}</span>
+                            <span className="font-mono text-[10px] text-neutral-500">/ {num(p.tokenQuota)}</span>
+                          </div>
+                          <div className="mt-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${meta.bar}`}
+                              style={{ width: `${100 - p.usedPercent}%` }}
+                            />
+                          </div>
+                          <div className="mt-0.5 text-[9px] text-neutral-500">
+                            {p.usedPercent.toFixed(1)}% terpakai
+                          </div>
                         </div>
-                        <div className="mt-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${meta.bar}`}
-                            style={{ width: `${100 - p.usedPercent}%` }}
-                          />
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-neutral-400">{num(p.requestCount)}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${meta.cls}`}>
+                          {meta.label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap">
+                        {p.expiresAt ? fmt(p.expiresAt) : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap">
+                        {p.lastUsedAt ? fmt(p.lastUsedAt) : "—"}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => openExpand(p, "extend")}
+                            className={`rounded-md border px-2 py-1 text-[10px] font-medium transition disabled:opacity-50 ${
+                              expanded?.mode === "extend"
+                                ? "border-teal-500/50 bg-teal-500/10 text-teal-300"
+                                : "border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                            }`}
+                          >
+                            + Masa Aktif
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => openExpand(p, "quota")}
+                            className={`rounded-md border px-2 py-1 text-[10px] font-medium transition disabled:opacity-50 ${
+                              expanded?.mode === "quota"
+                                ? "border-teal-500/50 bg-teal-500/10 text-teal-300"
+                                : "border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                            }`}
+                          >
+                            + Kuota
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleToggle(p)}
+                            className={`rounded-md border px-2 py-1 text-[10px] font-medium transition disabled:opacity-50 ${
+                              p.enabled
+                                ? "border-red-500/40 text-red-400 hover:bg-red-500/10"
+                                : "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                            }`}
+                          >
+                            {isBusy ? "…" : p.enabled ? "Matikan" : "Aktifkan"}
+                          </button>
                         </div>
-                        <div className="mt-0.5 text-[9px] text-neutral-500">
-                          {p.usedPercent.toFixed(1)}% terpakai
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-neutral-400">{num(p.requestCount)}</td>
-                    <td className="px-3 py-2.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${meta.cls}`}>
-                        {meta.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap">
-                      {p.expiresAt ? fmt(p.expiresAt) : "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap">
-                      {p.lastUsedAt ? fmt(p.lastUsedAt) : "—"}
-                    </td>
-                  </tr>
+                        {errorMsg && busyId === null && expand?.id !== p.id && (
+                          <div className="mt-1.5 text-[10px] text-red-400 max-w-[180px]">{errorMsg}</div>
+                        )}
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="bg-neutral-950/60">
+                        <td colSpan={8} className="px-3 py-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-neutral-400">
+                              {expanded.mode === "extend"
+                                ? `Tambah masa aktif "${p.name}" (hari):`
+                                : `Tambah kuota "${p.name}" (token):`}
+                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={amount}
+                              onChange={(e) => setAmount(e.target.value)}
+                              placeholder={expanded.mode === "extend" ? "mis. 7" : "mis. 1000000"}
+                              className="w-36 px-2.5 py-1.5 border border-neutral-700 rounded-md bg-neutral-950 text-xs text-neutral-200"
+                            />
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleExpandSubmit(p)}
+                              className="rounded-md bg-teal-500/90 px-3 py-1.5 text-[11px] font-semibold text-black transition hover:bg-teal-400 disabled:opacity-50"
+                            >
+                              {isBusy ? "Memproses…" : "Terapkan"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => { setExpand(null); setErrorMsg(null); }}
+                              className="rounded-md border border-neutral-700 px-3 py-1.5 text-[11px] text-neutral-400 transition hover:border-neutral-500"
+                            >
+                              Batal
+                            </button>
+                            {expanded.mode === "extend" && p.expiresAt && (
+                              <span className="text-[10px] text-neutral-600">
+                                Berakhir saat ini: {fmt(p.expiresAt)}
+                                {p.isExpired ? " (sudah lewat — perpanjangan dihitung dari sekarang)" : ""}
+                              </span>
+                            )}
+                            {errorMsg && <span className="text-[11px] text-red-400">{errorMsg}</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })
             )}
