@@ -10,7 +10,9 @@
     "modelsTitle": "AI Model Catalog — DeepSeek, GLM, Qwen, Kimi",
     "modelsDescription": "Browse affordable AI models on 9inference. One OpenAI-compatible API key for every model. Transparent token pricing.",
     "blogTitle": "Blog — Affordable AI APIs & Guides",
-    "blogDescription": "Articles on affordable AI model APIs, DeepSeek, OpenAI alternatives, and pay-per-token billing."
+    "blogDescription": "Articles on affordable AI model APIs, DeepSeek, OpenAI alternatives, and pay-per-token billing.",
+    "termsTitle": "Terms of Service — 9inference",
+    "termsDescription": "9inference terms of service: refund policy, model pricing changes, and usage terms for the AI model API service."
   },
   "Common": {
     "home": "Home",
@@ -62,6 +64,7 @@
     "openaiAlt": "OpenAI Alternative",
     "payPerToken": "Pay Per Token",
     "account": "Account",
+    "terms": "Terms of Service",
     "copyright": "© {year} 9inference. Affordable AI API for developers worldwide."
   },
   "Landing": {
@@ -159,6 +162,34 @@
     "ctaTitle": "Start free today",
     "ctaDesc": "Get an instant API key. Pay only what you use.",
     "viewDocs": "View documentation"
+  },
+  "Terms": {
+    "badge": "Legal",
+    "title": "Terms of Service",
+    "updated": "Last updated: July 31, 2026",
+    "intro": "These terms govern all use of the 9inference service. Please read them carefully before making any purchase, balance top-up, or use of the service.",
+    "acceptTitle": "1. Acceptance of Terms",
+    "acceptBody": "By purchasing a package, topping up your balance, or using the 9inference service in any form, you declare that you have read, understood, and agreed to these Terms of Service in their entirety. Purchasing and using the service constitutes acceptance of these terms without exception. If you do not agree to these terms, please do not use our service.",
+    "refundTitle": "2. Refund Policy",
+    "refundIntro": "Refunds of remaining balance are only granted under the following conditions:",
+    "refundPoint1": "Refunds only apply if the admin officially declares the method totally dead, meaning the method is permanently unusable.",
+    "refundPoint2": "The remaining balance will be refunded minus an 8% admin fee deducted from the remaining balance.",
+    "refundPoint3": "Refund funds will be sent to your DANA, GoPay, or bank account.",
+    "refundFeeLabel": "Refund Admin Fee",
+    "refundFeeDesc": "of the remaining balance, deducted when the refund is processed",
+    "refundChannelLabel": "Payout Destination",
+    "refundChannelBank": "Bank Account",
+    "refundChannelDesc": "sent to your own account/e-wallet",
+    "refundNote": "Outside of the method being declared totally dead by the admin, all payments are final and non-refundable.",
+    "pricingTitle": "3. Model Pricing Changes",
+    "pricingBody1": "The price of each model may change at any time without explicit notice to users.",
+    "pricingBody2": "The applicable rate is the rate listed on the 9inference system at the time your request is processed. You are responsible for checking the latest pricing periodically.",
+    "waTitle": "4. Refund Requirement: WhatsApp Number",
+    "waBody1": "Refunds can only be processed if there is a WhatsApp number associated with your account or transaction.",
+    "waBody2": "If there is no associated WhatsApp number, funds will not be refunded.",
+    "waNote": "Make sure your WhatsApp number is listed correctly before making a purchase.",
+    "questionsTitle": "Questions?",
+    "questionsBody": "If anything is unclear, please contact our admin through the official contact channels before making a purchase."
   },
   "Auth": {
     "loginTitle": "Sign in",

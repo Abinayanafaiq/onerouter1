@@ -8,12 +8,13 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
-  const staticPaths = ["", "/pricing", "/models", "/blog"];
+  const staticPaths = ["", "/pricing", "/models", "/blog", "/terms"];
   const priorities: Record<string, number> = {
     "": 1,
     "/pricing": 0.95,
     "/models": 0.95,
     "/blog": 0.9,
+    "/terms": 0.3,
   };
 
   const staticRoutes: MetadataRoute.Sitemap = locales.flatMap((locale) =>

@@ -42,6 +42,7 @@ export async function PublicShell({ children }: { children: React.ReactNode }) {
               { label: tc("login"), href: "/login" },
               { label: tc("dashboard"), href: "/dashboard" },
               { label: tc("wallet"), href: "/dashboard/wallet" },
+              { label: t("terms"), href: "/terms" },
             ]}
           />
         </div>

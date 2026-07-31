@@ -10,7 +10,9 @@
     "modelsTitle": "Katalog Model AI — DeepSeek, GLM, Qwen, Kimi",
     "modelsDescription": "Daftar model AI murah di 9inference. Satu API key kompatibel OpenAI untuk semua model. Harga token transparan.",
     "blogTitle": "Blog — API Model AI Murah & Tutorial",
-    "blogDescription": "Artikel tentang API model AI murah, DeepSeek, alternatif OpenAI, dan bayar per token di Indonesia."
+    "blogDescription": "Artikel tentang API model AI murah, DeepSeek, alternatif OpenAI, dan bayar per token di Indonesia.",
+    "termsTitle": "Syarat & Ketentuan Layanan — 9inference",
+    "termsDescription": "Syarat dan ketentuan layanan 9inference: kebijakan refund, perubahan harga model, dan ketentuan penggunaan layanan API model AI."
   },
   "Common": {
     "home": "Beranda",
@@ -62,6 +64,7 @@
     "openaiAlt": "Alternatif OpenAI",
     "payPerToken": "Bayar Per Token",
     "account": "Akun",
+    "terms": "Syarat & Ketentuan",
     "copyright": "© {year} 9inference. API model murah untuk developer Indonesia."
   },
   "Landing": {
@@ -159,6 +162,34 @@
     "ctaTitle": "Mulai gratis hari ini",
     "ctaDesc": "Dapatkan API key instan. Bayar hanya yang dipakai.",
     "viewDocs": "Lihat dokumentasi"
+  },
+  "Terms": {
+    "badge": "Legal",
+    "title": "Syarat & Ketentuan Layanan",
+    "updated": "Terakhir diperbarui: 31 Juli 2026",
+    "intro": "Ketentuan ini mengatur seluruh penggunaan layanan 9inference. Harap dibaca dengan saksama sebelum Anda melakukan pembelian, pengisian saldo, maupun penggunaan layanan.",
+    "acceptTitle": "1. Penerimaan Ketentuan",
+    "acceptBody": "Dengan membeli paket, mengisi saldo, atau menggunakan layanan 9inference dalam bentuk apa pun, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh Syarat & Ketentuan ini. Membeli dan menggunakan layanan sama dengan menyetujui ketentuan ini tanpa pengecualian. Jika Anda tidak menyetujui ketentuan ini, mohon tidak menggunakan layanan kami.",
+    "refundTitle": "2. Kebijakan Refund",
+    "refundIntro": "Refund sisa dana hanya diberikan dengan ketentuan berikut:",
+    "refundPoint1": "Refund hanya berlaku apabila admin secara resmi menyatakan metode mati total, yaitu metode tidak dapat digunakan sama sekali secara permanen.",
+    "refundPoint2": "Sisa dana akan di-refund dengan potongan 8% dari sisa dana sebagai biaya admin.",
+    "refundPoint3": "Dana refund akan dikirim ke DANA, GoPay, atau rekening bank milik Anda.",
+    "refundFeeLabel": "Biaya Admin Refund",
+    "refundFeeDesc": "dari sisa dana, dipotong saat refund diproses",
+    "refundChannelLabel": "Tujuan Pengiriman",
+    "refundChannelBank": "Rekening Bank",
+    "refundChannelDesc": "dikirim ke akun/e-wallet milik Anda",
+    "refundNote": "Di luar kondisi metode dinyatakan mati total oleh admin, seluruh pembayaran bersifat final dan tidak dapat dikembalikan.",
+    "pricingTitle": "3. Perubahan Harga Model",
+    "pricingBody1": "Harga setiap model dapat berubah sewaktu-waktu tanpa penyampaian eksplisit kepada para pengguna.",
+    "pricingBody2": "Tarif yang berlaku adalah tarif yang tercantum pada sistem 9inference pada saat request Anda diproses. Anda bertanggung jawab untuk memeriksa harga terbaru secara berkala.",
+    "waTitle": "4. Syarat Refund: Nomor WhatsApp",
+    "waBody1": "Proses refund hanya dapat dilakukan apabila terdapat nomor WhatsApp yang bersangkutan dengan akun atau transaksi Anda.",
+    "waBody2": "Apabila tidak ada nomor WhatsApp yang bersangkutan, dana tidak akan di-refund.",
+    "waNote": "Pastikan nomor WhatsApp Anda tercantum dengan benar sebelum melakukan pembelian.",
+    "questionsTitle": "Ada pertanyaan?",
+    "questionsBody": "Jika ada poin yang belum jelas, silakan hubungi admin melalui kontak resmi kami sebelum melakukan pembelian."
   },
   "Auth": {
     "loginTitle": "Masuk",
