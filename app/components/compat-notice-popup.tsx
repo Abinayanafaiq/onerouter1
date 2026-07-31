@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * One-a-day compatibility notice for dashboard users.
+ * Compatibility notice for dashboard users.
  *
  * The 9inference /v1 endpoint only accepts standard OpenAI chat-completion
  * fields. Third-party tools that inject gateway-specific extras (e.g.
@@ -11,12 +11,15 @@ import { useEffect, useState } from "react";
  * not permitted" from upstream. This popup proactively tells users to use
  * opencode IDE instead of letting them discover the error the hard way.
  *
- * Frequency: shown at most once per 24h (localStorage timestamp), unless the
- * user picks "Jangan ingatkan lagi" which dismisses it permanently.
+ * Frequency (intentionally persistent):
+ * - Default: re-appears every REMIND_MS (1 menit) after being closed.
+ * - "Jangan tampilkan lagi": snoozes the popup for SNOOZE_MS (24 jam),
+ *   after which it starts appearing every minute again.
  */
-const DISMISS_KEY = "9i_compat_notice_dismissed";
+const SNOOZE_KEY = "9i_compat_notice_snoozed_until";
 const SHOWN_KEY = "9i_compat_notice_shown_at";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const REMIND_MS = 60 * 1000; // 1 menit
+const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24 jam
 
 const UNSUPPORTED_FIELDS = [
   "promptCacheKey",
@@ -37,44 +40,80 @@ const UNSUPPORTED_FIELDS = [
 
 export function CompatNoticePopup() {
   const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleNext = useCallback((delay: number) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setOpen(true), delay);
+  }, []);
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(DISMISS_KEY) === "1") return;
+      const now = Date.now();
+      const snoozedUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
+      if (now < snoozedUntil) {
+        // Masih dalam masa snooze 24 jam — bangun tepat saat snooze berakhir.
+        scheduleNext(snoozedUntil - now + 100);
+        return;
+      }
       const lastShown = Number(localStorage.getItem(SHOWN_KEY) || 0);
-      if (Date.now() - lastShown < DAY_MS) return;
-      localStorage.setItem(SHOWN_KEY, String(Date.now()));
-      setOpen(true);
+      const elapsed = now - lastShown;
+      if (elapsed < REMIND_MS) {
+        // Baru saja tampil (mis. pindah halaman) — tunggu sisa 1 menitnya.
+        scheduleNext(REMIND_MS - elapsed);
+        return;
+      }
+      localStorage.setItem(SHOWN_KEY, String(now));
     } catch {
-      // localStorage unavailable (private mode etc.) — fail silent.
+      // localStorage unavailable — tetap tampilkan.
     }
-  }, []);
+    setOpen(true);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [scheduleNext]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!open) return null;
 
-  const dismissForever = () => {
+  /** Tutup biasa: popup muncul lagi 1 menit kemudian. */
+  const close = () => {
+    setOpen(false);
     try {
-      localStorage.setItem(DISMISS_KEY, "1");
+      localStorage.setItem(SHOWN_KEY, String(Date.now()));
     } catch {
       // ignore
     }
+    scheduleNext(REMIND_MS);
+  };
+
+  /** "Jangan tampilkan lagi": tidur 24 jam, lalu muncul tiap menit lagi. */
+  const snooze = () => {
     setOpen(false);
+    try {
+      localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
+      localStorage.setItem(SHOWN_KEY, String(Date.now()));
+    } catch {
+      // ignore
+    }
+    scheduleNext(SNOOZE_MS + 100);
   };
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={(e) => {
-        if (e.target === e.currentTarget) setOpen(false);
+        if (e.target === e.currentTarget) close();
       }}
       role="dialog"
       aria-modal="true"
@@ -124,14 +163,14 @@ export function CompatNoticePopup() {
         <div className="mt-5 flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={dismissForever}
+            onClick={snooze}
             className="text-xs text-neutral-500 transition hover:text-neutral-300"
           >
-            Jangan ingatkan lagi
+            Jangan tampilkan lagi (24 jam)
           </button>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={close}
             className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
           >
             Mengerti
