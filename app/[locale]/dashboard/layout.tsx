@@ -7,6 +7,7 @@ import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { DashboardShell } from "@/app/components/dashboard-shell";
 import { PakasirPendingVerifier } from "@/app/components/pending-verifier";
+import { CompatNoticePopup } from "@/app/components/compat-notice-popup";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
       }}
     >
       <PakasirPendingVerifier />
+      <CompatNoticePopup />
       {children}
     </DashboardShell>
   );
