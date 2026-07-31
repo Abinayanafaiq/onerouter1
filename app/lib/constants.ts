@@ -7,6 +7,14 @@ export const APP_NAME = "9inference";
 export const APP_TAGLINE = "Token AI Murah - Multi Model Premium";
 
 /**
+ * Default per-user rate limit (requests per minute) applied to every newly
+ * registered account. Set on User.rateLimit at registration; enforced by
+ * checkUserRateLimit() in the v1 chat completions routes. Admin can override
+ * or clear it (null/0 = unlimited) via the admin users API.
+ */
+export const DEFAULT_USER_RATE_LIMIT_RPM = 15;
+
+/**
  * Credit unit: TOKS.
  * 1 TOKS = Rp1.000. Wallet balances & AI usage costs are stored internally in
  * IDR (rupiah); TOKS is the user-facing credit unit used for top up & display.

@@ -14,6 +14,7 @@ import {
 import { verifyTurnstile } from "@/app/lib/turnstile";
 import { checkRegisterRateLimit, peekLoginRateLimit } from "@/app/lib/rate-limit";
 import { getClientIp } from "@/app/lib/proxy-utils";
+import { DEFAULT_USER_RATE_LIMIT_RPM } from "@/app/lib/constants";
 
 export async function registerAction(formData: FormData) {
   const t = await getTranslations("Auth");
@@ -66,7 +67,15 @@ export async function registerAction(formData: FormData) {
 
   const hashed = await bcrypt.hash(password, 10);
   await prisma.user.create({
-    data: { email, password: hashed, name, role: "USER" },
+    data: {
+      email,
+      password: hashed,
+      name,
+      role: "USER",
+      // New accounts start on the default per-user rate limit. The v1 routes
+      // enforce this via checkUserRateLimit(); admin can override per-user.
+      rateLimit: DEFAULT_USER_RATE_LIMIT_RPM,
+    },
   });
 
   try {
