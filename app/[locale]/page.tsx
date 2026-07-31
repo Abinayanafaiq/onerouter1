@@ -658,6 +658,7 @@ export default async function Home({
                 { label: tc("login"), href: "/login" },
                 { label: tc("register"), href: "/register" },
                 { label: tc("topUp"), href: "/dashboard/wallet" },
+                { label: tf("terms"), href: "/terms" },
               ]}
             />
           </div>

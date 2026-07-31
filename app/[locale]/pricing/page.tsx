@@ -160,6 +160,7 @@ export default async function PricingPage({
   setRequestLocale(locale);
   const t = await getTranslations("Pricing");
   const tc = await getTranslations("Common");
+  const tt = await getTranslations("Terms");
   const tokenPackages = await getAllPackages();
 
   return (
@@ -249,6 +250,15 @@ export default async function PricingPage({
           </div>
           <p className="mt-4 text-[12px] text-muted-foreground">
             Tanpa kartu kredit · Batal kapan saja · Jaminan refund 14 hari
+          </p>
+          <p className="mt-3 text-[12px] text-muted-foreground">
+            {tt.rich("agreePurchase", {
+              link: (chunks) => (
+                <Link href="/terms" className="text-foreground underline underline-offset-2 hover:text-accent">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       </section>

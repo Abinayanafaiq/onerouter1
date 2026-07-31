@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { IDR_PER_TOKS, TOKS_LABEL, toksToIdr } from "@/app/lib/constants";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
@@ -146,6 +148,7 @@ export function WalletTopUpForm({
   bscConfigured: boolean;
 }) {
   const router = useRouter();
+  const tt = useTranslations("Terms");
   const [amount, setAmount] = useState("");
   const [wa, setWa] = useState(whatsapp || "");
   const [method, setMethod] = useState<"PAKASIR" | "BSC">(
@@ -833,6 +836,17 @@ export function WalletTopUpForm({
           </>
         )}
       </button>
+
+      {/* Terms notice */}
+      <p className="text-center text-[12px] text-muted-foreground">
+        {tt.rich("agreePurchase", {
+          link: (chunks) => (
+            <Link href="/terms" className="text-foreground underline underline-offset-2 hover:text-accent">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
     </div>
   );
 }

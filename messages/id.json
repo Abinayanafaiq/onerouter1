@@ -189,7 +189,9 @@
     "waBody2": "Apabila tidak ada nomor WhatsApp yang bersangkutan, dana tidak akan di-refund.",
     "waNote": "Pastikan nomor WhatsApp Anda tercantum dengan benar sebelum melakukan pembelian.",
     "questionsTitle": "Ada pertanyaan?",
-    "questionsBody": "Jika ada poin yang belum jelas, silakan hubungi admin melalui kontak resmi kami sebelum melakukan pembelian."
+    "questionsBody": "Jika ada poin yang belum jelas, silakan hubungi admin melalui kontak resmi kami sebelum melakukan pembelian.",
+    "agreePurchase": "Dengan melakukan pembelian atau isi saldo, Anda menyetujui <link>Syarat & Ketentuan</link> kami.",
+    "agreeRegister": "Dengan mendaftar, Anda menyetujui <link>Syarat & Ketentuan</link> kami."
   },
   "Auth": {
     "loginTitle": "Masuk",

@@ -4,7 +4,7 @@ import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { isPakasirConfigured } from "@/app/lib/pakasir";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { redirect, Link } from "@/i18n/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { CheckoutForm } from "./form";
 
 export const metadata: Metadata = {
@@ -19,6 +19,7 @@ export default async function CheckoutPage({
 }) {
   const session = await auth();
   const locale = await getLocale();
+  const tt = await getTranslations("Terms");
   if (!session?.user) {
     redirect({ href: "/login", locale });
     return null;
@@ -123,6 +124,15 @@ export default async function CheckoutPage({
             pakasirConfigured={pakasirConfigured}
             bscConfigured={bscConfigured}
           />
+          <p className="mt-4 text-center text-[12px] text-muted-foreground">
+            {tt.rich("agreePurchase", {
+              link: (chunks) => (
+                <Link href="/terms" className="text-foreground underline underline-offset-2 hover:text-accent">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </p>
         </div>
       </main>
     </div>

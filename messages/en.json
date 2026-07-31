@@ -189,7 +189,9 @@
     "waBody2": "If there is no associated WhatsApp number, funds will not be refunded.",
     "waNote": "Make sure your WhatsApp number is listed correctly before making a purchase.",
     "questionsTitle": "Questions?",
-    "questionsBody": "If anything is unclear, please contact our admin through the official contact channels before making a purchase."
+    "questionsBody": "If anything is unclear, please contact our admin through the official contact channels before making a purchase.",
+    "agreePurchase": "By making a purchase or topping up balance, you agree to our <link>Terms of Service</link>.",
+    "agreeRegister": "By creating an account, you agree to our <link>Terms of Service</link>."
   },
   "Auth": {
     "loginTitle": "Sign in",

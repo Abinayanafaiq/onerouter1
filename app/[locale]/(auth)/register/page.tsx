@@ -9,6 +9,7 @@ import { TurnstileWidget } from "@/app/components/turnstile-widget";
 export default function RegisterPage() {
   const t = useTranslations("Auth");
   const tc = useTranslations("Common");
+  const tt = useTranslations("Terms");
   const [state, formAction, pending] = useActionState(
     async (_p: unknown, fd: FormData) => registerAction(fd),
     null as { error?: string } | null,
@@ -88,6 +89,15 @@ export default function RegisterPage() {
         >
           {pending ? tc("loading") : t("registerButton")}
         </button>
+        <p className="text-xs text-center text-muted-foreground">
+          {tt.rich("agreeRegister", {
+            link: (chunks) => (
+              <Link href="/terms" className="text-foreground font-medium hover:underline">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
       </form>
       <p className="text-sm text-center mt-6 text-muted-foreground">
         {t("hasAccount")}{" "}
