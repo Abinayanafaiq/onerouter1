@@ -21,3 +21,7 @@
  GET /id/pricing 200 in 1977ms (next.js: 257ms, proxy.ts: 105ms, generate-params: 11ms, application-code: 1615ms)
  GET /id/pricing 200 in 946ms (next.js: 31ms, proxy.ts: 12ms, generate-params: 11ms, application-code: 902ms)
  GET /en/pricing 200 in 903ms (next.js: 22ms, proxy.ts: 9ms, generate-params: 10ms, application-code: 871ms)
+✓ Compiled in 201ms
+✓ Compiled in 200ms
+ GET /id/dashboard/beli-paket 307 in 3.1s (next.js: 2.0s, proxy.ts: 94ms, generate-params: 1118ms, application-code: 946ms)
+ GET /id/dashboard/packages 307 in 1889ms (next.js: 1716ms, proxy.ts: 11ms, generate-params: 954ms, application-code: 161ms)

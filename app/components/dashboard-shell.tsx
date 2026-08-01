@@ -60,6 +60,17 @@ const NAV_MAIN_DEFS = [
     ),
   },
   {
+    key: "buyPackage" as const,
+    href: "/dashboard/beli-paket",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+        <path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.2L20 8H6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="20" r="1.3" stroke="currentColor" strokeWidth="1.4" />
+        <circle cx="17" cy="20" r="1.3" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    ),
+  },
+  {
     key: "packages" as const,
     href: "/dashboard/packages",
     icon: (
