@@ -16,6 +16,7 @@ import {
   sanitizeUpstreamError,
   fetchUpstream,
   aggregateUpstreamStream,
+  computeSessionHash,
   UPSTREAM_RETRY_BACKOFF_MS,
   sleep,
   type RequestMeta,
@@ -276,6 +277,7 @@ export async function POST(request: Request) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentKey.plaintext}`,
+          "x-session-hash": computeSessionHash(userId),
         },
         body: JSON.stringify(body),
       });

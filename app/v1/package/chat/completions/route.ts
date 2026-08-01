@@ -1,6 +1,7 @@
 import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
 import {
   authenticateRequest,
+  computeSessionHash,
   errorResponse,
   estimatePromptTokens,
   getClientIp,
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${PACKAGE_UPSTREAM_API_KEY}`,
+        "x-session-hash": computeSessionHash(apiKey.userId),
       },
       body: JSON.stringify(body),
       signal: request.signal,

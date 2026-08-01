@@ -1,3 +1,4 @@
+import { createHmac } from "crypto";
 import { prisma } from "./prisma";
 import { hashKey, safeHashEqual } from "./apikey";
 import { resolveModel, type ResolvedModel } from "./models";
@@ -215,6 +216,23 @@ export function isModelAllowed(
   const allowed = apiKey.allowedModels ?? [];
   if (allowed.length === 0) return true;
   return allowed.includes(resolvedModel.modelId) || allowed.includes(resolvedModel.masterId);
+}
+
+/**
+ * Stable, pseudonymous per-user identifier sent to the upstream provider as
+ * the `x-session-hash` header, so the upstream can recognize that consecutive
+ * requests come from the same end user without ever seeing the real user ID.
+ *
+ * HMAC-SHA256 of the user ID, keyed by SESSION_HASH_SECRET (falls back to
+ * NEXTAUTH_SECRET) so the upstream cannot reverse it into a user ID even if
+ * it knows our ID format. Rotate the secret to re-anonymize all users.
+ */
+export function computeSessionHash(userId: string): string {
+  const secret =
+    process.env.SESSION_HASH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "onerouter-session-hash";
+  return createHmac("sha256", secret).update(userId).digest("hex");
 }
 
 /** Extract the best-guess client IP from request headers. */

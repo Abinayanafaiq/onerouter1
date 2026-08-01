@@ -15,6 +15,7 @@ import {
   sanitizeUpstreamError,
   fetchUpstream,
   aggregateUpstreamStream,
+  computeSessionHash,
   UPSTREAM_RETRY_BACKOFF_MS,
   sleep,
   type BillingInfo,
@@ -307,6 +308,10 @@ export async function POST(request: Request) {
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
 
+  // Pseudonymous per-user identifier so the upstream can correlate requests
+  // from the same end user (see computeSessionHash in proxy-utils).
+  const sessionHash = computeSessionHash(apiKey.userId);
+
   try {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
@@ -329,6 +334,7 @@ export async function POST(request: Request) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentKey.plaintext}`,
+          "x-session-hash": sessionHash,
         },
         body: JSON.stringify(body),
       });
@@ -359,6 +365,7 @@ export async function POST(request: Request) {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${currentKey.plaintext}`,
+              "x-session-hash": sessionHash,
             },
             body: JSON.stringify(body),
           });
