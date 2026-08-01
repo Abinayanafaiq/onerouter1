@@ -115,6 +115,10 @@ const FAQS = [
     a: "TOKS adalah unit kredit internal kami. 1 TOKS = Rp1.000 = US$0.0553. Setiap model punya tarif per 1 juta token dalam rupiah; Anda hanya membayar token yang benar-benar dipakai. Tanpa langganan, tanpa minimum.",
   },
   {
+    q: "Apa bedanya PAYG dan Paket?",
+    a: "PAYG: Anda isi saldo TOKS dan saldo terpotong per token yang benar-benar dipakai — saldo tidak kedaluwarsa dan berlaku untuk semua model. Paket: Anda bayar sekali untuk kuota jutaan token dengan API key khusus yang aktif 24 jam — cocok untuk beban pemakaian besar dengan harga tetap. Kuota paket tidak memakai saldo PAYG, begitu pula sebaliknya.",
+  },
+  {
     q: "Apakah saya butuh kartu kredit untuk mulai?",
     a: "Tidak. Daftar gratis, buat API key, dan isi saldo kapan saja. Anda bisa mulai dengan jumlah berapa pun — tidak ada deposit minimum.",
   },
@@ -248,6 +252,16 @@ export default async function PricingPage({
               Isi Saldo
             </Link>
           </div>
+          <p className="mt-5 text-[13px] text-muted-foreground">
+            Dua cara bayar:{" "}
+            <a href="#payg" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
+              PAYG — isi saldo per token
+            </a>
+            {" "}atau{" "}
+            <a href="#paket" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
+              PAKET — kuota 24 jam
+            </a>
+          </p>
           <p className="mt-4 text-[12px] text-muted-foreground">
             Tanpa kartu kredit · Batal kapan saja · Jaminan refund 14 hari
           </p>
@@ -263,10 +277,82 @@ export default async function PricingPage({
         </div>
       </section>
 
-      <section className="px-4 py-16 sm:px-6 sm:py-20">
+      <section className="px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-8 text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Dua Cara Bayar</span>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Pilih yang paling cocok untuk Anda</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Keduanya memakai API yang sama dan model yang sama — bedanya hanya cara Anda membayar.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="glass relative overflow-hidden rounded-2xl p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-3">
+                <span className="rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
+                  PAYG · Pay As You Go
+                </span>
+                <span className="text-[11px] text-muted-foreground">Fleksibel</span>
+              </div>
+              <h3 className="mt-5 text-xl font-bold tracking-tight">Isi saldo, bayar per token</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                Saldo TOKS terpotong hanya untuk token yang benar-benar dipakai. Berlaku untuk semua model, tanpa batas waktu.
+              </p>
+              <ul className="mt-5 space-y-2.5 text-[13px] text-muted-foreground">
+                <li className="flex gap-2"><span className="text-accent">✓</span>Mulai dari Rp1.000 — tanpa minimum</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>Saldo tidak kedaluwarsa</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>Satu API key untuk semua model</li>
+              </ul>
+              <a
+                href="#payg"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white/[0.08]"
+              >
+                Lihat tarif per token
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
+            </article>
+
+            <article className="glass relative overflow-hidden rounded-2xl border-accent/30 p-6 sm:p-8">
+              <div
+                className="pointer-events-none absolute inset-0 -z-10"
+                style={{ background: "radial-gradient(60% 60% at 50% 0%, rgba(0,255,136,0.08), transparent 70%)" }}
+                aria-hidden
+              />
+              <div className="flex items-center justify-between gap-3">
+                <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-black">
+                  PAKET · Kuota 24 Jam
+                </span>
+                <span className="text-[11px] text-muted-foreground">Hemat untuk volume besar</span>
+              </div>
+              <h3 className="mt-5 text-xl font-bold tracking-tight">Sekali bayar, kuota jutaan token</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                Harga tetap untuk kuota besar. Setiap pembelian menghasilkan API key khusus yang aktif 24 jam.
+              </p>
+              <ul className="mt-5 space-y-2.5 text-[13px] text-muted-foreground">
+                <li className="flex gap-2"><span className="text-accent">✓</span>Harga tetap — lebih hemat untuk beban besar</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>API key khusus per paket</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>Kuota terpisah dari saldo PAYG</li>
+              </ul>
+              <a
+                href="#paket"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+              >
+                Lihat pilihan paket
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="paket" className="scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Paket Token 24 Jam</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">PAKET · Kuota Token 24 Jam</span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Kuota besar, harga tetap</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
               Setiap pembelian menghasilkan API key khusus. Kuota menghitung token input dan output, aktif selama 24 jam, dan tidak memakai saldo PAYG.
@@ -303,18 +389,18 @@ export default async function PricingPage({
         </div>
       </section>
 
-      <section className="px-4 py-16 sm:px-6 sm:py-20">
+      <section id="payg" className="scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Katalog Model
+              PAYG · Tarif per Token
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               Tarif per-token untuk setiap model
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
-              Harga per 1 juta token dan ditagih dalam rupiah. Konversi ke TOKS atau USD secara instan
-              menggunakan kurs di atas.
+              Saldo TOKS Anda terpotong sesuai token yang dipakai — harga per 1 juta token, ditagih
+              dalam rupiah. Konversi ke TOKS atau USD secara instan menggunakan kurs di atas.
             </p>
           </div>
 
