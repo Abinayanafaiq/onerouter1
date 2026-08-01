@@ -97,6 +97,9 @@ export async function approvePaidOrder(
             tokenQuota: quota,
             tokenUsed: 0,
             billingMode: "TOKEN_PACKAGE",
+            // Paket khusus: batasi key hanya ke model yang diizinkan paketnya.
+            // Array kosong = tanpa batasan (semua model paket).
+            allowedModels: pkg.allowedModels ?? [],
             expiresAt,
             isActive: true,
             lastResetDay: now,

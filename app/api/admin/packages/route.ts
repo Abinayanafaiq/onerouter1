@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       stock?: number;
       productType?: string;
       isActive?: boolean;
+      allowedModels?: unknown;
     };
 
     const name = body.name?.trim();
@@ -76,6 +77,19 @@ export async function POST(request: Request) {
     const stock = Math.max(0, Math.floor(Number(body.stock) || 0));
     const isActive = body.isActive !== false;
 
+    // Model khusus: array modelId yang boleh dipakai key paket ini.
+    // Kosong = semua model paket boleh.
+    let allowedModels: string[] = [];
+    if (body.allowedModels !== undefined) {
+      if (!Array.isArray(body.allowedModels) || body.allowedModels.some((m) => typeof m !== "string")) {
+        return NextResponse.json(
+          { success: false, error: "allowedModels harus berupa array string" },
+          { status: 400 },
+        );
+      }
+      allowedModels = (body.allowedModels as string[]).map((m) => m.trim()).filter(Boolean);
+    }
+
     const created = await prisma.package.create({
       data: {
         name,
@@ -87,6 +101,7 @@ export async function POST(request: Request) {
         stock,
         productType,
         isActive,
+        allowedModels,
       },
     });
 

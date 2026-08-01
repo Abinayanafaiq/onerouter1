@@ -14,6 +14,7 @@ export type PackageData = {
   stock: number;
   productType: string;
   isActive: boolean;
+  allowedModels: string[];
 };
 
 function Toggle({
@@ -58,9 +59,11 @@ const inputClass =
 export function PackageEditor({
   pkg,
   onClose,
+  availableModels = [],
 }: {
   pkg: PackageData | null;
   onClose?: () => void;
+  availableModels?: string[];
 }) {
   const router = useRouter();
   const isCreate = pkg === null;
@@ -75,6 +78,7 @@ export function PackageEditor({
     stock: String(pkg?.stock ?? 0),
     productType: pkg?.productType ?? "TOKEN_PACKAGE",
     isActive: pkg?.isActive ?? true,
+    allowedModels: pkg?.allowedModels?.join(", ") ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -100,6 +104,10 @@ export function PackageEditor({
         stock: parseInt(form.stock, 10) || 0,
         productType: form.productType,
         isActive: form.isActive,
+        allowedModels: form.allowedModels
+          .split(",")
+          .map((m) => m.trim())
+          .filter(Boolean),
       };
 
       const res = await fetch(
@@ -163,6 +171,11 @@ export function PackageEditor({
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
             {form.productType}
           </span>
+          {form.allowedModels.trim() && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-400">
+              Paket Khusus
+            </span>
+          )}
         </div>
         {!isCreate && (
           <div className="flex items-center gap-1.5">
@@ -272,6 +285,21 @@ export function PackageEditor({
           className={inputClass + " resize-none"}
           placeholder="Deskripsi singkat yang ditampilkan di halaman harga"
         />
+      </Field>
+
+      <Field label="Model Khusus (opsional — pisahkan dengan koma; kosong = semua model paket)">
+        <input
+          type="text"
+          value={form.allowedModels}
+          onChange={(e) => set("allowedModels", e.target.value)}
+          className={inputClass}
+          placeholder="contoh: deepseek-v4-flash-0731"
+        />
+        {availableModels.length > 0 && (
+          <p className="text-[10px] text-neutral-600 mt-1">
+            Model paket tersedia: {availableModels.join(", ")}
+          </p>
+        )}
       </Field>
 
       <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-neutral-800">

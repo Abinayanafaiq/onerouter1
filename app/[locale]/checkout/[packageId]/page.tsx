@@ -104,6 +104,16 @@ export default async function CheckoutPage({
             </div>
           </div>
 
+          {(pkg.allowedModels?.length ?? 0) > 0 && (
+            <div className="mt-3.5 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3.5 py-2.5">
+              <p className="text-xs leading-relaxed text-amber-300">
+                Paket khusus: hanya dapat digunakan untuk model{" "}
+                <code className="font-mono font-semibold">{pkg.allowedModels.join(", ")}</code>.
+                Model lain akan ditolak.
+              </p>
+            </div>
+          )}
+
           <div className="mt-3.5 flex items-center gap-2 rounded-xl border border-accent/15 bg-accent/[0.05] px-3.5 py-2.5">
             <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-accent">
               <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13L13 2Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

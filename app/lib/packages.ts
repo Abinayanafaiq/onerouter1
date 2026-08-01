@@ -48,12 +48,23 @@ export function formatDuration(durationDays: number): string {
 }
 
 function enrich(p: Package): PackageDef {
+  const allowed = p.allowedModels ?? [];
+  const extras = EXTRA_FEATURES[p.id] ?? [];
   return {
     ...p,
     features: [
       formatTokenQuota(p.tokenQuota),
       formatDuration(p.durationDays),
-      ...(EXTRA_FEATURES[p.id] ?? []),
+      // Derived from the DB restriction, so buyers always know up-front
+      // whether the package covers all models or only specific ones.
+      // Legacy entries with hand-written EXTRA_FEATURES already carry a
+      // "Semua model aktif" line — don't duplicate it.
+      ...(allowed.length > 0
+        ? [`Khusus model ${allowed.join(", ")}`]
+        : extras.length > 0
+          ? []
+          : ["Semua model paket aktif"]),
+      ...extras,
     ],
     highlight: HIGHLIGHTS.has(p.id),
   };

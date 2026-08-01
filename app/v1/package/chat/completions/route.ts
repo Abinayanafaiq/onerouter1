@@ -94,6 +94,22 @@ export async function POST(request: Request) {
   if (!model.enabled) {
     return apiError(`Model '${requestedModel}' sedang tidak tersedia.`, 503, "model_unavailable", "model_unavailable");
   }
+
+  // Paket khusus: key yang diterbitkan dari paket dengan allowedModels terisi
+  // hanya boleh memakai model tersebut. Array kosong = semua model paket boleh.
+  const keyAllowedModels = apiKey.allowedModels ?? [];
+  if (
+    keyAllowedModels.length > 0 &&
+    !keyAllowedModels.includes(model.modelId) &&
+    !keyAllowedModels.includes(model.upstreamId)
+  ) {
+    return apiError(
+      `Model '${requestedModel}' tidak termasuk dalam paket Anda.`,
+      403,
+      "invalid_request_error",
+      "model_not_in_package",
+    );
+  }
   if (body.stream === true && !model.supportsStreaming) {
     return apiError(`Model '${requestedModel}' tidak mendukung streaming.`, 400, "invalid_request_error", "streaming_not_supported");
   }

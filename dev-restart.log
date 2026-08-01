@@ -1,0 +1,16 @@
+
+> 9inference@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.10.203:3000
+- Environments: .env.local, .env
+✓ Ready in 953ms
+[instrumentation] Admin user ensured.
+
+ GET /id/pricing 200 in 2.9s (next.js: 1261ms, proxy.ts: 107ms, generate-params: 956ms, application-code: 1505ms)
+ GET /id/checkout/cmsa9bcfy0000u108xm7ovts7 307 in 2.3s (next.js: 2.0s, proxy.ts: 11ms, application-code: 283ms)
+ GET /id/pricing 200 in 1006ms (next.js: 28ms, proxy.ts: 11ms, generate-params: 12ms, application-code: 967ms)
+✓ Compiled in 273ms
+ GET /id/pricing 200 in 2.0s (next.js: 223ms, proxy.ts: 116ms, generate-params: 9ms, application-code: 1681ms)

@@ -274,8 +274,11 @@ export default async function PricingPage({
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {tokenPackages.map((pkg) => (
-              <article key={pkg.id} className={`glass relative overflow-hidden rounded-2xl p-6 ${pkg.highlight ? "border-accent/30" : ""}`}>
+              <article key={pkg.id} className={`glass relative overflow-hidden rounded-2xl p-6 ${pkg.highlight ? "border-accent/30" : (pkg.allowedModels?.length ?? 0) > 0 ? "border-amber-400/25" : ""}`}>
                 {pkg.highlight && <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">Paling hemat</span>}
+                {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
+                  <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">Paket Khusus</span>
+                )}
                 <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{pkg.name}</div>
                 <div className="mt-5 text-3xl font-bold tracking-tight">Rp{pkg.price.toLocaleString("id-ID")}</div>
                 <div className="mt-1 text-xs text-muted-foreground">

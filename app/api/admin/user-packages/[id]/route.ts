@@ -18,6 +18,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *        paket yang masih aktif diperpanjang dari tanggal berakhirnya.
  *   { action: "addQuota",   tokens: number }  -> tambah kuota token.
  *   { action: "setEnabled", enabled: boolean }-> aktifkan / matikan paket.
+ *   { action: "setAllowedModels", models: string[] } -> batasi paket ke model
+ *        tertentu (paket khusus). Array kosong = cabut batasan (semua model).
  */
 export async function PATCH(
   request: Request,
@@ -130,9 +132,31 @@ export async function PATCH(
         return NextResponse.json({ success: true, enabled: body.enabled });
       }
 
+      case "setAllowedModels": {
+        const models = body.models;
+        if (!Array.isArray(models) || models.some((m) => typeof m !== "string")) {
+          return NextResponse.json(
+            { success: false, error: "models harus berupa array string" },
+            { status: 400 },
+          );
+        }
+        const cleaned = (models as string[]).map((m) => m.trim()).filter(Boolean);
+        await prisma.apiKey.update({
+          where: { id },
+          data: { allowedModels: cleaned },
+          select: { id: true },
+        });
+        await writeAuditLog({
+          actorUserId: actorId,
+          action: "userPackage.setAllowedModels",
+          target: cleaned.length > 0 ? `${id} -> [${cleaned.join(", ")}]` : `${id} -> (tanpa batasan)`,
+        });
+        return NextResponse.json({ success: true, allowedModels: cleaned });
+      }
+
       default:
         return NextResponse.json(
-          { success: false, error: "action harus extend | addQuota | setEnabled" },
+          { success: false, error: "action harus extend | addQuota | setEnabled | setAllowedModels" },
           { status: 400 },
         );
     }

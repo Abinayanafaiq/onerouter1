@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       durationDays?: number;
       sort?: number;
       productType?: string;
+      allowedModels?: unknown;
     };
 
     const { id } = body;
@@ -101,6 +102,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: "Tipe produk tidak valid" }, { status: 400 });
       }
       data.productType = body.productType;
+    }
+
+    if (body.allowedModels !== undefined) {
+      if (!Array.isArray(body.allowedModels) || body.allowedModels.some((m) => typeof m !== "string")) {
+        return NextResponse.json(
+          { success: false, error: "allowedModels harus berupa array string" },
+          { status: 400 },
+        );
+      }
+      data.allowedModels = (body.allowedModels as string[]).map((m) => m.trim()).filter(Boolean);
     }
 
     if (Object.keys(data).length === 0) {

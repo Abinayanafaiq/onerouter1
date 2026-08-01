@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { PackageEditor, type PackageData } from "./package-editor";
 
-export function PackagesManager({ packages }: { packages: PackageData[] }) {
+export function PackagesManager({
+  packages,
+  availableModels = [],
+}: {
+  packages: PackageData[];
+  availableModels?: string[];
+}) {
   const [showAdd, setShowAdd] = useState(false);
 
   return (
@@ -18,7 +24,9 @@ export function PackagesManager({ packages }: { packages: PackageData[] }) {
         </button>
       </div>
 
-      {showAdd && <PackageEditor pkg={null} onClose={() => setShowAdd(false)} />}
+      {showAdd && (
+        <PackageEditor pkg={null} onClose={() => setShowAdd(false)} availableModels={availableModels} />
+      )}
 
       <div className="space-y-2">
         {packages.length === 0 && !showAdd ? (
@@ -26,7 +34,7 @@ export function PackagesManager({ packages }: { packages: PackageData[] }) {
             Belum ada paket. Klik &quot;+ Tambah Paket&quot; untuk membuat.
           </div>
         ) : (
-          packages.map((p) => <PackageEditor key={p.id} pkg={p} />)
+          packages.map((p) => <PackageEditor key={p.id} pkg={p} availableModels={availableModels} />)
         )}
       </div>
     </div>

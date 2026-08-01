@@ -168,6 +168,18 @@ export function UserPackagesTable({
                       <td className="px-3 py-2.5">
                         <div className="font-medium text-neutral-200 text-xs">{p.name}</div>
                         <code className="text-[10px] font-mono text-neutral-500">{p.maskedKey}</code>
+                        {p.allowedModels.length > 0 && (
+                          <div className="mt-0.5 flex flex-wrap gap-1">
+                            {p.allowedModels.map((m) => (
+                              <span
+                                key={m}
+                                className="text-[9px] px-1 py-px rounded bg-amber-900/40 text-amber-400 font-mono"
+                              >
+                                {m}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-neutral-300 text-xs">{p.userEmail}</td>
                       <td className="px-3 py-2.5">

@@ -96,6 +96,9 @@ model Package {
   sort         Int      @default(0)
   stock        Int      @default(0)
   productType  String   @default("LEGACY")
+  // Empty = key paket boleh akses SEMUA model paket. Terisi = "paket khusus":
+  // key yang diterbitkan dari paket ini hanya boleh memakai modelId terdaftar.
+  allowedModels String[] @default([])
   orders       Order[]
   createdAt    DateTime @default(now())
 }

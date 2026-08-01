@@ -6,11 +6,16 @@ import { UserPackagesTable } from "./user-packages-table";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPackagesPage() {
-  const [packages, userPackages] = await Promise.all([
+  const [packages, userPackages, packageModels] = await Promise.all([
     prisma.package.findMany({
       orderBy: { sort: "asc" },
     }),
     listUserTokenPackages(),
+    prisma.packageModel.findMany({
+      where: { enabled: true },
+      orderBy: [{ sort: "asc" }, { name: "asc" }],
+      select: { modelId: true },
+    }),
   ]);
 
   const data = packages.map((p) => ({
@@ -24,6 +29,7 @@ export default async function AdminPackagesPage() {
     stock: p.stock,
     productType: p.productType,
     isActive: p.isActive,
+    allowedModels: p.allowedModels,
   }));
 
   return (
@@ -35,7 +41,7 @@ export default async function AdminPackagesPage() {
             Tambah, edit, atau hapus paket. Paket yang sudah punya pesanan tidak bisa dihapus — nonaktifkan saja.
           </p>
         </div>
-        <PackagesManager packages={data} />
+        <PackagesManager packages={data} availableModels={packageModels.map((m) => m.modelId)} />
       </div>
 
       <div className="space-y-4">
