@@ -21,7 +21,7 @@ export async function reservePackageTokens(apiKeyId: string, amount: number) {
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.$executeRaw`
-      UPDATE "ApiKey"
+      UPDATE public."ApiKey"
       SET "tokenUsed" = "tokenUsed" + ${reservedTokens}, "updatedAt" = NOW()
       WHERE "id" = ${apiKeyId}
         AND "billingMode" = 'TOKEN_PACKAGE'
@@ -104,7 +104,7 @@ export async function settlePackageTokens(params: {
         // Usage reported by the vendor can exceed the local reservation
         // estimate. Charge the overage without ever crossing tokenQuota.
         await tx.$executeRaw`
-          UPDATE "ApiKey"
+          UPDATE public."ApiKey"
           SET "tokenUsed" = LEAST("tokenQuota", "tokenUsed" + ${extra}),
               "updatedAt" = NOW()
           WHERE "id" = ${params.apiKeyId}
