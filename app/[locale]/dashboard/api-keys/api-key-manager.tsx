@@ -383,6 +383,10 @@ export function ApiKeyManager({
             const s = stats[k.id];
             const disabled = !k.enabled;
             const revoked = !k.isActive;
+            // Zero-balance gate hanya berlaku untuk key PAYG. Key paket
+            // (TOKEN_PACKAGE/LEGACY) adalah produk berbayar — regenerate
+            // tidak membutuhkan saldo (server juga mengizinkan).
+            const balanceBlockedForKey = balanceBlocked && k.billingMode === "PAYG";
             return (
               <div key={k.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -433,8 +437,8 @@ export function ApiKeyManager({
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                     <button
                       onClick={() => regenerate(k.id, k.name)}
-                      disabled={busy || balanceBlocked}
-                      title={balanceBlocked ? "Isi saldo dulu untuk regenerate" : undefined}
+                      disabled={busy || balanceBlockedForKey}
+                      title={balanceBlockedForKey ? "Isi saldo dulu untuk regenerate" : undefined}
                       className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Regenerate
