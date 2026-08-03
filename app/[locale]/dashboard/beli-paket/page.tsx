@@ -43,7 +43,10 @@ export default async function BuyPackagePage() {
         </div>
       ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {tokenPackages.map((pkg) => (
+          {tokenPackages.map((pkg) => {
+            const soldOut = pkg.stock <= 0;
+            const lowStock = !soldOut && pkg.stock <= 5;
+            return (
             <article
               key={pkg.id}
               className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white/[0.02] p-6 ${
@@ -73,6 +76,17 @@ export default async function BuyPackagePage() {
               <div className="mt-1 text-xs text-muted-foreground">
                 sekali bayar · {formatDuration(pkg.durationDays).toLowerCase()}
               </div>
+              <div
+                className={`mt-1.5 text-xs font-medium ${
+                  soldOut ? "text-red-400" : lowStock ? "text-amber-300" : "text-muted-foreground"
+                }`}
+              >
+                {soldOut
+                  ? "Stok habis"
+                  : lowStock
+                    ? `Sisa stok: ${pkg.stock.toLocaleString("id-ID")} — hampir habis`
+                    : `Sisa stok: ${pkg.stock.toLocaleString("id-ID")}`}
+              </div>
               <div className="mt-5 border-y border-white/[0.07] py-4">
                 <div className="text-2xl font-semibold text-accent">{formatTokenQuota(pkg.tokenQuota)}</div>
                 <div className="mt-1 text-[11px] text-muted-foreground">token input + output</div>
@@ -85,18 +99,25 @@ export default async function BuyPackagePage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href={`/checkout/${pkg.id}`}
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                  pkg.highlight
-                    ? "bg-accent text-black hover:brightness-110"
-                    : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"
-                }`}
-              >
-                Beli {pkg.name}
-              </Link>
+              {soldOut ? (
+                <span className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-muted-foreground">
+                  Stok Habis
+                </span>
+              ) : (
+                <Link
+                  href={`/checkout/${pkg.id}`}
+                  className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    pkg.highlight
+                      ? "bg-accent text-black hover:brightness-110"
+                      : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"
+                  }`}
+                >
+                  Beli {pkg.name}
+                </Link>
+              )}
             </article>
-          ))}
+            );
+          })}
         </section>
       )}
 
