@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
 declare global {
@@ -24,12 +24,22 @@ declare global {
 }
 
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+const LOAD_TIMEOUT_MS = 12_000;
+const POLL_INTERVAL_MS = 100;
 
 /**
  * Widget Cloudflare Turnstile. Me-render token ke hidden input
  * name="cf-turnstile-response" sehingga otomatis terbawa saat form di-submit
  * via server action (FormData). Memakai explicit render agar bisa reset ulang
  * setelah submit gagal.
+ *
+ * Deteksi kesiapan script TIDAK mengandalkan next/script onLoad: saat user
+ * berpindah halaman via client-side navigation (misal /login → /register),
+ * script yang sudah termuat tidak dieksekusi ulang dan onLoad tidak pernah
+ * terpanggil — widget tidak pernah muncul sampai user refresh manual.
+ * Sebagai gantinya kita poll window.turnstile (cepat jika sudah termuat,
+ * tetap jalan saat script sedang loading), dengan timeout → pesan error +
+ * tombol coba lagi.
  *
  * Jika NEXT_PUBLIC_TURNSTILE_SITE_KEY kosong, widget tidak di-render (mode dev).
  */
@@ -43,11 +53,49 @@ export function TurnstileWidget({
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
   const [errored, setErrored] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
+  // Simpan onVerified terbaru di ref supaya callback Turnstile stabil dan
+  // effect render tidak bongkar-pasang widget setiap parent re-render.
+  const onVerifiedRef = useRef(onVerified);
   useEffect(() => {
-    if (!siteKey || !scriptLoaded || !containerRef.current) return;
+    onVerifiedRef.current = onVerified;
+  });
+
+  // Deteksi kesiapan window.turnstile (polling), bukan onLoad next/script.
+  useEffect(() => {
+    if (!siteKey) return;
+    setErrored(false);
+
+    if (window.turnstile) {
+      setReady(true);
+      return;
+    }
+
+    const poll = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(poll);
+        clearTimeout(timeout);
+        setReady(true);
+      }
+    }, POLL_INTERVAL_MS);
+
+    const timeout = setTimeout(() => {
+      clearInterval(poll);
+      if (!window.turnstile) setErrored(true);
+    }, LOAD_TIMEOUT_MS);
+
+    return () => {
+      clearInterval(poll);
+      clearTimeout(timeout);
+    };
+  }, [siteKey, attempt]);
+
+  // Render widget begitu script siap.
+  useEffect(() => {
+    if (!siteKey || !ready || !containerRef.current) return;
     if (widgetIdRef.current) return;
     if (!window.turnstile) return;
 
@@ -56,14 +104,14 @@ export function TurnstileWidget({
       appearance: "always",
       callback: (token: string) => {
         setErrored(false);
-        onVerified?.(token);
+        onVerifiedRef.current?.(token);
       },
       "error-callback": () => {
         setErrored(true);
-        onVerified?.("");
+        onVerifiedRef.current?.("");
       },
       "expired-callback": () => {
-        onVerified?.("");
+        onVerifiedRef.current?.("");
       },
     });
 
@@ -77,7 +125,7 @@ export function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, scriptLoaded, onVerified]);
+  }, [siteKey, ready]);
 
   // Reset widget saat token perlu di-refresh (dipanggil parent via ref/event).
   useEffect(() => {
@@ -90,6 +138,13 @@ export function TurnstileWidget({
     return () => window.removeEventListener("turnstile:reset", onReset);
   }, []);
 
+  const retry = useCallback(() => {
+    // Coba lagi deteksi + render tanpa reload halaman.
+    setReady(false);
+    setErrored(false);
+    setAttempt((a) => a + 1);
+  }, []);
+
   if (!siteKey) return null;
 
   return (
@@ -97,14 +152,23 @@ export function TurnstileWidget({
       <Script
         src={SCRIPT_SRC}
         strategy="afterInteractive"
-        onLoad={() => setScriptLoaded(true)}
+        onLoad={() => setReady(true)}
         onError={() => setErrored(true)}
       />
       <div ref={containerRef} className="min-h-[65px]" />
       {errored && (
-        <p className="text-xs text-red-600 mt-1">
-          Verifikasi keamanan gagal dimuat. Muat ulang halaman lalu coba lagi.
-        </p>
+        <div className="mt-1 text-center">
+          <p className="text-xs text-red-400">
+            Verifikasi keamanan gagal dimuat.
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="mt-1.5 text-xs font-medium text-foreground underline underline-offset-2 hover:text-[#b8ff45] transition"
+          >
+            Coba muat ulang widget
+          </button>
+        </div>
       )}
     </div>
   );
