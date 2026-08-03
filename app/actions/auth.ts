@@ -12,10 +12,123 @@ import {
   Admin2FAFailedError,
 } from "@/app/lib/auth";
 import { verifyTurnstile } from "@/app/lib/turnstile";
-import { checkRegisterRateLimit, peekLoginRateLimit } from "@/app/lib/rate-limit";
+import {
+  checkRegisterRateLimit,
+  peekLoginRateLimit,
+  checkEmailCodeSendLimit,
+  checkEmailCodeVerifyLimit,
+} from "@/app/lib/rate-limit";
 import { getClientIp } from "@/app/lib/proxy-utils";
 import { DEFAULT_USER_RATE_LIMIT_RPM } from "@/app/lib/constants";
+import { sendMail } from "@/app/lib/mail";
+import {
+  issueEmailCode,
+  verifyEmailCode,
+  issueVerifiedEmail,
+  verifyVerifiedEmail,
+} from "@/app/lib/email-code";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * REGISTER STEP 1 — user memasukkan email. Server mengirim kode 6 digit ke
+ * email tersebut dan mengembalikan `proof` (HMAC stateless, tanpa DB) yang
+ * disimpan client sebagai hidden field untuk step 2.
+ */
+export type RegisterCodeResult = { error: string } | { ok: true; proof: string };
+
+export async function requestRegisterCodeAction(
+  formData: FormData,
+): Promise<RegisterCodeResult> {
+  const t = await getTranslations("Auth");
+  const email = (formData.get("email") as string | null)?.toLowerCase().trim();
+  const turnstileToken = formData.get("cf-turnstile-response") as string | null;
+
+  if (!email || !EMAIL_RE.test(email)) {
+    return { error: t("errorInvalidEmail") };
+  }
+
+  // Turnstile hanya di step ini (token-nya single-use). Step 2 & 3 aman karena
+  // hanya bisa dilanjutkan dengan kode yang dikirim ke inbox email tersebut.
+  const ts = await verifyTurnstile(turnstileToken, await headers());
+  if (!ts.success) {
+    return { error: t("errorBotCheck") };
+  }
+
+  const reqHeaders = await headers();
+  const clientIp = getClientIp(reqHeaders) || "unknown";
+  const rl = checkEmailCodeSendLimit(email, clientIp);
+  if (!rl.allowed) {
+    const minutes = Math.max(1, Math.ceil(rl.retryAfter / 60));
+    return { error: t("errorRateLimitCode", { minutes }) };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return { error: t("errorEmailTaken") };
+  }
+
+  const { code, proof } = issueEmailCode(email);
+  const sent = await sendMail({
+    to: email,
+    subject: `Kode verifikasi pendaftaran: ${code}`,
+    text: [
+      `Kode verifikasi kamu: ${code}`,
+      "",
+      `Kode berlaku 10 menit. Masukkan kode ini di halaman pendaftaran.`,
+      "Jika kamu tidak merasa mendaftar, abaikan email ini.",
+    ].join("\n"),
+    html: `
+      <div style="font-family:sans-serif;max-width:420px;margin:auto;padding:24px">
+        <p>Kode verifikasi pendaftaran kamu:</p>
+        <p style="font-size:32px;font-weight:bold;letter-spacing:6px;margin:16px 0">${code}</p>
+        <p style="color:#666;font-size:13px">Kode berlaku 10 menit. Jika kamu tidak merasa mendaftar, abaikan email ini.</p>
+      </div>`,
+  });
+  if (!sent.ok) {
+    return { error: t("errorSendCode") };
+  }
+
+  return { ok: true, proof };
+}
+
+/**
+ * REGISTER STEP 2 — user memasukkan kode dari inbox. Jika cocok, server
+ * mengembalikan `verifiedToken` (HMAC stateless) yang WAJIB disertakan di
+ * step 3 — tanpa token ini pembuatan akun ditolak.
+ */
+export type VerifyCodeResult = { error: string } | { ok: true; verifiedToken: string };
+
+export async function verifyRegisterCodeAction(
+  formData: FormData,
+): Promise<VerifyCodeResult> {
+  const t = await getTranslations("Auth");
+  const email = (formData.get("email") as string | null)?.toLowerCase().trim();
+  const code = (formData.get("code") as string | null)?.trim();
+  const proof = (formData.get("proof") as string | null) ?? "";
+
+  if (!email || !code) {
+    return { error: t("errorCodeRequired") };
+  }
+
+  const rl = checkEmailCodeVerifyLimit(email);
+  if (!rl.allowed) {
+    const minutes = Math.max(1, Math.ceil(rl.retryAfter / 60));
+    return { error: t("errorRateLimitCode", { minutes }) };
+  }
+
+  if (!verifyEmailCode(email, code, proof)) {
+    return { error: t("errorCodeInvalid") };
+  }
+
+  return { ok: true, verifiedToken: issueVerifiedEmail(email) };
+}
+
+/**
+ * REGISTER STEP 3 (final) — buat password & akun. `verifiedToken` dari step 2
+ * adalah satu-satunya bukti bahwa email sudah diverifikasi; tanpa token yang
+ * valid (atau sudah kedaluwarsa), pendaftaran ditolak.
+ */
 export async function registerAction(formData: FormData) {
   const t = await getTranslations("Auth");
   const locale = await getLocale();
@@ -23,7 +136,7 @@ export async function registerAction(formData: FormData) {
   const email = (formData.get("email") as string | null)?.toLowerCase().trim();
   const password = formData.get("password") as string | null;
   const confirm = formData.get("confirm") as string | null;
-  const turnstileToken = formData.get("cf-turnstile-response") as string | null;
+  const verifiedToken = (formData.get("verifiedToken") as string | null) ?? "";
 
   if (!email || !password) {
     return { error: t("errorRequired") };
@@ -35,16 +148,13 @@ export async function registerAction(formData: FormData) {
     return { error: t("errorConfirm") };
   }
 
-  const ts = await verifyTurnstile(turnstileToken, await headers());
-  if (!ts.success) {
-    return { error: t("errorBotCheck") };
+  // Email WAJIB sudah diverifikasi lewat kode (step 1 & 2). Token stateless,
+  // jadi verifikasi ini murah dan tidak menyentuh DB.
+  if (!verifyVerifiedEmail(email, verifiedToken)) {
+    return { error: t("errorEmailNotVerified") };
   }
 
   // Brute-force / mass-account protection: cap registrations per source IP.
-  // Checked AFTER Turnstile so the bot-check is the first gate (cheaper for
-  // legit users who fail captcha) but BEFORE the DB lookup so we don't leak
-  // "email already taken" info to a rate-limited attacker.
-  //
   // Register is safe to rate-limit only in this server action because there
   // is NO alternative route handler for registration (unlike login, which
   // NextAuth exposes at /api/auth/callback/credentials). Next.js server

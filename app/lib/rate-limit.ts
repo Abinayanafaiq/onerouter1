@@ -128,6 +128,58 @@ export function checkRegisterRateLimit(ip: string): {
   return { allowed: result.allowed, retryAfter: result.retryAfter, limit: result.limit };
 }
 
+/* ============================================================
+   Email verification code (register step 1 & 2)
+   ------------------------------------------------------------
+   - Send: per-email (3/10 min, cukup untuk "kirim ulang") dan
+     per-IP (10/jam) supaya endpoint ini tidak bisa dipakai
+     meng-spam inbox orang lain.
+   - Verify: per-email (5/10 min). 6 digit = 1 juta kombinasi,
+     jadi 5 percobaan per masa berlaku kode membuat brute-force
+     praktis mustahil tanpa perlu menyimpan state kode di DB.
+   ============================================================ */
+
+export const EMAIL_CODE_SEND_EMAIL_MAX = 3;
+export const EMAIL_CODE_SEND_IP_MAX = 10;
+export const EMAIL_CODE_VERIFY_MAX = 5;
+export const EMAIL_CODE_WINDOW_MS = 10 * 60_000;
+
+export function checkEmailCodeSendLimit(email: string, ip: string): {
+  allowed: boolean;
+  retryAfter: number;
+} {
+  const emailResult = checkFixedWindow(
+    authLimits,
+    `emailcode-send:${email.toLowerCase()}`,
+    EMAIL_CODE_SEND_EMAIL_MAX,
+    EMAIL_CODE_WINDOW_MS,
+  );
+  if (!emailResult.allowed) return { allowed: false, retryAfter: emailResult.retryAfter };
+
+  const ipResult = checkFixedWindow(
+    authLimits,
+    `emailcode-send-ip:${ip}`,
+    EMAIL_CODE_SEND_IP_MAX,
+    REGISTER_WINDOW_MS,
+  );
+  if (!ipResult.allowed) return { allowed: false, retryAfter: ipResult.retryAfter };
+
+  return { allowed: true, retryAfter: 0 };
+}
+
+export function checkEmailCodeVerifyLimit(email: string): {
+  allowed: boolean;
+  retryAfter: number;
+} {
+  const result = checkFixedWindow(
+    authLimits,
+    `emailcode-verify:${email.toLowerCase()}`,
+    EMAIL_CODE_VERIFY_MAX,
+    EMAIL_CODE_WINDOW_MS,
+  );
+  return { allowed: result.allowed, retryAfter: result.retryAfter };
+}
+
 /**
  * Max order/payment-create requests a single user may make per 3-minute
  * window, shared across ALL payment endpoints (QRIS, BSC, BTCPay, manual,

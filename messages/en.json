@@ -215,7 +215,20 @@
     "errorRateLimitRegister": "Too many registrations from this device (max {count} per hour). Try again in {minutes} minutes.",
     "admin2FAHeader": "Admin Additional Verification",
     "admin2FAAnswerLabel": "Answer",
-    "admin2FAVerifyButton": "Verify"
+    "admin2FAVerifyButton": "Verify",
+    "sendCodeButton": "Send Verification Code",
+    "verifyCodeButton": "Verify",
+    "codeLabel": "Verification Code",
+    "codePlaceholder": "6-digit code",
+    "changeEmail": "Change email / resend code",
+    "codeSentNotice": "A verification code has been sent to {email}. Check your inbox (or spam folder).",
+    "verifiedNotice": "Email {email} verified. Create your password.",
+    "errorInvalidEmail": "Invalid email format",
+    "errorSendCode": "Failed to send verification code. Please try again shortly.",
+    "errorRateLimitCode": "Too many code requests. Try again in {minutes} minutes.",
+    "errorCodeRequired": "Verification code is required",
+    "errorCodeInvalid": "Invalid or expired verification code",
+    "errorEmailNotVerified": "Email verification session expired. Please resend the code."
   },
   "Dashboard": {
     "overview": "Overview",

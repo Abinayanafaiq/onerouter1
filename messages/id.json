@@ -215,7 +215,20 @@
     "errorRateLimitRegister": "Terlalu banyak pendaftaran dari perangkat ini (maksimal {count} per jam). Coba lagi dalam {minutes} menit.",
     "admin2FAHeader": "Verifikasi Tambahan Admin",
     "admin2FAAnswerLabel": "Jawaban",
-    "admin2FAVerifyButton": "Verifikasi"
+    "admin2FAVerifyButton": "Verifikasi",
+    "sendCodeButton": "Kirim Kode Verifikasi",
+    "verifyCodeButton": "Verifikasi",
+    "codeLabel": "Kode Verifikasi",
+    "codePlaceholder": "6 digit kode",
+    "changeEmail": "Ganti email / kirim ulang kode",
+    "codeSentNotice": "Kode verifikasi sudah dikirim ke {email}. Cek inbox (atau folder spam).",
+    "verifiedNotice": "Email {email} terverifikasi. Buat password kamu.",
+    "errorInvalidEmail": "Format email tidak valid",
+    "errorSendCode": "Gagal mengirim kode verifikasi. Coba lagi beberapa saat.",
+    "errorRateLimitCode": "Terlalu banyak permintaan kode. Coba lagi dalam {minutes} menit.",
+    "errorCodeRequired": "Kode verifikasi wajib diisi",
+    "errorCodeInvalid": "Kode verifikasi salah atau sudah kedaluwarsa",
+    "errorEmailNotVerified": "Sesi verifikasi email sudah kedaluwarsa. Silakan kirim ulang kode."
   },
   "Dashboard": {
     "overview": "Overview",
