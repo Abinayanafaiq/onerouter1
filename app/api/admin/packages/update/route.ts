@@ -61,9 +61,20 @@ export async function POST(request: Request) {
     }
 
     if (body.tokenQuota !== undefined && body.tokenQuota !== null && body.tokenQuota !== "") {
-      const tokenQuota = BigInt(
-        typeof body.tokenQuota === "number" ? body.tokenQuota : body.tokenQuota,
-      );
+      // Toleran terhadap pemisah ribuan ala Indonesia ("10.000.000" / "10,000,000").
+      const tokenQuotaStr =
+        typeof body.tokenQuota === "number"
+          ? String(Math.trunc(body.tokenQuota))
+          : body.tokenQuota.replace(/[.,\s_]/g, "");
+      let tokenQuota: bigint;
+      try {
+        tokenQuota = BigInt(tokenQuotaStr);
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Token quota harus berupa angka bulat" },
+          { status: 400 },
+        );
+      }
       if (tokenQuota < 0) {
         return NextResponse.json({ success: false, error: "Token quota tidak valid" }, { status: 400 });
       }

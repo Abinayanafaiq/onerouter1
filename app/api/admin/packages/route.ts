@@ -53,7 +53,20 @@ export async function POST(request: Request) {
     if (tokenQuotaRaw === undefined || tokenQuotaRaw === null || tokenQuotaRaw === "") {
       return NextResponse.json({ success: false, error: "Token quota wajib diisi" }, { status: 400 });
     }
-    const tokenQuota = BigInt(typeof tokenQuotaRaw === "number" ? tokenQuotaRaw : tokenQuotaRaw);
+    // Toleran terhadap pemisah ribuan ala Indonesia ("10.000.000" / "10,000,000").
+    const tokenQuotaStr =
+      typeof tokenQuotaRaw === "number"
+        ? String(Math.trunc(tokenQuotaRaw))
+        : tokenQuotaRaw.replace(/[.,\s_]/g, "");
+    let tokenQuota: bigint;
+    try {
+      tokenQuota = BigInt(tokenQuotaStr);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Token quota harus berupa angka bulat" },
+        { status: 400 },
+      );
+    }
     if (tokenQuota < 0) {
       return NextResponse.json({ success: false, error: "Token quota tidak valid" }, { status: 400 });
     }
@@ -107,7 +120,12 @@ export async function POST(request: Request) {
 
     await writeAuditLog({ actorUserId: actorId, action: "package.create", target: created.id });
 
-    return NextResponse.json({ success: true, package: created });
+    return NextResponse.json({
+      success: true,
+      // tokenQuota adalah BigInt — wajib di-string-kan, kalau tidak
+      // JSON.stringify throw dan request sukses terlihat sebagai error 500.
+      package: { ...created, tokenQuota: created.tokenQuota.toString() },
+    });
   } catch (e) {
     console.error("[admin/packages POST] exception:", e);
     return NextResponse.json({ success: false, error: "Internal error" }, { status: 500 });
