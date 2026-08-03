@@ -2,6 +2,7 @@ import { getAllModels } from "@/app/lib/models";
 import { ModelEditor } from "./model-editor";
 import { getAllPackageModels } from "@/app/lib/package-models";
 import { PackageModelEditor } from "./package-model-editor";
+import { PackageModelCreator } from "./package-model-creator";
 
 export default async function AdminModelsPage() {
   const [models, packageModels] = await Promise.all([getAllModels(), getAllPackageModels()]);
@@ -40,10 +41,15 @@ export default async function AdminModelsPage() {
       </div>
 
       <div className="border-t border-neutral-800 pt-6">
-        <h2 className="text-lg font-bold text-neutral-100">Model Paket Token</h2>
-        <p className="mt-1 text-xs text-neutral-500">
-          Katalog terpisah untuk endpoint /v1/package. ID publik tidak memakai prefix wz/.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-neutral-100">Model Paket Token</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              Katalog terpisah untuk endpoint /v1/package. ID publik tidak memakai prefix wz/.
+            </p>
+          </div>
+          <PackageModelCreator />
+        </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         {packageModels.map((model) => (
