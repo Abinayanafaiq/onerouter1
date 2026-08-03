@@ -10,9 +10,9 @@ export type PackageDef = Package & { features: string[]; highlight?: boolean };
  * sync when an admin edits a package's quota or duration.
  */
 const EXTRA_FEATURES: Record<string, string[]> = {
-  "token-20m-1d": ["Semua model aktif", "Input + output dihitung"],
-  "token-40m-1d": ["Semua model aktif", "Input + output dihitung"],
-  "token-50m-1d": ["Semua model aktif", "Input + output dihitung"],
+  "token-20m-1d": ["Semua model aktif kecuali kimi-k3", "Input + output dihitung"],
+  "token-40m-1d": ["Semua model aktif kecuali kimi-k3", "Input + output dihitung"],
+  "token-50m-1d": ["Semua model aktif kecuali kimi-k3", "Input + output dihitung"],
   mini: [
     "Semua model AI tersedia",
     "Limit request 20/menit",
