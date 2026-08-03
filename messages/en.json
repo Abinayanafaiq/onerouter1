@@ -228,7 +228,11 @@
     "errorRateLimitCode": "Too many code requests. Try again in {minutes} minutes.",
     "errorCodeRequired": "Verification code is required",
     "errorCodeInvalid": "Invalid or expired verification code",
-    "errorEmailNotVerified": "Email verification session expired. Please resend the code."
+    "errorEmailNotVerified": "Email verification session expired. Please resend the code.",
+    "spamNotice": "Can't find the email in your inbox? Check your <b>Spam / Junk</b> folder — verification emails sometimes end up there, then mark it as \"Not Spam\".",
+    "stepEmail": "Email",
+    "stepCode": "Code",
+    "stepPassword": "Password"
   },
   "Dashboard": {
     "overview": "Overview",

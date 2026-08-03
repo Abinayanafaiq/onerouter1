@@ -25,7 +25,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           </div>
         </div>
       </header>
-      <main className="flex-1 flex items-center justify-center px-4 py-12">{children}</main>
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12 glow-bg">{children}</main>
     </div>
   );
 }

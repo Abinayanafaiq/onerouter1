@@ -5,6 +5,12 @@ import { useTranslations } from "next-intl";
 import { loginAction, type LoginActionResult } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
 import { TurnstileWidget } from "@/app/components/turnstile-widget";
+import {
+  AuthShell,
+  authInputClass,
+  authLabelClass,
+  authButtonClass,
+} from "@/app/components/auth-shell";
 
 export default function LoginPage() {
   const t = useTranslations("Auth");
@@ -65,20 +71,25 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold">{t("loginTitle")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t("loginSubtitle")}
-        </p>
-      </div>
+    <AuthShell
+      title={t("loginTitle")}
+      subtitle={t("loginSubtitle")}
+      footer={
+        <>
+          {t("noAccount")}{" "}
+          <Link href="/register" className="text-foreground font-medium hover:text-[#b8ff45] transition">
+            {t("registerLink")}
+          </Link>
+        </>
+      }
+    >
       <form action={formAction} className="space-y-4">
         {/* Step 1 fields — visible at step 1, replaced by hidden inputs at
             step 2 so the server action still receives them on retry. */}
         {!needs2FA && (
           <>
             <div>
-              <label htmlFor="email" className="text-sm font-medium block mb-1.5">
+              <label htmlFor="email" className={authLabelClass}>
                 {tc("email")}
               </label>
               <input
@@ -88,12 +99,12 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder={t("emailPlaceholder")}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                className={authInputClass}
                 onChange={(e) => setEmailValue(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="text-sm font-medium block mb-1.5">
+              <label htmlFor="password" className={authLabelClass}>
                 {tc("password")}
               </label>
               <input
@@ -102,7 +113,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                className={authInputClass}
                 onChange={(e) => setPasswordValue(e.target.value)}
               />
             </div>
@@ -114,8 +125,8 @@ export default function LoginPage() {
             populated from the captured step-1 state. */}
         {needs2FA && (
           <>
-            <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3 space-y-1">
-              <p className="text-xs font-semibold text-yellow-600">
+            <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 space-y-1">
+              <p className="text-xs font-semibold text-amber-300">
                 {t("admin2FAHeader")}
               </p>
               <p className="text-sm text-foreground">{question}</p>
@@ -130,7 +141,7 @@ export default function LoginPage() {
                 is the correct security behavior anyway). */}
             <input type="hidden" name="cf-turnstile-response" value={turnstileTokenRef.current} />
             <div>
-              <label htmlFor="securityAnswer" className="text-sm font-medium block mb-1.5">
+              <label htmlFor="securityAnswer" className={authLabelClass}>
                 {t("admin2FAAnswerLabel")}
               </label>
               <input
@@ -140,7 +151,7 @@ export default function LoginPage() {
                 required
                 autoComplete="off"
                 autoFocus
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                className={authInputClass}
               />
             </div>
           </>
@@ -159,22 +170,12 @@ export default function LoginPage() {
         )}
 
         {state && "error" in state && state.error && (
-          <p className="text-sm text-red-600">{state.error}</p>
+          <p className="text-sm text-red-400">{state.error}</p>
         )}
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full bg-foreground text-background py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={authButtonClass}>
           {pending ? tc("loading") : needs2FA ? t("admin2FAVerifyButton") : t("loginButton")}
         </button>
       </form>
-      <p className="text-sm text-center mt-6 text-muted-foreground">
-        {t("noAccount")}{" "}
-        <Link href="/register" className="text-foreground font-medium hover:underline">
-          {t("registerLink")}
-        </Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

@@ -9,9 +9,13 @@ import {
 } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
 import { TurnstileWidget } from "@/app/components/turnstile-widget";
-
-const inputClass =
-  "w-full px-3 py-2 border rounded-md bg-background text-sm";
+import {
+  AuthShell,
+  StepIndicator,
+  authInputClass,
+  authLabelClass,
+  authButtonClass,
+} from "@/app/components/auth-shell";
 
 export default function RegisterPage() {
   const t = useTranslations("Auth");
@@ -59,20 +63,33 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold">{t("registerTitle")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {step === 1 && t("registerSubtitle")}
-          {step === 2 && t("codeSentNotice", { email })}
-          {step === 3 && t("verifiedNotice", { email })}
-        </p>
-      </div>
+    <AuthShell
+      title={t("registerTitle")}
+      subtitle={
+        step === 1
+          ? t("registerSubtitle")
+          : step === 2
+            ? t("codeSentNotice", { email })
+            : t("verifiedNotice", { email })
+      }
+      footer={
+        <>
+          {t("hasAccount")}{" "}
+          <Link href="/login" className="text-foreground font-medium hover:text-[#b8ff45] transition">
+            {t("loginLink")}
+          </Link>
+        </>
+      }
+    >
+      <StepIndicator
+        steps={[t("stepEmail"), t("stepCode"), t("stepPassword")]}
+        current={step}
+      />
 
       {step === 1 && (
         <form action={codeAction} className="space-y-4">
           <div>
-            <label htmlFor="email" className="text-sm font-medium block mb-1.5">
+            <label htmlFor="email" className={authLabelClass}>
               {tc("email")}
             </label>
             <input
@@ -82,18 +99,14 @@ export default function RegisterPage() {
               required
               autoComplete="email"
               placeholder={t("emailPlaceholder")}
-              className={inputClass}
+              className={authInputClass}
             />
           </div>
           <TurnstileWidget className="flex justify-center" />
           {codeState?.error && (
-            <p className="text-sm text-red-600">{codeState.error}</p>
+            <p className="text-sm text-red-400">{codeState.error}</p>
           )}
-          <button
-            type="submit"
-            disabled={codePending}
-            className="w-full bg-foreground text-background py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50"
-          >
+          <button type="submit" disabled={codePending} className={authButtonClass}>
             {codePending ? tc("loading") : t("sendCodeButton")}
           </button>
         </form>
@@ -104,7 +117,7 @@ export default function RegisterPage() {
           <input type="hidden" name="email" value={email} />
           <input type="hidden" name="proof" value={proof} />
           <div>
-            <label htmlFor="code" className="text-sm font-medium block mb-1.5">
+            <label htmlFor="code" className={authLabelClass}>
               {t("codeLabel")}
             </label>
             <input
@@ -116,23 +129,42 @@ export default function RegisterPage() {
               autoComplete="one-time-code"
               maxLength={6}
               placeholder={t("codePlaceholder")}
-              className={`${inputClass} text-center text-lg tracking-[0.5em] font-mono`}
+              className={`${authInputClass} text-center text-2xl tracking-[0.5em] font-mono py-3.5`}
             />
           </div>
+
+          {/* Spam notice — banyak email verifikasi nyasar ke Spam/Junk,
+              terutama dari domain baru. */}
+          <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 flex items-start gap-2.5">
+            <svg
+              className="h-4 w-4 mt-0.5 shrink-0 text-amber-400/80"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            <p className="text-xs leading-relaxed text-amber-200/80">
+              {t.rich("spamNotice", {
+                b: (chunks) => <strong className="text-amber-200">{chunks}</strong>,
+              })}
+            </p>
+          </div>
+
           {verifyState?.error && (
-            <p className="text-sm text-red-600">{verifyState.error}</p>
+            <p className="text-sm text-red-400">{verifyState.error}</p>
           )}
-          <button
-            type="submit"
-            disabled={verifyPending}
-            className="w-full bg-foreground text-background py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50"
-          >
+          <button type="submit" disabled={verifyPending} className={authButtonClass}>
             {verifyPending ? tc("loading") : t("verifyCodeButton")}
           </button>
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="w-full text-sm text-muted-foreground hover:text-foreground"
+            className="w-full py-1 text-sm text-muted-foreground hover:text-foreground transition"
           >
             {t("changeEmail")}
           </button>
@@ -144,7 +176,7 @@ export default function RegisterPage() {
           <input type="hidden" name="email" value={email} />
           <input type="hidden" name="verifiedToken" value={verifiedToken} />
           <div>
-            <label htmlFor="name" className="text-sm font-medium block mb-1.5">
+            <label htmlFor="name" className={authLabelClass}>
               {tc("nameOptional")}
             </label>
             <input
@@ -152,11 +184,11 @@ export default function RegisterPage() {
               name="name"
               type="text"
               autoComplete="name"
-              className={inputClass}
+              className={authInputClass}
             />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm font-medium block mb-1.5">
+            <label htmlFor="password" className={authLabelClass}>
               {tc("password")}
             </label>
             <input
@@ -166,11 +198,11 @@ export default function RegisterPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className={inputClass}
+              className={authInputClass}
             />
           </div>
           <div>
-            <label htmlFor="confirm" className="text-sm font-medium block mb-1.5">
+            <label htmlFor="confirm" className={authLabelClass}>
               {tc("confirmPassword")}
             </label>
             <input
@@ -180,37 +212,27 @@ export default function RegisterPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className={inputClass}
+              className={authInputClass}
             />
           </div>
           {registerState?.error && (
-            <p className="text-sm text-red-600">{registerState.error}</p>
+            <p className="text-sm text-red-400">{registerState.error}</p>
           )}
-          <button
-            type="submit"
-            disabled={registerPending}
-            className="w-full bg-foreground text-background py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50"
-          >
+          <button type="submit" disabled={registerPending} className={authButtonClass}>
             {registerPending ? tc("loading") : t("registerButton")}
           </button>
         </form>
       )}
 
-      <p className="text-xs text-center text-muted-foreground mt-4">
+      <p className="text-[11px] text-center text-neutral-500 mt-5 leading-relaxed">
         {tt.rich("agreeRegister", {
           link: (chunks) => (
-            <Link href="/terms" className="text-foreground font-medium hover:underline">
+            <Link href="/terms" className="text-neutral-300 font-medium hover:text-[#b8ff45] transition">
               {chunks}
             </Link>
           ),
         })}
       </p>
-      <p className="text-sm text-center mt-6 text-muted-foreground">
-        {t("hasAccount")}{" "}
-        <Link href="/login" className="text-foreground font-medium hover:underline">
-          {t("loginLink")}
-        </Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }
