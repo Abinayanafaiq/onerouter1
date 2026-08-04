@@ -232,7 +232,32 @@
     "spamNotice": "Can't find the email in your inbox? Check your <b>Spam / Junk</b> folder — verification emails sometimes end up there, then mark it as \"Not Spam\".",
     "stepEmail": "Email",
     "stepCode": "Code",
-    "stepPassword": "Password"
+    "stepPassword": "Password",
+    "forgotPassword": "Forgot password?",
+    "resetTitle": "Reset Password",
+    "resetSubtitle": "Enter your email. We'll send you a code to reset your password.",
+    "resetSentNotice": "If {email} is registered, a reset code has been sent. Check your inbox (or spam folder).",
+    "resetVerifiedNotice": "Email {email} verified. Create your new password.",
+    "rememberPassword": "Remember your password?",
+    "newPasswordLabel": "New Password",
+    "confirmNewPasswordLabel": "Confirm New Password",
+    "resetButton": "Reset Password",
+    "errorResetSession": "Reset session expired. Please resend the code."
+  },
+  "Settings": {
+    "securityTitle": "Security",
+    "securityDesc": "Change your account password. Use the new password on your next sign-in.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "changeButton": "Change Password",
+    "success": "Password changed successfully. Use your new password on your next sign-in.",
+    "errorRequired": "All fields are required",
+    "errorMinPassword": "New password must be at least 6 characters",
+    "errorConfirm": "New password confirmation does not match",
+    "errorWrongCurrent": "Current password is incorrect",
+    "errorRateLimit": "Too many attempts. Try again in {seconds} seconds.",
+    "errorUnauthorized": "Your session has expired. Please sign in again."
   },
   "Dashboard": {
     "overview": "Overview",

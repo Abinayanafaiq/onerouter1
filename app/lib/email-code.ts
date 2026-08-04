@@ -81,3 +81,39 @@ export function verifyVerifiedEmail(email: string, token: string): boolean {
   const expected = sign(`verified|${normalizeEmail(email)}|${exp}`);
   return safeEqual(expected, sig);
 }
+
+/**
+ * RESET PASSWORD — varian khusus dengan namespace payload terpisah
+ * (`resetcode|` / `resetverified|`). Token registrasi TIDAK bisa dipakai
+ * silang ke flow reset (dan sebaliknya) karena signature-nya berbeda,
+ * walaupun keduanya membuktikan hal yang sama (kepemilikan email).
+ */
+export function issuePasswordResetCode(email: string): { code: string; proof: string } {
+  const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+  const exp = Date.now() + CODE_TTL_MS;
+  const sig = sign(`resetcode|${normalizeEmail(email)}|${code}|${exp}`);
+  return { code, proof: `${exp}.${sig}` };
+}
+
+export function verifyPasswordResetCode(email: string, code: string, proof: string): boolean {
+  const [expStr, sig] = proof.split(".");
+  const exp = Number(expStr);
+  if (!exp || !sig || Date.now() > exp) return false;
+  if (!/^\d{6}$/.test(code)) return false;
+  const expected = sign(`resetcode|${normalizeEmail(email)}|${code}|${exp}`);
+  return safeEqual(expected, sig);
+}
+
+export function issuePasswordResetToken(email: string): string {
+  const exp = Date.now() + VERIFIED_TTL_MS;
+  const sig = sign(`resetverified|${normalizeEmail(email)}|${exp}`);
+  return `${exp}.${sig}`;
+}
+
+export function verifyPasswordResetToken(email: string, token: string): boolean {
+  const [expStr, sig] = token.split(".");
+  const exp = Number(expStr);
+  if (!exp || !sig || Date.now() > exp) return false;
+  const expected = sign(`resetverified|${normalizeEmail(email)}|${exp}`);
+  return safeEqual(expected, sig);
+}

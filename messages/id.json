@@ -232,7 +232,32 @@
     "spamNotice": "Tidak menemukan emailnya di inbox? Cek folder <b>Spam / Junk</b> — email verifikasi kadang nyasar ke sana, lalu tandai \"Bukan Spam\".",
     "stepEmail": "Email",
     "stepCode": "Kode",
-    "stepPassword": "Password"
+    "stepPassword": "Password",
+    "forgotPassword": "Lupa password?",
+    "resetTitle": "Reset Password",
+    "resetSubtitle": "Masukkan email kamu. Kami akan kirim kode untuk reset password.",
+    "resetSentNotice": "Jika email {email} terdaftar, kode reset sudah dikirim. Cek inbox (atau folder spam).",
+    "resetVerifiedNotice": "Email {email} terverifikasi. Buat password baru kamu.",
+    "rememberPassword": "Ingat password?",
+    "newPasswordLabel": "Password Baru",
+    "confirmNewPasswordLabel": "Konfirmasi Password Baru",
+    "resetButton": "Reset Password",
+    "errorResetSession": "Sesi reset sudah kedaluwarsa. Silakan kirim ulang kode."
+  },
+  "Settings": {
+    "securityTitle": "Keamanan",
+    "securityDesc": "Ganti password akun kamu. Setelah diganti, gunakan password baru saat login berikutnya.",
+    "currentPassword": "Password Saat Ini",
+    "newPassword": "Password Baru",
+    "confirmNewPassword": "Konfirmasi Password Baru",
+    "changeButton": "Ganti Password",
+    "success": "Password berhasil diganti. Gunakan password baru saat login berikutnya.",
+    "errorRequired": "Semua kolom wajib diisi",
+    "errorMinPassword": "Password baru minimal 6 karakter",
+    "errorConfirm": "Konfirmasi password baru tidak cocok",
+    "errorWrongCurrent": "Password saat ini salah",
+    "errorRateLimit": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
+    "errorUnauthorized": "Sesi sudah berakhir. Silakan login ulang."
   },
   "Dashboard": {
     "overview": "Overview",

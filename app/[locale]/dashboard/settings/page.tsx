@@ -1,9 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
+import { ChangePasswordForm } from "./change-password-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await auth();
+  const t = await getTranslations("Settings");
   const name = session?.user?.name ?? "—";
   const email = session?.user?.email ?? "—";
   const role = (session?.user as { role?: string } | undefined)?.role ?? "USER";
@@ -34,18 +37,25 @@ export default async function SettingsPage() {
         </div>
       </section>
 
+      {/* Security — change password */}
+      <section className="glass animate-fade-up-delay-1 rounded-2xl p-6">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-muted-foreground">
+            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+              <path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <h2 className="text-sm font-semibold tracking-tight">{t("securityTitle")}</h2>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("securityDesc")}</p>
+        <div className="mt-5 max-w-lg">
+          <ChangePasswordForm />
+        </div>
+      </section>
+
       {/* Sections (coming soon) */}
       <section className="grid gap-4 sm:grid-cols-2">
         {[
-          {
-            title: "Security",
-            desc: "Password, two-factor authentication, and active sessions.",
-            icon: (
-              <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
-                <path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              </svg>
-            ),
-          },
           {
             title: "Notifications",
             desc: "Email alerts for low balance, usage spikes, and billing.",
