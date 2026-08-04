@@ -68,6 +68,12 @@ export async function GET(request: Request) {
       object: "model",
       created: now,
       owned_by: m.provider,
+      // OpenRouter-style capability metadata so clients that parse it can
+      // enable image input without any manual configuration.
+      architecture: {
+        input_modalities: m.supportsImages ? ["text", "image"] : ["text"],
+        output_modalities: ["text"],
+      },
     })),
   }, { headers: corsHeaders() });
 }

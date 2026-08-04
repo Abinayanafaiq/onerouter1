@@ -1,5 +1,6 @@
 import { authenticateRequest, errorResponse, getClientIp } from "@/app/lib/proxy-utils";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
+import { prisma } from "@/app/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,13 @@ export async function GET(request: Request) {
   }
 
   const models = await getEnabledPackageModels();
+  // PackageModel has no supportsImages column — reuse the PAYG AIModel row
+  // with the same modelId as the capability source.
+  const aiModels = await prisma.aIModel.findMany({
+    where: { modelId: { in: models.map((m) => m.modelId) } },
+    select: { modelId: true, supportsImages: true },
+  });
+  const imageCapable = new Map(aiModels.map((m) => [m.modelId, m.supportsImages]));
   const now = Math.floor(Date.now() / 1000);
   return Response.json({
     object: "list",
@@ -35,6 +43,12 @@ export async function GET(request: Request) {
       object: "model",
       created: now,
       owned_by: model.provider,
+      // OpenRouter-style capability metadata so clients that parse it can
+      // enable image input without any manual configuration.
+      architecture: {
+        input_modalities: imageCapable.get(model.modelId) ? ["text", "image"] : ["text"],
+        output_modalities: ["text"],
+      },
     })),
   }, { headers: cors });
 }
