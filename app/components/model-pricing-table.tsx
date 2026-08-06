@@ -72,7 +72,7 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
                   </td>
                   <td className="px-4 py-3.5 text-muted-foreground capitalize">{m.provider}</td>
                   <td className="px-4 py-3.5">
-                    <span className="text-xs font-mono px-2 py-0.5 rounded-full border border-foreground/15 text-muted-foreground">
+                    <span className="text-xs tabular-nums px-2 py-0.5 rounded-full border border-foreground/15 text-muted-foreground">
                       {m.contextWindow || "—"}
                     </span>
                   </td>
@@ -97,12 +97,12 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
                     </td>
                   )}
                   <td className="px-4 py-3.5 text-right">
-                    <div className="font-mono font-semibold">{fmtRupiah(inRp, locale)}</div>
-                    <div className="text-[10px] text-muted-foreground">{fmtToks(inRp, locale)} · {fmtUsd(inRp)}</div>
+                    <div className="font-semibold tabular-nums">{fmtRupiah(inRp, locale)}</div>
+                    <div className="text-[10px] text-muted-foreground tabular-nums">{fmtToks(inRp, locale)} · {fmtUsd(inRp)}</div>
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <div className="font-mono font-semibold">{fmtRupiah(outRp, locale)}</div>
-                    <div className="text-[10px] text-muted-foreground">{fmtToks(outRp, locale)} · {fmtUsd(outRp)}</div>
+                    <div className="font-semibold tabular-nums">{fmtRupiah(outRp, locale)}</div>
+                    <div className="text-[10px] text-muted-foreground tabular-nums">{fmtToks(outRp, locale)} · {fmtUsd(outRp)}</div>
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     {m.maintenanceMode ? (
