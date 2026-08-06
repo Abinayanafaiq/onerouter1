@@ -808,7 +808,7 @@
     "backToDashboard": "Dashboard",
     "usageAnalytics": "Usage Analytics",
     "statBalanceLabel": "Credit Balance",
-    "statBalanceSub": "≈ Rp{amount}",
+    "statBalanceSub": "≈ {amount}",
     "statPurchasedLabel": "Total Purchased",
     "statPurchasedSub": "Total topped up",
     "statUsedLabel": "Total Used",
@@ -897,6 +897,8 @@
     "youReceiveLabel": "You Receive",
     "processingEstimateLabel": "Processing Estimate",
     "creatingOrder": "Creating Order...",
-    "createOrder": "Create Order"
+    "createOrder": "Create Order",
+    "paymentInfoRate": "1 {unit} = US${usd}",
+    "rateNote": "1 {unit} = US${usd}"
   }
 }

@@ -4,8 +4,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { IDR_PER_TOKS, TOKS_LABEL, toksToIdr } from "@/app/lib/constants";
+import { IDR_PER_TOKS, TOKS_LABEL, toksToIdr, idrToUsd, USD_PER_TOKS } from "@/app/lib/constants";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
+
+/** USD reference string for an IDR amount (display only, en locale). */
+function usdRef(idr: number): string {
+  return "US$" + idrToUsd(idr).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
 type PakasirResult = {
   orderId: string;
@@ -638,6 +646,7 @@ export function WalletTopUpForm({
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                   Rp{(p * IDR_PER_TOKS).toLocaleString(locale)}
+                  {locale === "en" && <> · ≈ {usdRef(p * IDR_PER_TOKS)}</>}
                 </div>
               </button>
             );
@@ -661,7 +670,7 @@ export function WalletTopUpForm({
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString(locale)}
+            {t("rateNote", { unit: TOKS_LABEL, idr: IDR_PER_TOKS.toLocaleString(locale), usd: USD_PER_TOKS })}
           </p>
         </div>
 
@@ -675,6 +684,9 @@ export function WalletTopUpForm({
             <span className="text-lg font-bold">
               Rp{previewIdr.toLocaleString(locale)}
             </span>
+            {locale === "en" && (
+              <span className="text-xs text-muted-foreground">≈ {usdRef(previewIdr)}</span>
+            )}
           </div>
         )}
       </section>
@@ -778,7 +790,9 @@ export function WalletTopUpForm({
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t("priceLabel")}</span>
             <span className="font-semibold">
-              {hasValidAmount ? `Rp${previewIdr.toLocaleString(locale)}` : "—"}
+              {hasValidAmount
+                ? `Rp${previewIdr.toLocaleString(locale)}${locale === "en" ? ` ≈ ${usdRef(previewIdr)}` : ""}`
+                : "—"}
             </span>
           </div>
           <div className="flex items-center justify-between">

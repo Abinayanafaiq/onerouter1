@@ -3,7 +3,7 @@ import { auth } from "@/app/lib/auth";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
 import { prisma } from "@/app/lib/prisma";
-import { IDR_PER_TOKS, TOKS_LABEL, idrToToks } from "@/app/lib/constants";
+import { IDR_PER_TOKS, TOKS_LABEL, idrToToks, idrToUsd, USD_PER_TOKS } from "@/app/lib/constants";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { ADMIN_EMAIL } from "@/app/lib/constants";
@@ -89,6 +89,17 @@ function fmtToks(toks: number, locale: string, max = 4): string {
   return toks.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: max });
 }
 
+/** Reference currency for an IDR amount: Rp for id, US$ for en. */
+function fmtIdrRef(idr: number, locale: string, max = 2): string {
+  if (locale === "en") {
+    return "US$" + idrToUsd(idr).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  return "Rp" + idr.toLocaleString(locale, { maximumFractionDigits: max });
+}
+
 function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
@@ -169,7 +180,7 @@ export default async function WalletPage() {
       label: t("statBalanceLabel"),
       value: `${fmtToks(summary.balanceToks, locale)} ${TOKS_LABEL}`,
       sub: t("statBalanceSub", {
-        amount: balance.toLocaleString(locale, { maximumFractionDigits: 2 }),
+        amount: fmtIdrRef(balance, locale),
       }),
       icon: <WalletIcon className="h-5 w-5" />,
       accent: isEmpty ? "text-red-500" : "text-green-500",
@@ -322,7 +333,7 @@ export default async function WalletPage() {
             <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
-                <span>1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString(locale)}</span>
+                <span>{t("paymentInfoRate", { unit: TOKS_LABEL, idr: IDR_PER_TOKS.toLocaleString(locale), usd: USD_PER_TOKS })}</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
@@ -401,7 +412,7 @@ export default async function WalletPage() {
                       {idrToToks(Math.abs(amt)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
                     </div>
                     <div className="text-[10px] font-normal text-muted-foreground">
-                      Rp{Math.abs(amt).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+                      {fmtIdrRef(Math.abs(amt), locale, 4)}
                     </div>
                   </div>
                 </div>

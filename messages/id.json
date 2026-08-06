@@ -808,7 +808,7 @@
     "backToDashboard": "Dashboard",
     "usageAnalytics": "Usage Analytics",
     "statBalanceLabel": "Saldo Kredit",
-    "statBalanceSub": "≈ Rp{amount}",
+    "statBalanceSub": "≈ {amount}",
     "statPurchasedLabel": "Total Dibeli",
     "statPurchasedSub": "Total top up",
     "statUsedLabel": "Total Terpakai",
@@ -897,6 +897,8 @@
     "youReceiveLabel": "Kamu Terima",
     "processingEstimateLabel": "Estimasi Proses",
     "creatingOrder": "Membuat Order...",
-    "createOrder": "Buat Order"
+    "createOrder": "Buat Order",
+    "paymentInfoRate": "1 {unit} = Rp{idr}",
+    "rateNote": "1 {unit} = Rp{idr}"
   }
 }

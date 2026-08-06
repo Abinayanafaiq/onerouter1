@@ -3,7 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
 import { getAvailableModels } from "@/app/lib/models";
-import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
+import { TOKS_LABEL, idrToToks, idrToUsd } from "@/app/lib/constants";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { AnimatedCounter } from "@/app/components/animated-counter";
@@ -14,6 +14,17 @@ import { RevealKey } from "./reveal-key";
 export const dynamic = "force-dynamic";
 
 const API_BASE_URL = "https://9inference.cloud/v1";
+
+/** Reference currency for an IDR amount: Rp for id, US$ for en. */
+function fmtIdrRef(idr: number, locale: string, max = 2): string {
+  if (locale === "en") {
+    return "US$" + idrToUsd(idr).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  return "Rp" + idr.toLocaleString(locale, { maximumFractionDigits: max });
+}
 
 function greetingKey(d: Date): "greetingMorning" | "greetingAfternoon" | "greetingEvening" | "greetingNight" {
   const h = d.getHours();
@@ -237,7 +248,7 @@ export default async function DashboardPage() {
           value={balanceToks}
           decimals={2}
           suffix={` ${TOKS_LABEL}`}
-          sub={`≈ Rp${balance.toLocaleString(locale, { maximumFractionDigits: 0 })}`}
+          sub={`≈ ${fmtIdrRef(balance, locale, 0)}`}
           delay="animate-fade-up"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -316,7 +327,7 @@ export default async function DashboardPage() {
                 <span className="mb-1 text-sm font-semibold text-muted-foreground">{TOKS_LABEL}</span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                ≈ Rp{balance.toLocaleString(locale, { maximumFractionDigits: 0 })}
+                ≈ {fmtIdrRef(balance, locale, 0)}
               </div>
             </div>
             <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusColor}`}>
@@ -603,7 +614,7 @@ export default async function DashboardPage() {
                         {idrToToks(Math.abs(amt)).toLocaleString(locale, { maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] font-normal text-muted-foreground">
-                        Rp{Math.abs(amt).toLocaleString(locale, { maximumFractionDigits: 0 })}
+                        {fmtIdrRef(Math.abs(amt), locale, 0)}
                       </div>
                     </div>
                   </div>

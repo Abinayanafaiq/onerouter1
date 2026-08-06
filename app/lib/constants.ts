@@ -22,9 +22,17 @@ export const DEFAULT_USER_RATE_LIMIT_RPM = 15;
 export const TOKS_LABEL = "TOKS";
 export const IDR_PER_TOKS = 1000;
 
+/** Fixed display rate: 1 TOKS ≈ US$0.0553 (reference only, billing stays in IDR). */
+export const USD_PER_TOKS = 0.0553;
+
 /** Convert an IDR amount into TOKS credit. */
 export function idrToToks(idr: number): number {
   return idr / IDR_PER_TOKS;
+}
+
+/** Convert an IDR amount into its USD reference value (display only). */
+export function idrToUsd(idr: number): number {
+  return idrToToks(idr) * USD_PER_TOKS;
 }
 
 /** Convert a TOKS credit amount into IDR (rupiah). */
