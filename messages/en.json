@@ -786,7 +786,21 @@
     "modelCount": "{count, plural, one {# model} other {# models}}",
     "clearFilters": "Clear filters",
     "emptyTitle": "No models found",
-    "emptyDesc": "Try a different search term or provider."
+    "emptyDesc": "Try a different search term or provider.",
+    "cardPricing": "Pricing",
+    "cardInput": "Input",
+    "cardOutput": "Output",
+    "cardContext": "Context",
+    "cardStreaming": "Streaming",
+    "cardSupported": "Supported",
+    "cardMaintenance": "Maintenance",
+    "cardTryPlayground": "Try in Playground",
+    "cardCopyId": "Copy model ID",
+    "capChat": "Chat",
+    "capCoding": "Coding",
+    "capVision": "Vision",
+    "capStreaming": "Streaming",
+    "capReasoning": "Reasoning"
   },
   "Wallet": {
     "title": "Wallet",

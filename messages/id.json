@@ -786,7 +786,21 @@
     "modelCount": "{count} model",
     "clearFilters": "Bersihkan filter",
     "emptyTitle": "Tidak ada model ditemukan",
-    "emptyDesc": "Coba kata kunci atau provider lain."
+    "emptyDesc": "Coba kata kunci atau provider lain.",
+    "cardPricing": "Harga",
+    "cardInput": "Input",
+    "cardOutput": "Output",
+    "cardContext": "Konteks",
+    "cardStreaming": "Streaming",
+    "cardSupported": "Didukung",
+    "cardMaintenance": "Maintenance",
+    "cardTryPlayground": "Coba di Playground",
+    "cardCopyId": "Salin model ID",
+    "capChat": "Chat",
+    "capCoding": "Coding",
+    "capVision": "Visi",
+    "capStreaming": "Streaming",
+    "capReasoning": "Reasoning"
   },
   "Wallet": {
     "title": "Dompet",

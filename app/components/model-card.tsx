@@ -1,10 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { ModelCardData } from "@/app/lib/model-card-data";
 
 export type { ModelCardData };
+
+const TOKS_TO_RP = 1000;
+const TOKS_TO_USD = 0.0553;
+
+function fmtToksUsd(rp: number, locale: string): string {
+  const toks = rp / TOKS_TO_RP;
+  const toksStr = toks.toLocaleString(locale, { maximumFractionDigits: 1 });
+  const usdStr = "US$" + (toks * TOKS_TO_USD).toFixed(2);
+  return `${toksStr} TOKS · ${usdStr}`;
+}
 
 const PROVIDER_STYLE: Record<string, { chip: string; dot: string }> = {
   GLM: { chip: "text-emerald-300 border-emerald-500/25 bg-emerald-500/10", dot: "bg-emerald-400" },
@@ -19,18 +30,19 @@ const DEFAULT_STYLE = {
   dot: "bg-white/40",
 };
 
-function capabilities(m: ModelCardData): string[] {
+function capabilityKeys(m: ModelCardData): string[] {
   const tags: string[] = [];
   const hay = (m.name + " " + m.modelId).toLowerCase();
-  if (m.supportsText) tags.push("Chat");
-  if (/code|coder/.test(hay)) tags.push("Coding");
-  if (m.supportsImages) tags.push("Vision");
-  if (m.supportsStreaming) tags.push("Streaming");
-  if (/pro|reason|o1/.test(hay) && tags.length < 4) tags.push("Reasoning");
+  if (m.supportsText) tags.push("capChat");
+  if (/code|coder/.test(hay)) tags.push("capCoding");
+  if (m.supportsImages) tags.push("capVision");
+  if (m.supportsStreaming) tags.push("capStreaming");
+  if (/pro|reason|o1/.test(hay) && tags.length < 4) tags.push("capReasoning");
   return tags.slice(0, 4);
 }
 
 function CopyIdButton({ modelId }: { modelId: string }) {
+  const t = useTranslations("DashModels");
   const [copied, setCopied] = useState(false);
   async function copy() {
     try {
@@ -46,7 +58,7 @@ function CopyIdButton({ modelId }: { modelId: string }) {
       type="button"
       onClick={copy}
       className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-2 text-[11px] font-medium text-muted-foreground transition hover:text-foreground hover:border-white/20"
-      title="Copy model ID"
+      title={t("cardCopyId")}
     >
       {copied ? (
         <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
@@ -64,10 +76,12 @@ function CopyIdButton({ modelId }: { modelId: string }) {
 }
 
 export function ModelCard({ model }: { model: ModelCardData }) {
+  const t = useTranslations("DashModels");
+  const locale = useLocale();
   const style = PROVIDER_STYLE[model.provider] ?? DEFAULT_STYLE;
-  const caps = capabilities(model);
-  const inputPrice = model.inputPricePerMillion.toLocaleString("id-ID");
-  const outputPrice = model.outputPricePerMillion.toLocaleString("id-ID");
+  const caps = capabilityKeys(model);
+  const inputPrice = model.inputPricePerMillion.toLocaleString(locale);
+  const outputPrice = model.outputPricePerMillion.toLocaleString(locale);
 
   return (
     <div className="glass card-glow group flex flex-col rounded-2xl p-5">
@@ -79,7 +93,7 @@ export function ModelCard({ model }: { model: ModelCardData }) {
             </h3>
             {model.maintenanceMode && (
               <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                Maintenance
+                {t("cardMaintenance")}
               </span>
             )}
           </div>
@@ -108,41 +122,47 @@ export function ModelCard({ model }: { model: ModelCardData }) {
             <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 text-accent">
               <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {c}
+            {t(c)}
           </span>
         ))}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[11px]">
         <div>
-          <div className="text-muted-foreground">Context</div>
-          <div className="mt-0.5 font-semibold text-foreground">{model.contextWindow ?? "—"}</div>
+          <div className="text-muted-foreground">{t("cardContext")}</div>
+          <div className="mt-0.5 font-semibold text-foreground tabular-nums">{model.contextWindow ?? "—"}</div>
         </div>
         <div>
-          <div className="text-muted-foreground">Streaming</div>
+          <div className="text-muted-foreground">{t("cardStreaming")}</div>
           <div className="mt-0.5 font-semibold text-foreground">
-            {model.supportsStreaming ? "Supported" : "—"}
+            {model.supportsStreaming ? t("cardSupported") : "—"}
           </div>
         </div>
       </div>
 
       <div className="mt-4 border-t border-white/[0.06] pt-4">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Pricing
+          {t("cardPricing")}
         </div>
         <div className="mt-2 grid grid-cols-2 gap-3">
           <div>
-            <div className="text-[10px] text-muted-foreground">Input</div>
-            <div className="mt-0.5 text-sm font-semibold text-foreground">
+            <div className="text-[10px] text-muted-foreground">{t("cardInput")}</div>
+            <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
               Rp{inputPrice}
               <span className="ml-1 text-[10px] font-normal text-muted-foreground">/1M</span>
             </div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground tabular-nums">
+              {fmtToksUsd(model.inputPricePerMillion, locale)}
+            </div>
           </div>
           <div>
-            <div className="text-[10px] text-muted-foreground">Output</div>
-            <div className="mt-0.5 text-sm font-semibold text-foreground">
+            <div className="text-[10px] text-muted-foreground">{t("cardOutput")}</div>
+            <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
               Rp{outputPrice}
               <span className="ml-1 text-[10px] font-normal text-muted-foreground">/1M</span>
+            </div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground tabular-nums">
+              {fmtToksUsd(model.outputPricePerMillion, locale)}
             </div>
           </div>
         </div>
@@ -153,7 +173,7 @@ export function ModelCard({ model }: { model: ModelCardData }) {
           href="/dashboard/chat"
           className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-[11px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
         >
-          Try in Playground
+          {t("cardTryPlayground")}
         </Link>
         <CopyIdButton modelId={model.modelId} />
       </div>
