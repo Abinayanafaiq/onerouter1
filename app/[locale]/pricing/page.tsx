@@ -40,8 +40,8 @@ const TOKS_TO_USD = 0.0553;
 
 const TRUST_BADGES = [
   {
-    title: "Tanpa Langganan",
-    desc: "Tanpa tagihan berulang atau komitmen bulanan. Selamanya.",
+    titleKey: "trustNoSub",
+    descKey: "trustNoSubDesc",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -50,8 +50,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Isi Saldo Kapan Saja",
-    desc: "Tambah kredit hanya saat dibutuhkan — Anda yang mengontrol.",
+    titleKey: "trustTopup",
+    descKey: "trustTopupDesc",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -60,8 +60,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Harga Transparan",
-    desc: "Tarif jelas di muka. Tanpa biaya tersembunyi, tanpa kejutan.",
+    titleKey: "trustTransparent",
+    descKey: "trustTransparentDesc",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" stroke="currentColor" strokeWidth="1.6" />
@@ -70,8 +70,8 @@ const TRUST_BADGES = [
     ),
   },
   {
-    title: "Keamanan Kelas Bank",
-    desc: "API key terenkripsi, rate limit per-key, kontrol gaya SOC2.",
+    titleKey: "trustSecureBank",
+    descKey: "trustSecureBankDesc",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -83,22 +83,19 @@ const TRUST_BADGES = [
 
 const TESTIMONIALS = [
   {
-    quote:
-      "Kami mengganti tiga SDK provider dengan satu key 9inference. Onboarding 10 menit dan tagihan infra turun.",
+    quoteKey: "testimonial1Quote",
     name: "Andi Pratama",
     role: "CTO, PinjamCepat",
     initials: "AP",
   },
   {
-    quote:
-      "Bayar per token tanpa langganan tepat untuk lab riset kami. Kami benchmark 6 model dari satu endpoint.",
+    quoteKey: "testimonial2Quote",
     name: "Sarah Wijaya",
     role: "ML Lead, Univ. Indonesia",
     initials: "SW",
   },
   {
-    quote:
-      "Routing failover menyelamatkan peluncuran kami. Saat satu provider throttle, traffic pindah otomatis — zero downtime.",
+    quoteKey: "testimonial3Quote",
     name: "Daniel Tan",
     role: "Founder, SaaSKit",
     initials: "DT",
@@ -106,53 +103,26 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  {
-    q: "Apa itu API model AI murah di 9inference?",
-    a: "9inference adalah gateway API model AI murah berbayar per token. Anda mengakses DeepSeek, GLM, Qwen, Kimi dan model lain lewat satu API key kompatibel OpenAI, dengan harga token dalam rupiah tanpa langganan wajib.",
-  },
-  {
-    q: "Apa itu TOKS dan bagaimana sistem harganya?",
-    a: "TOKS adalah unit kredit internal kami. 1 TOKS = Rp1.000 = US$0.0553. Setiap model punya tarif per 1 juta token dalam rupiah; Anda hanya membayar token yang benar-benar dipakai. Tanpa langganan, tanpa minimum.",
-  },
-  {
-    q: "Apa bedanya PAYG dan Paket?",
-    a: "PAYG: Anda isi saldo TOKS dan saldo terpotong per token yang benar-benar dipakai — saldo tidak kedaluwarsa dan berlaku untuk semua model. Paket: Anda bayar sekali untuk kuota jutaan token dengan API key khusus yang aktif 24 jam — cocok untuk beban pemakaian besar dengan harga tetap. Kuota paket tidak memakai saldo PAYG, begitu pula sebaliknya.",
-  },
-  {
-    q: "Apakah saya butuh kartu kredit untuk mulai?",
-    a: "Tidak. Daftar gratis, buat API key, dan isi saldo kapan saja. Anda bisa mulai dengan jumlah berapa pun — tidak ada deposit minimum.",
-  },
-  {
-    q: "Apa yang terjadi jika kredit habis?",
-    a: "Request akan mengembalikan pengingat isi saldo, bukan gagal diam-diam. Tambah kredit di dompet dan Anda online lagi dalam hitungan detik. API key dan pengaturan tetap utuh.",
-  },
-  {
-    q: "Apakah ada biaya tersembunyi atau langganan?",
-    a: "Tidak ada. Anda hanya membayar token yang dipakai sesuai tarif yang dipublikasikan. Tanpa biaya bulanan, tanpa biaya platform, tanpa biaya per seat. Harga yang Anda lihat adalah harga yang Anda bayar.",
-  },
-  {
-    q: "Bisakah saya ganti model tanpa mengubah kode?",
-    a: "Ya. 9inference kompatibel OpenAI — ubah parameter model di request, SDK Anda tetap sama. Ganti antara GLM, DeepSeek, Qwen, Kimi dan lainnya dengan satu baris.",
-  },
-  {
-    q: "Apakah data dan API key saya aman?",
-    a: "API key di-hash saat disimpan, kredensial dienkripsi, dan rate limit per-key mencegah penyalahgunaan. Kami tidak melatih model dengan data Anda dan tidak membagikan prompt ke pihak ketiga.",
-  },
-  {
-    q: "Apakah ada refund untuk kredit yang tidak terpakai?",
-    a: "Kredit yang tidak terpakai tidak kedaluwarsa. Jika dalam 14 hari setelah top-up pertama Anda merasa 9inference tidak cocok, hubungi support untuk refund penuh sisa saldo.",
-  },
+  { qKey: "faq1Q", aKey: "faq1A" },
+  { qKey: "faq2Q", aKey: "faq2A" },
+  { qKey: "faq3Q", aKey: "faq3A" },
+  { qKey: "faq4Q", aKey: "faq4A" },
+  { qKey: "faq5Q", aKey: "faq5A" },
+  { qKey: "faq6Q", aKey: "faq6A" },
+  { qKey: "faq7Q", aKey: "faq7A" },
+  { qKey: "faq8Q", aKey: "faq8A" },
+  { qKey: "faq9Q", aKey: "faq9A" },
 ];
 
 const COMPARISON = [
-  { feature: "Satu API key untuk semua model", ours: true, direct: false },
-  { feature: "Routing failover otomatis", ours: true, direct: false },
-  { feature: "Bayar per token, tanpa langganan", ours: true, direct: true },
-  { feature: "SDK kompatibel OpenAI", ours: true, direct: false },
-  { feature: "Billing terpadu IDR & USD", ours: true, direct: false },
-  { feature: "Rate limit & rotasi per-key", ours: true, direct: false },
-  { feature: "Kelola N akun provider", ours: false, direct: true },
-  { feature: "N invoice terpisah / bulan", ours: false, direct: true },
+  { featureKey: "cmpOneKey", ours: true, direct: false },
+  { featureKey: "cmpFailover", ours: true, direct: false },
+  { featureKey: "cmpPayPerToken", ours: true, direct: true },
+  { featureKey: "cmpOpenAiSdk", ours: true, direct: false },
+  { featureKey: "cmpUnifiedBilling", ours: true, direct: false },
+  { featureKey: "cmpRateLimit", ours: true, direct: false },
+  { featureKey: "cmpManageAccounts", ours: false, direct: true },
+  { featureKey: "cmpInvoices", ours: false, direct: true },
 ];
 
 export default async function PricingPage({
@@ -166,11 +136,12 @@ export default async function PricingPage({
   const tc = await getTranslations("Common");
   const tt = await getTranslations("Terms");
   const tokenPackages = await getAllPackages();
+  const faqs = FAQS.map((f) => ({ q: t(f.qKey), a: t(f.aKey) }));
 
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <FaqJsonLd faqs={FAQS} />
+      <FaqJsonLd faqs={faqs} />
 
       <section className="relative px-4 pt-32 pb-16 sm:px-6 sm:pt-40 sm:pb-24">
         <div
@@ -205,32 +176,31 @@ export default async function PricingPage({
                 aria-hidden
               />
               <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                Kurs Konversi Kredit
+                {t("conversionTitle")}
               </div>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
                   <div className="text-[11px] text-muted-foreground">1 TOKS</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">1 TOKS</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">Unit kredit dasar</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{t("unitCredit")}</div>
                 </div>
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-                  <div className="text-[11px] text-muted-foreground">Rupiah Indonesia</div>
+                  <div className="text-[11px] text-muted-foreground">{t("idrLabel")}</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">
-                    Rp{TOKS_TO_RP.toLocaleString("id-ID")}
+                    Rp{TOKS_TO_RP.toLocaleString(locale)}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">per TOKS</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{t("perToks")}</div>
                 </div>
                 <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
-                  <div className="text-[11px] text-accent">Dolar AS</div>
+                  <div className="text-[11px] text-accent">{t("usdLabel")}</div>
                   <div className="mt-1 text-2xl font-bold text-foreground">
                     US${TOKS_TO_USD.toFixed(4)}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">per TOKS</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{t("perToks")}</div>
                 </div>
               </div>
               <p className="mt-4 text-[12px] text-muted-foreground">
-                Isi saldo dalam rupiah atau USD — kredit dilacak dalam TOKS dan dikonversi otomatis.
-                Tarif tetap dan ditampilkan sebelum setiap request.
+                {t("conversionNote")}
               </p>
             </div>
           </div>
@@ -240,7 +210,7 @@ export default async function PricingPage({
               href="/register"
               className="btn-accent group inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
             >
-              Dapatkan API Key — Gratis
+              {tc("getApiKey")}
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -249,21 +219,25 @@ export default async function PricingPage({
               href="/dashboard/wallet"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
             >
-              Isi Saldo
+              {tc("topUp")}
             </Link>
           </div>
           <p className="mt-5 text-[13px] text-muted-foreground">
-            Dua cara bayar:{" "}
-            <a href="#payg" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
-              PAYG — isi saldo per token
-            </a>
-            {" "}atau{" "}
-            <a href="#paket" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
-              PAKET — kuota 24 jam
-            </a>
+            {t.rich("twoWaysPay", {
+              payg: (chunks) => (
+                <a href="#payg" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
+                  {chunks}
+                </a>
+              ),
+              paket: (chunks) => (
+                <a href="#paket" className="font-medium text-accent underline underline-offset-2 hover:brightness-110">
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
           <p className="mt-4 text-[12px] text-muted-foreground">
-            Tanpa kartu kredit · Batal kapan saja · Jaminan refund 14 hari
+            {t("noCardNote")}
           </p>
           <p className="mt-3 text-[12px] text-muted-foreground">
             {tt.rich("agreePurchase", {
@@ -280,34 +254,34 @@ export default async function PricingPage({
       <section className="px-4 py-8 sm:px-6 sm:py-12">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Dua Cara Bayar</span>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Pilih yang paling cocok untuk Anda</h2>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{t("waysEyebrow")}</span>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">{t("waysTitle")}</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Keduanya memakai API yang sama dan model yang sama — bedanya hanya cara Anda membayar.
+              {t("waysDesc")}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <article className="glass relative overflow-hidden rounded-2xl p-6 sm:p-8">
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
-                  PAYG · Pay As You Go
+                  {t("paygBadge")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Fleksibel</span>
+                <span className="text-[11px] text-muted-foreground">{t("paygTag")}</span>
               </div>
-              <h3 className="mt-5 text-xl font-bold tracking-tight">Isi saldo, bayar per token</h3>
+              <h3 className="mt-5 text-xl font-bold tracking-tight">{t("paygTitle")}</h3>
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                Saldo TOKS terpotong hanya untuk token yang benar-benar dipakai. Berlaku untuk semua model, tanpa batas waktu.
+                {t("paygDesc")}
               </p>
               <ul className="mt-5 space-y-2.5 text-[13px] text-muted-foreground">
-                <li className="flex gap-2"><span className="text-accent">✓</span>Mulai dari Rp1.000 — tanpa minimum</li>
-                <li className="flex gap-2"><span className="text-accent">✓</span>Saldo tidak kedaluwarsa</li>
-                <li className="flex gap-2"><span className="text-accent">✓</span>Satu API key untuk semua model</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paygPoint1")}</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paygPoint2")}</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paygPoint3")}</li>
               </ul>
               <a
                 href="#payg"
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white/[0.08]"
               >
-                Lihat tarif per token
+                {t("paygCta")}
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                   <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -322,24 +296,24 @@ export default async function PricingPage({
               />
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-black">
-                  PAKET · Kuota 24 Jam
+                  {t("paketBadge")}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Hemat untuk volume besar</span>
+                <span className="text-[11px] text-muted-foreground">{t("paketTag")}</span>
               </div>
-              <h3 className="mt-5 text-xl font-bold tracking-tight">Sekali bayar, kuota jutaan token</h3>
+              <h3 className="mt-5 text-xl font-bold tracking-tight">{t("paketTitle")}</h3>
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                Harga tetap untuk kuota besar. Setiap pembelian menghasilkan API key khusus yang aktif 24 jam.
+                {t("paketDesc")}
               </p>
               <ul className="mt-5 space-y-2.5 text-[13px] text-muted-foreground">
-                <li className="flex gap-2"><span className="text-accent">✓</span>Harga tetap — lebih hemat untuk beban besar</li>
-                <li className="flex gap-2"><span className="text-accent">✓</span>API key khusus per paket</li>
-                <li className="flex gap-2"><span className="text-accent">✓</span>Kuota terpisah dari saldo PAYG</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paketPoint1")}</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paketPoint2")}</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span>{t("paketPoint3")}</li>
               </ul>
               <a
                 href="#paket"
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
               >
-                Lihat pilihan paket
+                {t("paketCta")}
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                   <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -352,10 +326,10 @@ export default async function PricingPage({
       <section id="paket" className="scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">PAKET · Kuota Token 24 Jam</span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Kuota besar, harga tetap</h2>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{t("packagesEyebrow")}</span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t("packagesTitle")}</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Setiap pembelian menghasilkan API key khusus. Kuota menghitung token input dan output, aktif selama 24 jam, dan tidak memakai saldo PAYG.
+              {t("packagesDesc")}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -364,45 +338,45 @@ export default async function PricingPage({
               const lowStock = !soldOut && pkg.stock <= 5;
               return (
               <article key={pkg.id} className={`glass relative overflow-hidden rounded-2xl p-6 ${pkg.highlight ? "border-accent/30" : (pkg.allowedModels?.length ?? 0) > 0 ? "border-amber-400/25" : ""}`}>
-                {pkg.highlight && <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">Paling hemat</span>}
+                {pkg.highlight && <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">{t("bestValueBadge")}</span>}
                 {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
-                  <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">Paket Khusus</span>
+                  <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">{t("specialBadge")}</span>
                 )}
                 <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{pkg.name}</div>
-                <div className="mt-5 text-3xl font-bold tracking-tight">Rp{pkg.price.toLocaleString("id-ID")}</div>
+                <div className="mt-5 text-3xl font-bold tracking-tight">Rp{pkg.price.toLocaleString(locale)}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  sekali bayar · {pkg.durationDays === 1 ? "aktif 24 jam" : `aktif ${pkg.durationDays} hari`}
+                  {t("activeDuration", { days: pkg.durationDays })}
                 </div>
                 <div className={`mt-1.5 text-xs font-medium ${soldOut ? "text-red-400" : lowStock ? "text-amber-300" : "text-muted-foreground"}`}>
                   {soldOut
-                    ? "Stok habis"
+                    ? t("soldOut")
                     : lowStock
-                      ? `Sisa stok: ${pkg.stock.toLocaleString("id-ID")} — hampir habis`
-                      : `Sisa stok: ${pkg.stock.toLocaleString("id-ID")}`}
+                      ? t("stockLow", { count: pkg.stock.toLocaleString(locale) })
+                      : t("stockLeft", { count: pkg.stock.toLocaleString(locale) })}
                 </div>
                 <div className="mt-6 border-y border-white/[0.07] py-4">
                   <div className="text-2xl font-semibold text-accent">
-                    {(Number(pkg.tokenQuota) / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} juta
+                    {t("quotaMillion", { value: (Number(pkg.tokenQuota) / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 }) })}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">token input + output</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{t("tokenIoLabel")}</div>
                 </div>
                 <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
                   {pkg.features.map((feature) => <li key={feature} className="flex gap-2"><span className="text-accent">✓</span>{feature}</li>)}
                 </ul>
                 {soldOut ? (
                   <span className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-muted-foreground">
-                    Stok Habis
+                    {t("soldOutButton")}
                   </span>
                 ) : (
                   <Link href={`/checkout/${pkg.id}`} className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${pkg.highlight ? "bg-accent text-black hover:brightness-110" : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"}`}>
-                    Beli {pkg.name}
+                    {t("buyPackage", { name: pkg.name })}
                   </Link>
                 )}
               </article>
               );
             })}
           </div>
-          <p className="mt-5 text-center text-[11px] text-muted-foreground">Saat kuota habis atau masa aktif berakhir, API key berhenti dan tidak otomatis memakai saldo PAYG.</p>
+          <p className="mt-5 text-center text-[11px] text-muted-foreground">{t("packagesFootnote")}</p>
         </div>
       </section>
 
@@ -410,28 +384,31 @@ export default async function PricingPage({
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              PAYG · Tarif per Token
+              {t("ratesEyebrow")}
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Tarif per-token untuk setiap model
+              {t("ratesTitle")}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
-              Saldo TOKS Anda terpotong sesuai token yang dipakai — harga per 1 juta token, ditagih
-              dalam rupiah. Konversi ke TOKS atau USD secara instan menggunakan kurs di atas.
+              {t("ratesDesc")}
             </p>
           </div>
 
           <ModelPricingTable />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Detail per model:{" "}
-            <Link href="/models" className="text-accent underline">
-              buka katalog model AI
-            </Link>{" "}
-            · panduan{" "}
-            <Link href="/blog/api-model-ai-murah-indonesia" className="text-accent underline">
-              API model murah
-            </Link>
+            {t.rich("catalogNote", {
+              catalog: (chunks) => (
+                <Link href="/models" className="text-accent underline">
+                  {chunks}
+                </Link>
+              ),
+              guide: (chunks) => (
+                <Link href="/blog/api-model-ai-murah-indonesia" className="text-accent underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
@@ -439,7 +416,7 @@ export default async function PricingPage({
               <strong className="text-foreground">Rp1.000</strong> = 1 TOKS = <strong className="text-foreground">US$0.0553</strong>
             </span>
             <span className="hidden h-3 w-px bg-white/10 sm:inline-block" />
-            <span>1Jt token = 1.000 × tarif model dalam TOKS</span>
+            <span>{t("perMillionNote")}</span>
           </div>
         </div>
       </section>
@@ -448,15 +425,15 @@ export default async function PricingPage({
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {TRUST_BADGES.map((b) => (
-              <div key={b.title} className="glass card-hover rounded-2xl p-6">
+              <div key={b.titleKey} className="glass card-hover rounded-2xl p-6">
                 <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
                   {b.icon}
                 </span>
                 <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
-                  {b.title}
+                  {t(b.titleKey)}
                 </h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                  {b.desc}
+                  {t(b.descKey)}
                 </p>
               </div>
             ))}
@@ -468,10 +445,10 @@ export default async function PricingPage({
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Mengapa 9inference
+              {t("whyEyebrow")}
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Satu API vs. mengelola setiap provider sendiri
+              {t("whyTitle")}
             </h2>
           </div>
 
@@ -480,20 +457,20 @@ export default async function PricingPage({
               <thead>
                 <tr className="border-b border-white/[0.08] text-left">
                   <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Kemampuan
+                    {t("compareCapability")}
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-accent">
                     9inference
                   </th>
                   <th className="px-5 py-4 text-center text-[13px] font-semibold text-muted-foreground">
-                    Langsung ke provider
+                    {t("compareDirectColumn")}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {COMPARISON.map((row) => (
-                  <tr key={row.feature} className="transition hover:bg-white/[0.02]">
-                    <td className="px-5 py-3.5 text-[13px] text-foreground">{row.feature}</td>
+                  <tr key={row.featureKey} className="transition hover:bg-white/[0.02]">
+                    <td className="px-5 py-3.5 text-[13px] text-foreground">{t(row.featureKey)}</td>
                     <td className="px-5 py-3.5 text-center">
                       {row.ours ? (
                         <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-5 w-5 text-accent">
@@ -531,29 +508,29 @@ export default async function PricingPage({
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Dipercaya builder
+              {t("testimonialsEyebrow")}
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Tim rilis lebih cepat dengan 9inference
+              {t("testimonialsTitle")}
             </h2>
           </div>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <figure key={t.name} className="glass card-hover flex flex-col rounded-2xl p-6">
+            {TESTIMONIALS.map((tm) => (
+              <figure key={tm.name} className="glass card-hover flex flex-col rounded-2xl p-6">
                 <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-accent/60">
                   <path d="M7 7h4v6c0 3-2 5-4 5V7Zm10 0h4v6c0 3-2 5-4 5V7Z" fill="currentColor" />
                 </svg>
                 <blockquote className="mt-3 flex-1 text-[13px] leading-relaxed text-foreground/90">
-                  {t.quote}
+                  {t(tm.quoteKey)}
                 </blockquote>
                 <figcaption className="mt-5 flex items-center gap-3 border-t border-white/[0.06] pt-4">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-accent/10 text-[11px] font-semibold text-accent">
-                    {t.initials}
+                    {tm.initials}
                   </span>
                   <div className="leading-tight">
-                    <div className="text-[13px] font-semibold text-foreground">{t.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{t.role}</div>
+                    <div className="text-[13px] font-semibold text-foreground">{tm.name}</div>
+                    <div className="text-[11px] text-muted-foreground">{tm.role}</div>
                   </div>
                 </figcaption>
               </figure>
@@ -566,15 +543,15 @@ export default async function PricingPage({
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              FAQ
+              {t("faqEyebrow")}
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Pertanyaan, dijawab
+              {t("faqHeadline")}
             </h2>
           </div>
 
           <div className="mt-10 space-y-3">
-            {FAQS.map((f) => (
+            {faqs.map((f) => (
               <details
                 key={f.q}
                 className="glass group rounded-xl border border-white/[0.06] p-5 transition hover:border-white/10"
@@ -610,15 +587,14 @@ export default async function PricingPage({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Mulai dalam kurang dari 5 menit
+              {t("ctaBadge")}
             </div>
 
             <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-              Rilis fitur AI hari ini
+              {t("ctaHeadline")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              Buat API key sekarang. Satu endpoint, semua model frontier, ditagih per token —
-              mulai dari 1 TOKS = Rp1.000 = US$0.0553.
+              {t("ctaDescription")}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -626,7 +602,7 @@ export default async function PricingPage({
                 href="/register"
                 className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
               >
-                Dapatkan API Key Gratis
+                {t("ctaApiKeyButton")}
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -635,7 +611,7 @@ export default async function PricingPage({
                 href="/dashboard/docs"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
               >
-                Baca dokumentasi
+                {t("readDocs")}
               </Link>
             </div>
 
@@ -644,19 +620,19 @@ export default async function PricingPage({
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Tanpa kartu kredit
+                {t("ctaPoint1")}
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Jaminan refund 14 hari
+                {t("ctaPoint2")}
               </span>
               <span className="flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
                   <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Kredit tidak kedaluwarsa
+                {t("ctaPoint3")}
               </span>
             </div>
           </div>

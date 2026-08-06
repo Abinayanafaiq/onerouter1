@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
 import { getOrCreateWallet } from "@/app/lib/wallet";
 import { getAvailableModels } from "@/app/lib/models";
@@ -12,6 +13,8 @@ export default async function ChatPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
+
+  const t = await getTranslations("Chat");
 
   const wallet = await getOrCreateWallet(userId);
   const models = await getAvailableModels();
@@ -73,16 +76,16 @@ export default async function ChatPage() {
     <div className="space-y-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Chat Playground</h1>
+          <h1 className="text-xl font-bold">{t("title")}</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Test API & lihat billing real-time
+            {t("subtitle")}
           </p>
         </div>
         <Link
           href="/dashboard"
           className="text-xs text-muted-foreground hover:text-foreground transition"
         >
-          ← Dashboard
+          ← {t("backToDashboard")}
         </Link>
       </div>
 
@@ -91,9 +94,13 @@ export default async function ChatPage() {
       ) : balance <= 0 ? (
         <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-6 text-center">
           <p className="text-sm text-yellow-700">
-            Saldo wallet habis.{" "}
-            <Link href="/dashboard/wallet" className="font-medium underline">Top up dulu</Link>{" "}
-            untuk mulai chat.
+            {t.rich("noBalance", {
+              link: (chunks) => (
+                <Link href="/dashboard/wallet" className="font-medium underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       ) : (

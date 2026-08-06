@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Compatibility notice for dashboard users.
@@ -39,6 +40,7 @@ const UNSUPPORTED_FIELDS = [
 ];
 
 export function CompatNoticePopup() {
+  const t = useTranslations("Popups");
   const [open, setOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,7 +119,7 @@ export function CompatNoticePopup() {
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Pemberitahuan kompatibilitas"
+      aria-label={t("compatAriaLabel")}
     >
       <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-neutral-950 p-6 shadow-2xl animate-fade-up">
         <div className="flex items-start gap-3">
@@ -134,12 +136,13 @@ export function CompatNoticePopup() {
           </span>
           <div>
             <h2 className="text-base font-semibold text-neutral-100">
-              Mengalami error aneh saat pakai tool/IDE pihak ketiga?
+              {t("compatTitle")}
             </h2>
             <p className="mt-1.5 text-[13px] leading-relaxed text-neutral-400">
-              Endpoint 9inference hanya mendukung field request OpenAI standar.
-              Field tambahan berikut <span className="text-neutral-200 font-medium">tidak didukung</span> dan
-              menyebabkan error <code className="text-red-400">&quot;Extra inputs are not permitted&quot;</code> (HTTP 400):
+              {t.rich("compatBody", {
+                b: (chunks) => <span className="text-neutral-200 font-medium">{chunks}</span>,
+                code: (chunks) => <code className="text-red-400">{chunks}</code>,
+              })}
             </p>
           </div>
         </div>
@@ -156,8 +159,9 @@ export function CompatNoticePopup() {
         </div>
 
         <p className="mt-4 rounded-xl border border-accent/20 bg-accent/[0.06] p-3 text-[13px] leading-relaxed text-neutral-300">
-          Solusi: gunakan <span className="font-semibold text-accent">opencode IDE</span> yang sudah
-          kompatibel penuh dengan 9inference — tanpa error, tanpa konfigurasi tambahan.
+          {t.rich("compatSolution", {
+            accent: (chunks) => <span className="font-semibold text-accent">{chunks}</span>,
+          })}
         </p>
 
         <div className="mt-5 flex items-center justify-between gap-3">
@@ -166,14 +170,14 @@ export function CompatNoticePopup() {
             onClick={snooze}
             className="text-xs text-neutral-500 transition hover:text-neutral-300"
           >
-            Jangan tampilkan lagi (24 jam)
+            {t("compatSnooze")}
           </button>
           <button
             type="button"
             onClick={close}
             className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
           >
-            Mengerti
+            {t("compatClose")}
           </button>
         </div>
       </div>

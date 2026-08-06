@@ -4,6 +4,7 @@ import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
 import { getAvailableModels } from "@/app/lib/models";
 import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { AnimatedCounter } from "@/app/components/animated-counter";
 import { ModelCard } from "@/app/components/model-card";
@@ -14,12 +15,12 @@ export const dynamic = "force-dynamic";
 
 const API_BASE_URL = "https://9inference.cloud/v1";
 
-function greeting(d: Date): string {
+function greetingKey(d: Date): "greetingMorning" | "greetingAfternoon" | "greetingEvening" | "greetingNight" {
   const h = d.getHours();
-  if (h < 11) return "Good morning";
-  if (h < 15) return "Good afternoon";
-  if (h < 19) return "Good evening";
-  return "Good night";
+  if (h < 11) return "greetingMorning";
+  if (h < 15) return "greetingAfternoon";
+  if (h < 19) return "greetingEvening";
+  return "greetingNight";
 }
 
 type MetricProps = {
@@ -100,6 +101,9 @@ export default async function DashboardPage() {
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
+  const t = await getTranslations("Overview");
+  const locale = await getLocale();
+
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sevenDaysAgo = new Date(now);
@@ -172,13 +176,13 @@ export default async function DashboardPage() {
       .filter((l) => l.createdAt >= d && l.createdAt < next)
       .reduce((s, l) => s + Number(l.totalCost), 0);
     trend.push({
-      label: d.toLocaleDateString("en-US", { weekday: "short" }),
+      label: d.toLocaleDateString(locale, { weekday: "short" }),
       cost: idrToToks(cost),
     });
   }
 
-  const firstName = (session?.user?.name || session?.user?.email || "Developer").split(/[\s@.]+/)[0];
-  const dateString = now.toLocaleDateString("en-US", {
+  const firstName = (session?.user?.name || session?.user?.email || t("defaultName")).split(/[\s@.]+/)[0];
+  const dateString = now.toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -186,7 +190,7 @@ export default async function DashboardPage() {
 
   const isEmpty = balance <= 0;
   const isLow = !isEmpty && usagePct >= 85;
-  const statusLabel = isEmpty ? "No balance" : isLow ? "Low credits" : "Active";
+  const statusLabel = isEmpty ? t("statusNoBalance") : isLow ? t("statusLowCredits") : t("statusActive");
   const statusColor = isEmpty
     ? "text-red-400 border-red-500/30 bg-red-500/10"
     : isLow
@@ -203,10 +207,10 @@ export default async function DashboardPage() {
           <div>
             <div className="text-[12px] font-medium text-muted-foreground">{dateString}</div>
             <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
-              {greeting(now)}, <span className="gradient-text-accent">{firstName}</span>
+              {t(greetingKey(now))}, <span className="gradient-text-accent">{firstName}</span>
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Your AI infrastructure usage at a glance.
+              {t("heroSubtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -214,13 +218,13 @@ export default async function DashboardPage() {
               href="/dashboard/chat"
               className="rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
             >
-              Open Playground
+              {t("openPlayground")}
             </Link>
             <Link
               href="/dashboard/wallet"
               className="btn-accent rounded-lg px-3.5 py-2 text-xs"
             >
-              + Add Credits
+              {t("addCredits")}
             </Link>
           </div>
         </div>
@@ -229,11 +233,11 @@ export default async function DashboardPage() {
       {/* Metric cards */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <MetricCard
-          label="Credit Balance"
+          label={t("metricCreditBalance")}
           value={balanceToks}
           decimals={2}
           suffix={` ${TOKS_LABEL}`}
-          sub={`≈ Rp${balance.toLocaleString("id-ID", { maximumFractionDigits: 0 })}`}
+          sub={`≈ Rp${balance.toLocaleString(locale, { maximumFractionDigits: 0 })}`}
           delay="animate-fade-up"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -243,9 +247,9 @@ export default async function DashboardPage() {
           }
         />
         <MetricCard
-          label="Total Requests"
+          label={t("metricTotalRequests")}
           value={totalRequests}
-          sub="API calls"
+          sub={t("subApiCalls")}
           delay="animate-fade-up-delay-1"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -254,9 +258,9 @@ export default async function DashboardPage() {
           }
         />
         <MetricCard
-          label="Tokens Consumed"
+          label={t("metricTokensConsumed")}
           value={totalTokens}
-          sub="prompt + completion"
+          sub={t("subPromptCompletion")}
           delay="animate-fade-up-delay-2"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -265,10 +269,10 @@ export default async function DashboardPage() {
           }
         />
         <MetricCard
-          label="Avg Latency"
+          label={t("metricAvgLatency")}
           value={avgLatency}
           suffix=" ms"
-          sub={`${latencySamples.toLocaleString("id-ID")} sampel`}
+          sub={t("subSamples", { count: latencySamples.toLocaleString(locale) })}
           delay="animate-fade-up-delay-3"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -278,11 +282,11 @@ export default async function DashboardPage() {
           }
         />
         <MetricCard
-          label="Monthly Spend"
+          label={t("metricMonthlySpend")}
           value={monthlySpendToks}
           decimals={2}
           suffix={` ${TOKS_LABEL}`}
-          sub="this month"
+          sub={t("subThisMonth")}
           delay="animate-fade-up-delay-4"
           icon={
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -303,7 +307,7 @@ export default async function DashboardPage() {
           <div className="relative flex items-start justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                AI Credits Balance
+                {t("walletTitle")}
               </div>
               <div className="mt-3 flex items-end gap-2">
                 <span className="text-4xl font-bold tracking-tight text-foreground">
@@ -312,7 +316,7 @@ export default async function DashboardPage() {
                 <span className="mb-1 text-sm font-semibold text-muted-foreground">{TOKS_LABEL}</span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                ≈ Rp{balance.toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                ≈ Rp{balance.toLocaleString(locale, { maximumFractionDigits: 0 })}
               </div>
             </div>
             <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusColor}`}>
@@ -323,10 +327,10 @@ export default async function DashboardPage() {
           {/* Usage progress */}
           <div className="relative mt-6">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">Credit utilization</span>
+              <span className="text-muted-foreground">{t("creditUtilization")}</span>
               <span className="font-medium text-foreground">
-                {idrToToks(totalUsed).toLocaleString("id-ID", { maximumFractionDigits: 2 })} /{" "}
-                {idrToToks(totalPurchased).toLocaleString("id-ID", { maximumFractionDigits: 0 })}{" "}
+                {idrToToks(totalUsed).toLocaleString(locale, { maximumFractionDigits: 2 })}{" "}
+                {idrToToks(totalPurchased).toLocaleString(locale, { maximumFractionDigits: 0 })}{" "}
                 {TOKS_LABEL}
               </span>
             </div>
@@ -344,16 +348,16 @@ export default async function DashboardPage() {
               />
             </div>
             <div className="mt-1.5 text-[10px] text-muted-foreground">
-              {usagePct.toFixed(1)}% of purchased credits used
+              {t("usagePctUsed", { pct: usagePct.toFixed(1) })}
             </div>
           </div>
 
           {/* 7-day trend */}
           <div className="relative mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted-foreground">Spending · last 7 days</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t("spendingLast7Days")}</span>
               <span className="text-[11px] font-semibold text-foreground">
-                {trend.reduce((s, d) => s + d.cost, 0).toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
+                {trend.reduce((s, d) => s + d.cost, 0).toLocaleString(locale, { maximumFractionDigits: 2 })}{" "}
                 {TOKS_LABEL}
               </span>
             </div>
@@ -370,22 +374,25 @@ export default async function DashboardPage() {
           {/* Actions */}
           <div className="relative mt-5 flex flex-wrap gap-2">
             <Link href="/dashboard/wallet" className="btn-accent rounded-lg px-4 py-2.5 text-xs">
-              + Add Credits
+              {t("addCredits")}
             </Link>
             <Link
               href="/dashboard/wallet"
               className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
             >
-              View Transactions
+              {t("viewTransactions")}
             </Link>
           </div>
 
           {isEmpty && (
             <div className="relative mt-4 rounded-lg border border-amber-500/25 bg-amber-500/[0.07] p-3 text-[11px] text-amber-400">
-              Credits depleted — AI services are paused until you top up.{" "}
-              <Link href="/dashboard/wallet" className="font-semibold underline">
-                Add credits →
-              </Link>
+              {t.rich("creditsDepleted", {
+                link: (chunks) => (
+                  <Link href="/dashboard/wallet" className="font-semibold underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </div>
           )}
         </div>
@@ -398,15 +405,15 @@ export default async function DashboardPage() {
                 <path d="m8 16-4-4 4-4M16 8l4 4-4 4M14 4l-4 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-            <h3 className="text-sm font-semibold tracking-tight">Start building</h3>
+            <h3 className="text-sm font-semibold tracking-tight">{t("startBuilding")}</h3>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            OpenAI-compatible endpoint. Drop your API key and start shipping.
+            {t("quickstartDesc")}
           </p>
 
           <div className="mt-4">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Base URL
+              {t("baseUrl")}
             </div>
             <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-2">
               <code className="flex-1 truncate font-mono text-[11px] text-foreground">{API_BASE_URL}</code>
@@ -415,7 +422,7 @@ export default async function DashboardPage() {
 
           <div className="mt-4">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Auth header
+              {t("authHeader")}
             </div>
             <div className="mt-1.5 rounded-lg border border-white/[0.06] bg-black/40 px-3 py-2">
               <code className="font-mono text-[11px] text-foreground">Authorization: Bearer sk_live_…</code>
@@ -427,13 +434,13 @@ export default async function DashboardPage() {
               href="/dashboard/docs"
               className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center text-xs font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
             >
-              View documentation
+              {t("viewDocumentation")}
             </Link>
             <Link
               href="/dashboard/api-keys"
               className="text-center text-[11px] text-muted-foreground transition hover:text-foreground"
             >
-              Manage API keys →
+              {t("manageApiKeys")}
             </Link>
           </div>
         </div>
@@ -443,21 +450,21 @@ export default async function DashboardPage() {
       <section className="animate-fade-up-delay-3">
         <div className="mb-4 flex items-end justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Models</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t("modelsTitle")}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {availableModels.length} models available across providers
+              {t("modelsAvailable", { count: availableModels.length })}
             </p>
           </div>
           <Link
             href="/dashboard/models"
             className="text-xs font-medium text-muted-foreground transition hover:text-foreground"
           >
-            Browse all →
+            {t("browseAll")}
           </Link>
         </div>
         {featuredModels.length === 0 ? (
           <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">
-            No models available right now.
+            {t("noModels")}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -473,22 +480,22 @@ export default async function DashboardPage() {
         {/* API Keys */}
         <div className="glass rounded-2xl p-6 animate-fade-up-delay-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold tracking-tight">API Keys</h2>
+            <h2 className="text-sm font-semibold tracking-tight">{t("apiKeysTitle")}</h2>
             <Link
               href="/dashboard/api-keys"
               className="text-xs text-muted-foreground transition hover:text-foreground"
             >
-              Manage →
+              {t("manage")}
             </Link>
           </div>
           {apiKeys.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
-              <p className="text-sm text-muted-foreground">No API keys yet.</p>
+              <p className="text-sm text-muted-foreground">{t("noApiKeys")}</p>
               <Link
                 href="/dashboard/api-keys"
                 className="mt-3 inline-block rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium transition hover:border-white/20"
               >
-                Generate a key
+                {t("generateKey")}
               </Link>
             </div>
           ) : (
@@ -506,7 +513,7 @@ export default async function DashboardPage() {
                           {key.name?.[0]?.toUpperCase() ?? "K"}
                         </span>
                         <span className="truncate text-xs font-medium text-foreground">
-                          {key.name || "Production Key"}
+                          {key.name || t("productionKey")}
                         </span>
                       </div>
                       <span
@@ -516,16 +523,16 @@ export default async function DashboardPage() {
                             : "border-accent/25 bg-accent/10 text-accent"
                         }`}
                       >
-                        {isExpired ? "Expired" : "Active"}
+                        {isExpired ? t("keyExpired") : t("keyActive")}
                       </span>
                     </div>
                     <div className="mt-2.5">
                       <RevealKey rawKey={key.key ?? ""} isExpired={isExpired} />
                     </div>
                     <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
-                      <span>{key.requestCount.toLocaleString("id-ID")} requests</span>
+                      <span>{t("requestsCount", { count: key.requestCount.toLocaleString(locale) })}</span>
                       <span>·</span>
-                      <span>Created {key.createdAt.toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+                      <span>{t("createdOn", { date: key.createdAt.toLocaleDateString(locale, { month: "short", year: "numeric" }) })}</span>
                     </div>
                   </div>
                 );
@@ -537,26 +544,26 @@ export default async function DashboardPage() {
         {/* Recent transactions */}
         <div className="glass rounded-2xl p-6 animate-fade-up-delay-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold tracking-tight">Recent Activity</h2>
+            <h2 className="text-sm font-semibold tracking-tight">{t("recentActivity")}</h2>
             <Link
               href="/dashboard/wallet"
               className="text-xs text-muted-foreground transition hover:text-foreground"
             >
-              View all →
+              {t("viewAll")}
             </Link>
           </div>
           {recentTransactions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-muted-foreground">
-              No transactions yet.
+              {t("noTransactions")}
             </div>
           ) : (
             <div className="space-y-1">
-              {recentTransactions.map((t) => {
-                const amt = Number(t.amount);
+              {recentTransactions.map((txn) => {
+                const amt = Number(txn.amount);
                 const isPositive = amt > 0;
                 return (
                   <div
-                    key={t.id}
+                    key={txn.id}
                     className="flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 transition hover:bg-white/[0.02]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -579,10 +586,10 @@ export default async function DashboardPage() {
                       </span>
                       <div className="min-w-0">
                         <div className="truncate text-xs font-medium text-foreground">
-                          {t.type === "USAGE" ? t.description?.replace(/^AI usage:\s*/, "") ?? "Usage" : t.type}
+                          {txn.type === "USAGE" ? txn.description?.replace(/^AI usage:\s*/, "") ?? t("usageFallback") : txn.type}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
-                          {t.createdAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                          {txn.createdAt.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}
                         </div>
                       </div>
                     </div>
@@ -593,10 +600,10 @@ export default async function DashboardPage() {
                     >
                       <div>
                         {isPositive ? "+" : "−"}
-                        {idrToToks(Math.abs(amt)).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+                        {idrToToks(Math.abs(amt)).toLocaleString(locale, { maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] font-normal text-muted-foreground">
-                        Rp{Math.abs(amt).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                        Rp{Math.abs(amt).toLocaleString(locale, { maximumFractionDigits: 0 })}
                       </div>
                     </div>
                   </div>

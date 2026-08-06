@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
 /**
@@ -29,6 +30,8 @@ export type PromoPackage = {
 };
 
 export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackage | null }) {
+  const t = useTranslations("Popups");
+  const locale = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -67,7 +70,7 @@ export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackag
     }
   };
 
-  const quotaMillions = (bestPackage.quotaTokens / 1_000_000).toLocaleString("id-ID", {
+  const quotaMillions = (bestPackage.quotaTokens / 1_000_000).toLocaleString(locale, {
     maximumFractionDigits: 1,
   });
   const perMillion =
@@ -83,7 +86,7 @@ export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackag
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Promo paket token"
+      aria-label={t("promoAriaLabel")}
     >
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-accent/20 bg-neutral-950 p-6 shadow-2xl animate-fade-up">
         <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent/[0.10] blur-3xl" />
@@ -96,18 +99,24 @@ export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackag
           </span>
           <div>
             <span className="rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-accent">
-              Lebih hemat
+              {t("promoBadge")}
             </span>
             <h2 className="mt-2 text-base font-semibold text-neutral-100">
-              Beli paket lebih murah
+              {t("promoTitle")}
             </h2>
             <p className="mt-1.5 text-[13px] leading-relaxed text-neutral-400">
-              Masih pakai saldo PAYG terus? Ambil paket{" "}
-              <span className="font-medium text-neutral-200">{bestPackage.name}</span>:{" "}
-              <span className="font-medium text-accent">{quotaMillions} juta token</span> cuma{" "}
-              <span className="font-medium text-neutral-200">Rp{bestPackage.price.toLocaleString("id-ID")}</span>
+              {t.rich("promoBody", {
+                b: (chunks) => <span className="font-medium text-neutral-200">{chunks}</span>,
+                accent: (chunks) => <span className="font-medium text-accent">{chunks}</span>,
+                name: bestPackage.name,
+                quota: quotaMillions,
+                price: bestPackage.price.toLocaleString(locale),
+              })}
               {perMillion !== null && (
-                <> — setara <span className="font-medium text-neutral-200">Rp{perMillion.toLocaleString("id-ID")}</span> per 1 juta token</>
+                <>{" "}{t.rich("promoPerMillion", {
+                  b: (chunks) => <span className="font-medium text-neutral-200">{chunks}</span>,
+                  amount: perMillion.toLocaleString(locale),
+                })}</>
               )}
               .
             </p>
@@ -117,11 +126,11 @@ export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackag
         <ul className="relative mt-4 space-y-2 text-[12px] text-neutral-400">
           <li className="flex gap-2">
             <span className="text-accent">✓</span>
-            Harga tetap — kuota tidak memotong saldo PAYG
+            {t("promoBullet1")}
           </li>
           <li className="flex gap-2">
             <span className="text-accent">✓</span>
-            Langsung dapat API key khusus, aktif 24 jam
+            {t("promoBullet2")}
           </li>
         </ul>
 
@@ -131,14 +140,14 @@ export function BuyPackagePromoPopup({ bestPackage }: { bestPackage: PromoPackag
             onClick={dismiss}
             className="text-xs text-neutral-500 transition hover:text-neutral-300"
           >
-            Nanti saja
+            {t("promoLater")}
           </button>
           <Link
             href="/dashboard/beli-paket"
             onClick={dismiss}
             className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
           >
-            Lihat Paket
+            {t("promoCta")}
             <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

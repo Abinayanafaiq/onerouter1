@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function UploadProof({ orderId }: { orderId: string }) {
+  const t = useTranslations("Overview");
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,17 +25,17 @@ export function UploadProof({ orderId }: { orderId: string }) {
         setDone(true);
         router.refresh();
       } else {
-        alert(data.error || "Upload gagal");
+        alert(data.error || t("uploadFailed"));
       }
     } catch {
-      alert("Koneksi gagal");
+      alert(t("connectionFailed"));
     }
     setUploading(false);
   }
 
   if (done) {
     return (
-      <span className="text-xs text-green-700 font-medium">✓ Bukti terkirim</span>
+      <span className="text-xs text-green-700 font-medium">{t("proofSent")}</span>
     );
   }
 
@@ -44,7 +46,7 @@ export function UploadProof({ orderId }: { orderId: string }) {
       onClick={() => inputRef.current?.click()}
       className="border px-3 py-1 rounded-md text-xs hover:bg-muted disabled:opacity-50"
     >
-      {uploading ? "Mengupload..." : "Upload Bukti"}
+      {uploading ? t("uploading") : t("uploadProof")}
       <input
         ref={inputRef}
         type="file"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Recovery control for package keys whose plaintext is no longer stored
@@ -16,6 +17,7 @@ export function RegeneratePackageKey({
   keyId: string;
   maskedKey: string;
 }) {
+  const t = useTranslations("MyPackages");
   const [busy, setBusy] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -23,9 +25,7 @@ export function RegeneratePackageKey({
 
   async function regenerate() {
     if (
-      !confirm(
-        "Regenerasi API key? Key lama langsung tidak berlaku dan harus diganti di aplikasi Anda. Kuota dan masa aktif paket tetap sama.",
-      )
+      !confirm(t("confirmRegenerate"))
     ) {
       return;
     }
@@ -37,10 +37,10 @@ export function RegeneratePackageKey({
       if (data.success && data.plaintext) {
         setNewKey(data.plaintext as string);
       } else {
-        setError(data.error || "Gagal melakukan regenerasi.");
+        setError(data.error || t("regenerateFailed"));
       }
     } catch {
-      setError("Koneksi gagal. Coba lagi.");
+      setError(t("connectionFailed"));
     }
     setBusy(false);
   }
@@ -62,14 +62,14 @@ export function RegeneratePackageKey({
         <code className="block break-all font-mono text-[11px] text-accent">{newKey}</code>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-[10px] text-emerald-300">
-            Key baru tersimpan — mulai sekarang bisa ditampilkan kapan saja.
+            {t("newKeySaved")}
           </span>
           <button
             type="button"
             onClick={copy}
             className="shrink-0 rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground transition hover:text-foreground"
           >
-            {copied ? "✓ Tersalin" : "Salin"}
+            {copied ? t("copied") : t("copy")}
           </button>
         </div>
       </div>
@@ -80,7 +80,7 @@ export function RegeneratePackageKey({
     <div>
       <code className="block text-[11px] text-muted-foreground">{maskedKey}</code>
       <p className="mt-1.5 text-[10px] leading-relaxed text-muted-foreground">
-        Key asli tidak tersimpan (pernah di-regenerate), jadi tidak bisa ditampilkan.
+        {t("keyNotStored")}
       </p>
       <button
         type="button"
@@ -88,7 +88,7 @@ export function RegeneratePackageKey({
         disabled={busy}
         className="mt-2 rounded-md border border-accent/25 bg-accent/[0.08] px-2.5 py-1 text-[10px] font-medium text-accent transition hover:bg-accent/[0.14] disabled:opacity-50"
       >
-        {busy ? "Memproses…" : "Regenerasi Key Baru"}
+        {busy ? t("processing") : t("regenerateButton")}
       </button>
       {error && <p className="mt-1.5 text-[10px] text-red-400">{error}</p>}
     </div>

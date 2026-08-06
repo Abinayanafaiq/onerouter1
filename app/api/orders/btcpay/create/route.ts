@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
-import { findPackage } from "@/app/lib/packages";
+import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { createInvoice, CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    if (!PACKAGE_CRYPTO_ENABLED) {
+      return NextResponse.json(
+        { success: false, error: "Pembayaran crypto untuk paket sementara dinonaktifkan." },
+        { status: 403 },
+      );
+    }
+
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ success: false, error: "Harap login" }, { status: 401 });

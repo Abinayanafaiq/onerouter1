@@ -4,6 +4,12 @@ import type { Package } from "@prisma/client";
 export type PackageDef = Package & { features: string[]; highlight?: boolean };
 
 /**
+ * Set true untuk mengaktifkan kembali pembayaran crypto (BTCPay & USDT BEP20)
+ * pada checkout paket. Tidak mempengaruhi top-up PAYG di wallet.
+ */
+export const PACKAGE_CRYPTO_ENABLED = false;
+
+/**
  * Feature lines that CANNOT be derived from package columns. The token quota
  * and active-duration lines are generated from the actual DB values in
  * enrich() — never hardcoded — so the pricing page can never drift out of

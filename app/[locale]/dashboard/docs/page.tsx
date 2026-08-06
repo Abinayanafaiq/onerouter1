@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getAvailableModels } from "@/app/lib/models";
 import { CopyableCode } from "@/app/components/copyable-code";
 
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 const API_BASE_URL = "https://9inference.cloud/v1";
 
 export default async function DocsPage() {
+  const t = await getTranslations("Docs");
   const availableModels = await getAvailableModels();
   const sampleModel = availableModels[0]?.modelId ?? "glm-5.2";
 
@@ -46,34 +48,36 @@ console.log(res.choices[0].message.content);`;
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <header className="animate-fade-up">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">API Documentation</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          9inference exposes an OpenAI-compatible Chat Completions API. Point your existing SDK at
-          our base URL and start inferencing in minutes.
+          {t("subtitle")}
         </p>
       </header>
 
       {/* Quickstart */}
       <section className="animate-fade-up-delay-1 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Quickstart
+          {t("quickstart")}
         </h2>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">1. Create an API key</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("step1Title")}</h3>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Head to{" "}
-            <a href="/dashboard/api-keys" className="font-medium text-foreground underline">
-              API Keys
-            </a>{" "}
-            and generate a production key. It follows the{" "}
-            <code className="rounded bg-white/5 px-1 py-0.5 font-mono text-[11px]">sk_live_…</code>{" "}
-            format.
+            {t.rich("step1Desc", {
+              link: (chunks) => (
+                <a href="/dashboard/api-keys" className="font-medium text-foreground underline">
+                  {chunks}
+                </a>
+              ),
+              code: (chunks) => (
+                <code className="rounded bg-white/5 px-1 py-0.5 font-mono text-[11px]">{chunks}</code>
+              ),
+            })}
           </p>
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">2. Make your first request</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("step2Title")}</h3>
           <p className="mt-1.5 text-xs text-muted-foreground">cURL</p>
           <div className="mt-2">
             <CopyableCode code={curlCode} />
@@ -81,9 +85,9 @@ console.log(res.choices[0].message.content);`;
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">3. Use the OpenAI SDK</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("step3Title")}</h3>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Any OpenAI-compatible client works — just swap the base URL.
+            {t("step3Desc")}
           </p>
           <div className="mt-2">
             <CopyableCode code={jsCode} language="javascript" />
@@ -94,20 +98,20 @@ console.log(res.choices[0].message.content);`;
       {/* Reference */}
       <section className="animate-fade-up-delay-2 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Reference
+          {t("reference")}
         </h2>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">Base URL</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("baseUrl")}</h3>
           <div className="mt-2">
             <CopyableCode code={API_BASE_URL} language="text" />
           </div>
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">Authentication</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("authentication")}</h3>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Send your API key as a Bearer token in the Authorization header.
+            {t("authenticationDesc")}
           </p>
           <div className="mt-2">
             <CopyableCode code={`Authorization: Bearer sk_live_xxx`} language="text" />
@@ -115,10 +119,11 @@ console.log(res.choices[0].message.content);`;
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">Billing</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("billing")}</h3>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Every response includes an <code className="font-mono text-[11px]">x_billing</code>{" "}
-            header with token usage and the deducted cost. You only pay for tokens consumed.
+            {t.rich("billingDesc", {
+              code: (chunks) => <code className="font-mono text-[11px]">{chunks}</code>,
+            })}
           </p>
           <div className="mt-2">
             <CopyableCode code={billingCode} language="json" />
@@ -126,7 +131,7 @@ console.log(res.choices[0].message.content);`;
         </div>
 
         <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">Available models</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("availableModels")}</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {availableModels.map((m) => (
               <span

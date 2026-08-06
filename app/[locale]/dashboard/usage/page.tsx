@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
 import { getUsageFilterOptions } from "@/app/lib/usage-stats";
 import { UsageAnalytics } from "./usage-analytics";
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function UsagePage() {
   const session = await auth();
+  const t = await getTranslations("Usage");
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
@@ -24,11 +26,11 @@ export default async function UsagePage() {
           <div>
             <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               <span className="h-px w-5 bg-accent/60" />
-              Analitik workspace
+              {t("workspaceAnalytics")}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pemakaian & biaya</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Pantau konsumsi kredit, performa model, dan seluruh riwayat request AI dalam satu tampilan.
+              {t("subtitle")}
             </p>
           </div>
         </div>

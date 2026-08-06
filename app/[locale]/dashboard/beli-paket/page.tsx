@@ -1,10 +1,13 @@
 import { Link } from "@/i18n/navigation";
 import { getAllPackages, formatTokenQuota, formatDuration } from "@/app/lib/packages";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function BuyPackagePage() {
   const tokenPackages = await getAllPackages();
+  const t = await getTranslations("BuyPackage");
+  const locale = await getLocale();
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -13,18 +16,18 @@ export default async function BuyPackagePage() {
         <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-px w-5 bg-accent/60" /> Beli paket
+              <span className="h-px w-5 bg-accent/60" /> {t("eyebrow")}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Paket Token Tersedia</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Sekali bayar, langsung dapat API key khusus dengan kuota jutaan token. Kuota paket terpisah dari saldo PAYG.
+              {t("subtitle")}
             </p>
           </div>
           <Link
             href="/dashboard/packages"
             className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-foreground transition hover:border-white/20 hover:bg-white/[0.06]"
           >
-            Paket Saya
+            {t("myPackages")}
           </Link>
         </div>
       </section>
@@ -36,9 +39,9 @@ export default async function BuyPackagePage() {
               <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
             </svg>
           </div>
-          <h3 className="mt-4 text-sm font-semibold">Belum ada paket tersedia</h3>
+          <h3 className="mt-4 text-sm font-semibold">{t("emptyTitle")}</h3>
           <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            Paket token sedang tidak tersedia. Silakan coba lagi nanti atau hubungi admin.
+            {t("emptyDesc")}
           </p>
         </div>
       ) : (
@@ -59,22 +62,22 @@ export default async function BuyPackagePage() {
             >
               {pkg.highlight && (
                 <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">
-                  Paling hemat
+                  {t("bestValue")}
                 </span>
               )}
               {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
                 <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">
-                  Paket Khusus
+                  {t("specialPackage")}
                 </span>
               )}
               <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 {pkg.name}
               </div>
               <div className="mt-4 text-3xl font-bold tracking-tight">
-                Rp{pkg.price.toLocaleString("id-ID")}
+                Rp{pkg.price.toLocaleString(locale)}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                sekali bayar · {formatDuration(pkg.durationDays).toLowerCase()}
+                {t("oneTimePayment", { duration: formatDuration(pkg.durationDays).toLowerCase() })}
               </div>
               <div
                 className={`mt-1.5 text-xs font-medium ${
@@ -82,14 +85,14 @@ export default async function BuyPackagePage() {
                 }`}
               >
                 {soldOut
-                  ? "Stok habis"
+                  ? t("outOfStock")
                   : lowStock
-                    ? `Sisa stok: ${pkg.stock.toLocaleString("id-ID")} — hampir habis`
-                    : `Sisa stok: ${pkg.stock.toLocaleString("id-ID")}`}
+                    ? t("stockLeftLow", { stock: pkg.stock.toLocaleString(locale) })
+                    : t("stockLeft", { stock: pkg.stock.toLocaleString(locale) })}
               </div>
               <div className="mt-5 border-y border-white/[0.07] py-4">
                 <div className="text-2xl font-semibold text-accent">{formatTokenQuota(pkg.tokenQuota)}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground">token input + output</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">{t("tokenInOut")}</div>
               </div>
               <ul className="mt-4 flex-1 space-y-2.5 text-xs text-muted-foreground">
                 {pkg.features.map((feature) => (
@@ -101,7 +104,7 @@ export default async function BuyPackagePage() {
               </ul>
               {soldOut ? (
                 <span className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-muted-foreground">
-                  Stok Habis
+                  {t("outOfStockButton")}
                 </span>
               ) : (
                 <Link
@@ -112,7 +115,7 @@ export default async function BuyPackagePage() {
                       : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"
                   }`}
                 >
-                  Beli {pkg.name}
+                  {t("buyPackage", { name: pkg.name })}
                 </Link>
               )}
             </article>
@@ -122,10 +125,10 @@ export default async function BuyPackagePage() {
       )}
 
       <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-        Saat kuota habis atau masa aktif berakhir, API key paket berhenti dan tidak otomatis memakai saldo PAYG.
-        <br className="hidden sm:block" /> Butuh bayar per token yang lebih fleksibel?{" "}
+        {t("footerNote")}
+        <br className="hidden sm:block" /> {t("footerPaygQuestion")}{" "}
         <Link href="/dashboard/wallet" className="text-accent underline underline-offset-2">
-          Isi saldo PAYG
+          {t("footerPaygLink")}
         </Link>
       </p>
     </div>

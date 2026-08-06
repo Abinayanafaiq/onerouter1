@@ -5,27 +5,32 @@ import { CopyChip } from "@/app/components/copy-chip";
 import { RevealKey } from "../reveal-key";
 import { RegeneratePackageKey } from "./regenerate-package-key";
 import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
 const PACKAGE_BASE_URL = "https://9inference.cloud/v1/package";
 
-function formatNumber(value: bigint | number): string {
-  return Number(value).toLocaleString("id-ID");
+type TFunc = (key: string, values?: Record<string, string | number>) => string;
+
+function formatNumber(value: bigint | number, locale: string): string {
+  return Number(value).toLocaleString(locale);
 }
 
-function formatDate(value: Date | null): string {
-  if (!value) return "Tidak dibatasi";
-  return value.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+function formatDate(value: Date | null, locale: string, t: TFunc): string {
+  if (!value) return t("notLimited");
+  return value.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
-function remainingTime(expiresAt: Date | null, now: Date): string {
-  if (!expiresAt) return "Tidak kedaluwarsa";
+function remainingTime(expiresAt: Date | null, now: Date, t: TFunc): string {
+  if (!expiresAt) return t("noExpiry");
   const milliseconds = expiresAt.getTime() - now.getTime();
-  if (milliseconds <= 0) return "Masa aktif telah berakhir";
+  if (milliseconds <= 0) return t("expired");
   const hours = Math.floor(milliseconds / 3_600_000);
   const minutes = Math.floor((milliseconds % 3_600_000) / 60_000);
-  return hours > 0 ? `${hours} jam ${minutes} menit tersisa` : `${Math.max(1, minutes)} menit tersisa`;
+  return hours > 0
+    ? t("remainingHoursMinutes", { hours, minutes })
+    : t("remainingMinutes", { minutes: Math.max(1, minutes) });
 }
 
 function keyStatus(key: {
@@ -34,19 +39,19 @@ function keyStatus(key: {
   expiresAt: Date | null;
   tokenUsed: bigint;
   tokenQuota: bigint;
-}, now: Date) {
-  if (!key.enabled || !key.isActive) return { label: "Dinonaktifkan", cls: "border-white/10 bg-white/[0.04] text-muted-foreground" };
-  if (key.expiresAt && key.expiresAt <= now) return { label: "Kedaluwarsa", cls: "border-red-400/20 bg-red-400/10 text-red-300" };
-  if (key.tokenUsed >= key.tokenQuota) return { label: "Kuota habis", cls: "border-amber-400/20 bg-amber-400/10 text-amber-300" };
-  return { label: "Aktif", cls: "border-accent/20 bg-accent/10 text-accent" };
+}, now: Date, t: TFunc) {
+  if (!key.enabled || !key.isActive) return { label: t("statusDisabled"), cls: "border-white/10 bg-white/[0.04] text-muted-foreground" };
+  if (key.expiresAt && key.expiresAt <= now) return { label: t("statusExpired"), cls: "border-red-400/20 bg-red-400/10 text-red-300" };
+  if (key.tokenUsed >= key.tokenQuota) return { label: t("statusQuotaExhausted"), cls: "border-amber-400/20 bg-amber-400/10 text-amber-300" };
+  return { label: t("statusActive"), cls: "border-accent/20 bg-accent/10 text-accent" };
 }
 
-function orderStatus(status: string) {
+function orderStatus(status: string, t: TFunc) {
   const styles: Record<string, { label: string; cls: string }> = {
-    APPROVED: { label: "Berhasil", cls: "bg-emerald-400/10 text-emerald-300" },
-    PENDING: { label: "Menunggu pembayaran", cls: "bg-amber-400/10 text-amber-300" },
-    REJECTED: { label: "Ditolak", cls: "bg-red-400/10 text-red-300" },
-    CANCELLED: { label: "Dibatalkan", cls: "bg-white/[0.05] text-muted-foreground" },
+    APPROVED: { label: t("orderApproved"), cls: "bg-emerald-400/10 text-emerald-300" },
+    PENDING: { label: t("orderPending"), cls: "bg-amber-400/10 text-amber-300" },
+    REJECTED: { label: t("orderRejected"), cls: "bg-red-400/10 text-red-300" },
+    CANCELLED: { label: t("orderCancelled"), cls: "bg-white/[0.05] text-muted-foreground" },
   };
   return styles[status] ?? { label: status, cls: "bg-white/[0.05] text-muted-foreground" };
 }
@@ -55,6 +60,9 @@ export default async function PackagesPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
+
+  const t = await getTranslations("MyPackages");
+  const locale = await getLocale();
 
   const [keys, orders, packageModels] = await Promise.all([
     prisma.apiKey.findMany({
@@ -93,41 +101,41 @@ export default async function PackagesPage() {
         <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-px w-5 bg-accent/60" /> Paket token
+              <span className="h-px w-5 bg-accent/60" /> {t("eyebrow")}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Paket Saya</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Pantau kuota, masa aktif, API key paket, dan riwayat pembelian dalam satu tempat.
+              {t("subtitle")}
             </p>
           </div>
           <Link href="/pricing" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110">
-            Beli Paket Baru
+            {t("buyNewPackage")}
           </Link>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard label="Paket aktif" value={activeKeys.length.toLocaleString("id-ID")} detail="API key siap digunakan" accent />
-        <SummaryCard label="Total sisa token" value={formatNumber(totalRemaining)} detail="Dari seluruh paket aktif" />
-        <SummaryCard label="Total pembelian" value={orders.length.toLocaleString("id-ID")} detail="Termasuk order tertunda" />
+        <SummaryCard label={t("summaryActivePackages")} value={activeKeys.length.toLocaleString(locale)} detail={t("summaryActiveDetail")} accent />
+        <SummaryCard label={t("summaryTotalRemaining")} value={formatNumber(totalRemaining, locale)} detail={t("summaryTotalRemainingDetail")} />
+        <SummaryCard label={t("summaryTotalPurchases")} value={orders.length.toLocaleString(locale)} detail={t("summaryTotalPurchasesDetail")} />
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.015]">
         <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] px-5 py-5 sm:px-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">Model yang tersedia</h2>
+            <h2 className="text-sm font-semibold">{t("modelsTitle")}</h2>
             <span className="rounded-full border border-accent/15 bg-accent/[0.07] px-2 py-0.5 font-mono text-[10px] text-accent">
-              {packageModels.length} model aktif
+              {t("modelsActiveCount", { count: packageModels.length })}
             </span>
           </div>
           <span className="shrink-0 text-[10px] text-muted-foreground">
-            {providerCount} provider
+            {t("providersCount", { count: providerCount })}
           </span>
         </div>
 
         {packageModels.length === 0 ? (
           <div className="px-5 py-10 text-center text-xs text-muted-foreground">
-            Belum ada model paket yang aktif. Silakan hubungi admin.
+            {t("modelsEmpty")}
           </div>
         ) : (
           <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
@@ -142,7 +150,7 @@ export default async function PackagesPage() {
                     <span className="truncate">{model.provider}</span>
                   </span>
                   <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${model.supportsStreaming ? "bg-emerald-400/10 text-emerald-300" : "bg-white/[0.05] text-muted-foreground"}`}>
-                    {model.supportsStreaming ? "stream" : "non-stream"}
+                    {model.supportsStreaming ? t("streamBadge") : t("nonStreamBadge")}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-2">
@@ -159,15 +167,15 @@ export default async function PackagesPage() {
           </div>
         )}
         <div className="flex flex-col gap-2 border-t border-white/[0.07] bg-white/[0.015] px-5 py-4 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>Daftar mengikuti pengaturan admin dan dapat berubah sewaktu-waktu.</span>
+          <span>{t("modelsFooterNote")}</span>
           <code className="text-foreground/70">GET {PACKAGE_BASE_URL}/models</code>
         </div>
       </section>
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold">API key paket</h2>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Setiap pembelian memiliki kuota dan masa aktif sendiri.</p>
+          <h2 className="text-sm font-semibold">{t("keysTitle")}</h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{t("keysSubtitle")}</p>
         </div>
 
         {keys.length === 0 ? (
@@ -175,9 +183,9 @@ export default async function PackagesPage() {
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-accent">
               <PackageIcon />
             </div>
-            <h3 className="mt-4 text-sm font-semibold">Belum ada paket token</h3>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">Beli paket untuk mendapatkan API key khusus dengan kuota token tetap selama 24 jam.</p>
-            <Link href="/pricing" className="mt-5 inline-flex rounded-lg border border-accent/20 bg-accent/[0.08] px-4 py-2 text-xs font-semibold text-accent hover:bg-accent/[0.12]">Lihat Paket</Link>
+            <h3 className="mt-4 text-sm font-semibold">{t("keysEmptyTitle")}</h3>
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">{t("keysEmptyDesc")}</p>
+            <Link href="/pricing" className="mt-5 inline-flex rounded-lg border border-accent/20 bg-accent/[0.08] px-4 py-2 text-xs font-semibold text-accent hover:bg-accent/[0.12]">{t("keysEmptyCta")}</Link>
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -186,13 +194,13 @@ export default async function PackagesPage() {
               const usedPercentage = key.tokenQuota > 0n
                 ? Math.min(100, (Number(key.tokenUsed) / Number(key.tokenQuota)) * 100)
                 : 100;
-              const status = keyStatus(key, now);
+              const status = keyStatus(key, now, t);
 
               return (
                 <article key={key.id} className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
                   <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] p-5">
                     <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold">{key.name || key.label || "Paket Token"}</h3>
+                      <h3 className="truncate text-sm font-semibold">{key.name || key.label || t("defaultKeyName")}</h3>
                       <code className="mt-1 block text-[11px] text-muted-foreground">{key.prefix || "sk_live_"}••••••{key.last4 || "••••"}</code>
                     </div>
                     <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span>
@@ -201,34 +209,34 @@ export default async function PackagesPage() {
                   <div className="p-5">
                     <div className="flex items-end justify-between gap-4">
                       <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">Sisa kuota</div>
-                        <div className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{formatNumber(remaining)}</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{t("quotaRemaining")}</div>
+                        <div className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{formatNumber(remaining, locale)}</div>
                       </div>
-                      <div className="text-right text-[11px] text-muted-foreground">dari {formatNumber(key.tokenQuota)} token</div>
+                      <div className="text-right text-[11px] text-muted-foreground">{t("quotaOfTotal", { quota: formatNumber(key.tokenQuota, locale) })}</div>
                     </div>
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.07]">
                       <div className="h-full rounded-full bg-gradient-to-r from-accent to-emerald-400 transition-all" style={{ width: `${100 - usedPercentage}%` }} />
                     </div>
                     <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
-                      <span>{usedPercentage.toFixed(1)}% terpakai</span>
-                      <span>{remainingTime(key.expiresAt, now)}</span>
+                      <span>{t("percentUsed", { percent: usedPercentage.toFixed(1) })}</span>
+                      <span>{remainingTime(key.expiresAt, now, t)}</span>
                     </div>
 
                     <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-4 text-[11px]">
-                      <Info label="Aktif sampai" value={formatDate(key.expiresAt)} />
-                      <Info label="Token terpakai" value={formatNumber(key.tokenUsed)} mono />
-                      <Info label="Total request" value={key.requestCount.toLocaleString("id-ID")} mono />
-                      <Info label="Terakhir digunakan" value={key.lastUsedAt ? formatDate(key.lastUsedAt) : "Belum pernah"} />
+                      <Info label={t("activeUntil")} value={formatDate(key.expiresAt, locale, t)} />
+                      <Info label={t("tokensUsed")} value={formatNumber(key.tokenUsed, locale)} mono />
+                      <Info label={t("totalRequests")} value={key.requestCount.toLocaleString(locale)} mono />
+                      <Info label={t("lastUsed")} value={key.lastUsedAt ? formatDate(key.lastUsedAt, locale, t) : t("neverUsed")} />
                     </dl>
 
                     <div className="mt-4 rounded-lg border border-white/[0.07] bg-black/20 p-3">
-                      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">API Key</div>
+                      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t("apiKeyLabel")}</div>
                       <div className="mt-1.5">
                         {key.key ? (
                           <RevealKey
                             rawKey={key.key}
                             isExpired={key.expiresAt ? key.expiresAt <= now : false}
-                            labels={{ show: "Tampilkan", hide: "Sembunyikan", copy: "Salin" }}
+                            labels={{ show: t("revealShow"), hide: t("revealHide"), copy: t("copy") }}
                           />
                         ) : (
                           <RegeneratePackageKey
@@ -240,7 +248,7 @@ export default async function PackagesPage() {
                     </div>
 
                     <div className="mt-4 rounded-lg border border-white/[0.07] bg-black/20 p-3">
-                      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Base URL paket</div>
+                      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t("baseUrlLabel")}</div>
                       <code className="mt-1.5 block break-all text-[11px] text-accent">{PACKAGE_BASE_URL}</code>
                     </div>
                   </div>
@@ -253,36 +261,36 @@ export default async function PackagesPage() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold">Riwayat pembelian</h2>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Status 20 order paket terbaru.</p>
+          <h2 className="text-sm font-semibold">{t("historyTitle")}</h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{t("historySubtitle")}</p>
         </div>
         <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-white/[0.015]">
           <table className="w-full min-w-[680px] text-sm">
             <thead className="border-b border-white/[0.07] bg-white/[0.025]">
               <tr>
-                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">Paket</th>
-                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">Tanggal</th>
-                <th className="px-4 py-3 text-right text-[11px] font-medium text-muted-foreground">Kuota</th>
-                <th className="px-4 py-3 text-right text-[11px] font-medium text-muted-foreground">Harga</th>
-                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">Pembayaran</th>
-                <th className="px-4 py-3 text-center text-[11px] font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">{t("thPackage")}</th>
+                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">{t("thDate")}</th>
+                <th className="px-4 py-3 text-right text-[11px] font-medium text-muted-foreground">{t("thQuota")}</th>
+                <th className="px-4 py-3 text-right text-[11px] font-medium text-muted-foreground">{t("thPrice")}</th>
+                <th className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground">{t("thPayment")}</th>
+                <th className="px-4 py-3 text-center text-[11px] font-medium text-muted-foreground">{t("thStatus")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
               {orders.map((order) => {
-                const status = orderStatus(order.status);
+                const status = orderStatus(order.status, t);
                 return (
                   <tr key={order.id} className="transition hover:bg-white/[0.025]">
                     <td className="px-4 py-3 font-medium">{order.package.name}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{formatDate(order.createdAt)}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">{formatNumber(order.tokenQuotaSnapshot ?? order.package.tokenQuota)}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">Rp{order.amount.toLocaleString("id-ID")}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{formatDate(order.createdAt, locale, t)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">{formatNumber(order.tokenQuotaSnapshot ?? order.package.tokenQuota, locale)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">Rp{order.amount.toLocaleString(locale)}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{order.paymentMethod.replaceAll("_", " ")}</td>
                     <td className="px-4 py-3 text-center"><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span></td>
                   </tr>
                 );
               })}
-              {orders.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-xs text-muted-foreground">Belum ada riwayat pembelian paket.</td></tr>}
+              {orders.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-xs text-muted-foreground">{t("historyEmpty")}</td></tr>}
             </tbody>
           </table>
         </div>

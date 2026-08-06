@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
@@ -37,6 +38,8 @@ export function ChatPlayground({
   models: ModelInfo[];
   initialBalance: number;
 }) {
+  const t = useTranslations("Chat");
+  const locale = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [model, setModel] = useState(models[0]?.id || "");
@@ -96,7 +99,7 @@ export function ChatPlayground({
       }
 
       const assistantContent =
-        data?.choices?.[0]?.message?.content || "(empty response)";
+        data?.choices?.[0]?.message?.content || t("emptyResponse");
       setMessages((prev) => [...prev, { role: "assistant", content: assistantContent }]);
 
       if (data.x_billing) {
@@ -106,7 +109,7 @@ export function ChatPlayground({
       // Sync navbar badge + analytics after every request.
       triggerWalletRefresh();
     } catch {
-      setError("Koneksi gagal");
+      setError(t("connectionFailed"));
       setMessages((prev) => prev.slice(0, -1));
     }
     setLoading(false);
@@ -124,13 +127,13 @@ export function ChatPlayground({
       {/* Balance + Model selector */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className={`border rounded-md px-3 py-1.5 text-xs ${isExhausted ? "border-red-500/40 bg-red-500/10" : ""}`}>
-          <span className="text-muted-foreground">Saldo: </span>
+          <span className="text-muted-foreground">{t("balanceLabel")}: </span>
           <span className={`font-bold ${isExhausted ? "text-red-500" : "text-green-600"}`}>
-            {idrToToks(balance).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
+            {idrToToks(balance).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <label className="text-xs text-muted-foreground">Model:</label>
+          <label className="text-xs text-muted-foreground">{t("modelLabel")}:</label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
@@ -146,7 +149,7 @@ export function ChatPlayground({
         </div>
         {estRemaining !== null && !isExhausted && (
           <span className="text-[11px] text-muted-foreground">
-            ~{estRemaining.toLocaleString("id-ID")} request tersisa
+            {t("requestsRemaining", { count: estRemaining.toLocaleString(locale) })}
           </span>
         )}
       </div>
@@ -155,13 +158,13 @@ export function ChatPlayground({
       {isExhausted && (
         <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-4 flex items-center justify-between gap-3">
           <p className="text-sm text-red-500 font-medium">
-            Insufficient credits. Please top up your wallet balance to continue using AI services.
+            {t("insufficientCredits")}
           </p>
           <Link
             href="/dashboard/wallet"
             className="shrink-0 bg-foreground text-background px-4 py-2 rounded-md text-xs font-medium hover:opacity-90"
           >
-            Top Up Credits
+            {t("topUpCredits")}
           </Link>
         </div>
       )}
@@ -170,14 +173,18 @@ export function ChatPlayground({
       {isLow && (
         <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 flex items-center justify-between gap-3">
           <p className="text-xs text-yellow-600">
-            Saldo kredit menipis
-            {estRemaining !== null ? ` (~${estRemaining.toLocaleString("id-ID")} request lagi)` : ""}. Segera top up agar tidak terputus.
+            {t("lowBalanceWarning", {
+              estimate:
+                estRemaining !== null
+                  ? t("lowBalanceEstimate", { count: estRemaining.toLocaleString(locale) })
+                  : "",
+            })}
           </p>
           <Link
             href="/dashboard/wallet"
             className="shrink-0 border border-yellow-500/40 text-yellow-600 px-3 py-1.5 rounded-md text-xs font-medium hover:bg-yellow-500/10"
           >
-            Top Up
+            {t("topUp")}
           </Link>
         </div>
       )}
@@ -189,9 +196,9 @@ export function ChatPlayground({
       >
         {messages.length === 0 && !loading && (
           <div className="text-center text-sm text-muted-foreground py-12">
-            Mulai chat dengan mengetik pesan di bawah.
+            {t("emptyStateLine1")}
             <br />
-            Billing akan tampil setelah setiap respons AI.
+            {t("emptyStateLine2")}
           </div>
         )}
         {messages.map((msg, i) => (
@@ -213,7 +220,7 @@ export function ChatPlayground({
         {loading && (
           <div className="flex justify-start">
             <div className="bg-background border rounded-lg px-3 py-2 text-sm text-muted-foreground">
-              <span className="animate-pulse">Mengetik...</span>
+              <span className="animate-pulse">{t("typing")}</span>
             </div>
           </div>
         )}
@@ -223,36 +230,39 @@ export function ChatPlayground({
       {billing && (
         <div className="border rounded-lg p-3 bg-muted/30">
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Billing Response
+            {t("billingResponse")}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
             <div>
-              <div className="text-muted-foreground">Input Tokens</div>
+              <div className="text-muted-foreground">{t("inputTokens")}</div>
               <div className="font-bold">{billing.inputTokens.toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Output Tokens</div>
+              <div className="text-muted-foreground">{t("outputTokens")}</div>
               <div className="font-bold">{billing.outputTokens.toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Total Tokens</div>
+              <div className="text-muted-foreground">{t("totalTokens")}</div>
               <div className="font-bold">{billing.totalTokens.toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Total Cost</div>
+              <div className="text-muted-foreground">{t("totalCost")}</div>
               <div className="font-bold text-red-600">
-                {idrToToks(billing.totalCost).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 6 })} {TOKS_LABEL}
+                {idrToToks(billing.totalCost).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 6 })} {TOKS_LABEL}
               </div>
             </div>
             <div>
-              <div className="text-muted-foreground">Remaining Balance</div>
+              <div className="text-muted-foreground">{t("remainingBalance")}</div>
               <div className="font-bold text-green-600">
-                {idrToToks(billing.remainingBalance).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
+                {idrToToks(billing.remainingBalance).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
               </div>
             </div>
           </div>
           <div className="text-[10px] text-muted-foreground mt-2">
-            Input: {idrToToks(billing.inputCost).toFixed(6)} {TOKS_LABEL} · Output: {idrToToks(billing.outputCost).toFixed(6)} {TOKS_LABEL}
+            {t("costBreakdown", {
+              input: `${idrToToks(billing.inputCost).toFixed(6)} ${TOKS_LABEL}`,
+              output: `${idrToToks(billing.outputCost).toFixed(6)} ${TOKS_LABEL}`,
+            })}
           </div>
         </div>
       )}
@@ -261,7 +271,7 @@ export function ChatPlayground({
         <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 text-sm text-red-600">
           {error}
           {error.includes("balance") && (
-            <> · <Link href="/dashboard/wallet" className="underline font-medium">Top up</Link></>
+            <> · <Link href="/dashboard/wallet" className="underline font-medium">{t("topUpLink")}</Link></>
           )}
         </div>
       )}
@@ -272,7 +282,7 @@ export function ChatPlayground({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isExhausted ? "Kredit habis — top up untuk melanjutkan" : "Ketik pesan... (Enter untuk kirim, Shift+Enter untuk baris baru)"}
+          placeholder={isExhausted ? t("placeholderExhausted") : t("placeholderDefault")}
           rows={2}
           className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none disabled:opacity-50"
           disabled={loading || isExhausted}
@@ -282,7 +292,7 @@ export function ChatPlayground({
           disabled={loading || !input.trim() || isExhausted}
           className="bg-foreground text-background px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50 self-end"
         >
-          {loading ? "..." : "Kirim"}
+          {loading ? "..." : t("send")}
         </button>
       </div>
     </div>

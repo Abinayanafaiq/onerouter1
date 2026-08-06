@@ -1,10 +1,11 @@
 import { getEnabledModels } from "@/app/lib/models";
+import { getLocale, getTranslations } from "next-intl/server";
 
 const TOKS_TO_RP = 1000;
 const TOKS_TO_USD = 0.0553;
 
-function fmtRupiah(n: number): string {
-  return "Rp" + n.toLocaleString("id-ID");
+function fmtRupiah(n: number, locale: string): string {
+  return "Rp" + n.toLocaleString(locale);
 }
 
 function fmtUsd(rp: number): string {
@@ -12,8 +13,8 @@ function fmtUsd(rp: number): string {
   return "US$" + (toks * TOKS_TO_USD).toFixed(2);
 }
 
-function fmtToks(rp: number): string {
-  return (rp / TOKS_TO_RP).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " TOKS";
+function fmtToks(rp: number, locale: string): string {
+  return (rp / TOKS_TO_RP).toLocaleString(locale, { maximumFractionDigits: 1 }) + " TOKS";
 }
 
 /**
@@ -26,11 +27,14 @@ function fmtToks(rp: number): string {
  */
 export async function ModelPricingTable({ compact = false }: { compact?: boolean }) {
   const models = await getEnabledModels();
+  const t = await getTranslations("PricingShared");
+  const tc = await getTranslations("Common");
+  const locale = await getLocale();
 
   if (models.length === 0) {
     return (
       <div className="border border-foreground/10 rounded-2xl p-8 text-center text-muted-foreground bg-muted/30">
-        Belum ada model tersedia.
+        {t("noModels")}
       </div>
     );
   }
@@ -41,23 +45,23 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-foreground/10 text-left">
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Model</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Provider</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Konteks</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">{t("modelColumn")}</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">{t("providerColumn")}</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">{t("contextColumn")}</th>
               {!compact && (
-                <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Dukungan</th>
+                <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">{t("supportColumn")}</th>
               )}
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Input / 1Jt</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">Output / 1Jt</th>
-              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-center">Status</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">{t("inputColumn")}</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">{t("outputColumn")}</th>
+              <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-center">{t("statusColumn")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-foreground/5">
             {models.map((m) => {
               const caps: string[] = [];
-              if (m.supportsText) caps.push("Teks");
-              if (m.supportsImages) caps.push("Gambar");
-              if (m.supportsStreaming) caps.push("Stream");
+              if (m.supportsText) caps.push(t("capText"));
+              if (m.supportsImages) caps.push(t("capImages"));
+              if (m.supportsStreaming) caps.push(t("capStream"));
               const inRp = Number(m.inputPricePerMillion);
               const outRp = Number(m.outputPricePerMillion);
               return (
@@ -93,28 +97,28 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
                     </td>
                   )}
                   <td className="px-4 py-3.5 text-right">
-                    <div className="font-mono font-semibold">{fmtRupiah(inRp)}</div>
-                    <div className="text-[10px] text-muted-foreground">{fmtToks(inRp)} · {fmtUsd(inRp)}</div>
+                    <div className="font-mono font-semibold">{fmtRupiah(inRp, locale)}</div>
+                    <div className="text-[10px] text-muted-foreground">{fmtToks(inRp, locale)} · {fmtUsd(inRp)}</div>
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <div className="font-mono font-semibold">{fmtRupiah(outRp)}</div>
-                    <div className="text-[10px] text-muted-foreground">{fmtToks(outRp)} · {fmtUsd(outRp)}</div>
+                    <div className="font-mono font-semibold">{fmtRupiah(outRp, locale)}</div>
+                    <div className="text-[10px] text-muted-foreground">{fmtToks(outRp, locale)} · {fmtUsd(outRp)}</div>
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     {m.maintenanceMode ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-500">
                         <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                        Pemeliharaan
+                        {tc("maintenance")}
                       </span>
                     ) : m.enabled ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-500">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        Aktif
+                        {tc("active")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
-                        Nonaktif
+                        {t("inactive")}
                       </span>
                     )}
                   </td>
@@ -125,7 +129,9 @@ export async function ModelPricingTable({ compact = false }: { compact?: boolean
         </table>
       </div>
       <div className="px-4 py-3 border-t border-foreground/10 text-[11px] text-muted-foreground">
-        Harga per 1 juta token. <strong className="text-foreground">1 TOKS = Rp1.000 = US$0.0553</strong>. Anda hanya membayar token yang dipakai — tanpa langganan, tanpa biaya tersembunyi.
+        {t.rich("tableFootnote", {
+          b: (chunks) => <strong className="text-foreground">{chunks}</strong>,
+        })}
       </div>
     </div>
   );

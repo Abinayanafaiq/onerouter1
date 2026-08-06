@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { TOKS_LABEL, idrToToks } from "@/app/lib/constants";
 import type { ApiKeyView, ApiKeyStats } from "@/app/lib/api-keys";
@@ -38,25 +39,26 @@ type Filters = {
 
 const PAGE_SIZE = 15;
 
-function toks(idr: number, max = 4): string {
-  return idrToToks(idr).toLocaleString("id-ID", {
+function toks(idr: number, max: number, locale: string): string {
+  return idrToToks(idr).toLocaleString(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: max,
   });
 }
 
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+function fmtDateTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function StatusBadge({ success }: { success: boolean }) {
+  const t = useTranslations("ApiKeys");
   return (
     <span
       className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
         success ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500"
       }`}
     >
-      {success ? "Success" : "Failed"}
+      {success ? t("statusSuccess") : t("statusFailed")}
     </span>
   );
 }
@@ -72,6 +74,8 @@ export function ApiKeyManager({
   providerOptions: string[];
   enabledModels: string[];
 }) {
+  const t = useTranslations("ApiKeys");
+  const locale = useLocale();
   const [keys, setKeys] = useState<ApiKeyView[]>(initialKeys);
   const [stats, setStats] = useState<Stats>({});
   const [remainingBalance, setRemainingBalance] = useState<number | null>(null);
@@ -205,11 +209,11 @@ export function ApiKeyManager({
 
   async function createKey() {
     if (!form.name.trim()) {
-      flash("Name is required", true);
+      flash(t("errorNameRequired"), true);
       return;
     }
     if (balanceBlocked) {
-      flash("Isi saldo terlebih dahulu untuk membuat API key.", true);
+      flash(t("errorTopUpToCreate"), true);
       return;
     }
     setBusy(true);
@@ -237,18 +241,18 @@ export function ApiKeyManager({
         setShowCreate(false);
         setForm({ name: "", expiresAt: "", ipWhitelist: "", rateLimit: "", allowedModels: [] });
         afterMutation();
-        flash("API key created. Copy it now — shown only once.");
+        flash(t("flashCreated"));
       } else {
-        flash(data.error || "Failed", true);
+        flash(data.error || t("flashFailed"), true);
       }
     } catch {
-      flash("Connection failed", true);
+      flash(t("flashConnectionFailed"), true);
     }
     setBusy(false);
   }
 
   async function regenerate(keyId: string, name: string) {
-    if (!confirm(`Regenerate "${name}"? The old key will stop working immediately.`)) return;
+    if (!confirm(t("confirmRegenerate", { name }))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/keys/${keyId}/regenerate`, { method: "POST" });
@@ -256,12 +260,12 @@ export function ApiKeyManager({
       if (data.success) {
         setRevealed({ name: data.key.name, key: data.plaintext });
         afterMutation();
-        flash("Key regenerated. Copy the new key — shown only once.");
+        flash(t("flashRegenerated"));
       } else {
-        flash(data.error || "Failed", true);
+        flash(data.error || t("flashFailed"), true);
       }
     } catch {
-      flash("Connection failed", true);
+      flash(t("flashConnectionFailed"), true);
     }
     setBusy(false);
   }
@@ -277,30 +281,30 @@ export function ApiKeyManager({
       const data = await res.json();
       if (data.success) {
         afterMutation();
-        flash(enabled ? "Key enabled" : "Key disabled");
+        flash(enabled ? t("flashEnabled") : t("flashDisabled"));
       } else {
-        flash(data.error || "Failed", true);
+        flash(data.error || t("flashFailed"), true);
       }
     } catch {
-      flash("Connection failed", true);
+      flash(t("flashConnectionFailed"), true);
     }
     setBusy(false);
   }
 
   async function removeKey(keyId: string, name: string) {
-    if (!confirm(`Delete "${name}"? This cannot be undone. All usage history is removed.`)) return;
+    if (!confirm(t("confirmDelete", { name }))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/keys/${keyId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         afterMutation();
-        flash("Key deleted");
+        flash(t("flashDeleted"));
       } else {
-        flash(data.error || "Failed", true);
+        flash(data.error || t("flashFailed"), true);
       }
     } catch {
-      flash("Connection failed", true);
+      flash(t("flashConnectionFailed"), true);
     }
     setBusy(false);
   }
@@ -342,30 +346,30 @@ export function ApiKeyManager({
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm text-muted-foreground">
-          {keys.length} key{keys.length !== 1 ? "s" : ""}
+          {t("keyCount", { count: keys.length })}
           {remainingBalance !== null && (
-            <> · {toks(remainingBalance)} {TOKS_LABEL} remaining</>
+            <>{t("balanceRemaining", { amount: toks(remainingBalance, 4, locale), unit: TOKS_LABEL })}</>
           )}
         </div>
         <button
           onClick={() => setShowCreate(true)}
           disabled={busy || balanceBlocked}
-          title={balanceBlocked ? "Isi saldo dulu untuk membuat API key" : undefined}
+          title={balanceBlocked ? t("tooltipTopUpCreate") : undefined}
           className="bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          + Generate Key
+          {t("generateButton")}
         </button>
       </div>
 
       {/* Zero-balance gate notice */}
       {balanceBlocked && (
         <div className="border border-red-500/30 bg-red-500/10 text-red-600 rounded-md p-3 text-xs flex items-center justify-between gap-3 flex-wrap">
-          <span>Saldo Anda 0. Isi saldo terlebih dahulu untuk membuat atau regenerate API key.</span>
+          <span>{t("zeroBalanceNotice")}</span>
           <Link
             href="/dashboard/wallet"
             className="border border-red-500/40 px-3 py-1.5 rounded-md font-medium hover:bg-red-500/10"
           >
-            Isi Saldo
+            {t("topUpLink")}
           </Link>
         </div>
       )}
@@ -374,7 +378,7 @@ export function ApiKeyManager({
       {keys.length === 0 ? (
         <div className="border rounded-lg p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No API keys yet. Generate one to start using the API.
+            {t("emptyState")}
           </p>
         </div>
       ) : (
@@ -394,32 +398,32 @@ export function ApiKeyManager({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{k.name}</span>
                       {revoked ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-500">Revoked</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-500">{t("badgeRevoked")}</span>
                       ) : k.isExpired ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-500">Expired</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-500">{t("badgeExpired")}</span>
                       ) : disabled ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/15 text-gray-500">Disabled</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/15 text-gray-500">{t("badgeDisabled")}</span>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-500">Active</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-500">{t("badgeActive")}</span>
                       )}
                     </div>
                     <code className="block text-xs font-mono mt-1.5 break-all text-muted-foreground">
                       {k.maskedKey}
                     </code>
                     <div className="text-[10px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-                      <span>Created {fmtDateTime(k.createdAt)}</span>
-                      {k.expiresAt && <span>· Expires {fmtDateTime(k.expiresAt)}</span>}
-                      {k.lastUsedAt && <span>· Last used {fmtDateTime(k.lastUsedAt)}</span>}
-                      {k.rateLimit && <span>· Rate {k.rateLimit}/min</span>}
-                      {k.ipWhitelist.length > 0 && <span>· IP whitelist ({k.ipWhitelist.length})</span>}
-                      {k.allowedModels.length > 0 && <span>· Models: {k.allowedModels.join(", ")}</span>}
+                      <span>{t("metaCreated", { date: fmtDateTime(k.createdAt, locale) })}</span>
+                      {k.expiresAt && <span>{t("metaExpires", { date: fmtDateTime(k.expiresAt, locale) })}</span>}
+                      {k.lastUsedAt && <span>{t("metaLastUsed", { date: fmtDateTime(k.lastUsedAt, locale) })}</span>}
+                      {k.rateLimit && <span>{t("metaRate", { rate: k.rateLimit })}</span>}
+                      {k.ipWhitelist.length > 0 && <span>{t("metaIpWhitelist", { count: k.ipWhitelist.length })}</span>}
+                      {k.allowedModels.length > 0 && <span>{t("metaModels", { models: k.allowedModels.join(", ") })}</span>}
                     </div>
                     {k.billingMode === "TOKEN_PACKAGE" && (
                       <div className="mt-3 rounded-lg border border-accent/20 bg-accent/[0.05] p-3">
                         <div className="flex items-center justify-between gap-3 text-[11px]">
-                          <span className="font-medium text-accent">Paket token</span>
+                          <span className="font-medium text-accent">{t("tokenPackage")}</span>
                           <span className="font-mono text-muted-foreground">
-                            {k.remainingTokens.toLocaleString("id-ID")} / {k.tokenQuota.toLocaleString("id-ID")} tersisa
+                            {t("tokensRemaining", { remaining: k.remainingTokens.toLocaleString(locale), quota: k.tokenQuota.toLocaleString(locale) })}
                           </span>
                         </div>
                         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
@@ -438,10 +442,10 @@ export function ApiKeyManager({
                     <button
                       onClick={() => regenerate(k.id, k.name)}
                       disabled={busy || balanceBlockedForKey}
-                      title={balanceBlockedForKey ? "Isi saldo dulu untuk regenerate" : undefined}
+                      title={balanceBlockedForKey ? t("tooltipTopUpRegenerate") : undefined}
                       className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Regenerate
+                      {t("regenerateButton")}
                     </button>
                     {k.enabled ? (
                       <button
@@ -449,7 +453,7 @@ export function ApiKeyManager({
                         disabled={busy || revoked}
                         className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40"
                       >
-                        Disable
+                        {t("disableButton")}
                       </button>
                     ) : (
                       <button
@@ -457,7 +461,7 @@ export function ApiKeyManager({
                         disabled={busy || revoked}
                         className="border px-2 py-1 rounded text-[11px] hover:bg-muted disabled:opacity-40"
                       >
-                        Enable
+                        {t("enableButton")}
                       </button>
                     )}
                     <button
@@ -465,7 +469,7 @@ export function ApiKeyManager({
                       disabled={busy}
                       className="border border-red-500/40 text-red-600 px-2 py-1 rounded text-[11px] hover:bg-red-500/10 disabled:opacity-40"
                     >
-                      Delete
+                      {t("deleteButton")}
                     </button>
                   </div>
                 </div>
@@ -473,12 +477,12 @@ export function ApiKeyManager({
                 {/* Per-key stats */}
                 {s && (
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-3 pt-3 border-t">
-                    <Stat label="Requests" value={s.totalRequests.toLocaleString("id-ID")} />
-                    <Stat label="Total Tokens" value={s.totalTokens.toLocaleString("id-ID")} />
-                    <Stat label="Credits Spent" value={`${toks(s.totalCost)} ${TOKS_LABEL}`} accent="text-red-500" />
-                    <Stat label="Success Rate" value={`${s.successRate.toFixed(1)}%`} accent={s.successRate >= 95 ? "text-green-500" : "text-yellow-600"} />
-                    <Stat label="Avg Time" value={`${s.avgResponseTime}ms`} />
-                    <Stat label="Last Used" value={s.lastUsedAt ? fmtDateTime(s.lastUsedAt) : "—"} />
+                    <Stat label={t("statRequests")} value={s.totalRequests.toLocaleString(locale)} />
+                    <Stat label={t("statTotalTokens")} value={s.totalTokens.toLocaleString(locale)} />
+                    <Stat label={t("statCreditsSpent")} value={`${toks(s.totalCost, 4, locale)} ${TOKS_LABEL}`} accent="text-red-500" />
+                    <Stat label={t("statSuccessRate")} value={`${s.successRate.toFixed(1)}%`} accent={s.successRate >= 95 ? "text-green-500" : "text-yellow-600"} />
+                    <Stat label={t("statAvgTime")} value={`${s.avgResponseTime}ms`} />
+                    <Stat label={t("statLastUsed")} value={s.lastUsedAt ? fmtDateTime(s.lastUsedAt, locale) : "—"} />
                   </div>
                 )}
               </div>
@@ -490,58 +494,58 @@ export function ApiKeyManager({
       {/* Request history */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Request History
+          {t("historyTitle")}
         </h2>
 
         <div className="border rounded-lg p-3 mb-3 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 items-end">
-          <FilterField label="API Key">
+          <FilterField label={t("filterApiKey")}>
             <select
               value={filters.apiKeyId}
               onChange={(e) => setFilters((f) => ({ ...f, apiKeyId: e.target.value }))}
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             >
-              <option value="">All</option>
+              <option value="">{t("filterAll")}</option>
               {keys.map((k) => (
                 <option key={k.id} value={k.id}>{k.name}</option>
               ))}
             </select>
           </FilterField>
-          <FilterField label="Model">
+          <FilterField label={t("filterModel")}>
             <select
               value={filters.model}
               onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             >
-              <option value="">All</option>
+              <option value="">{t("filterAll")}</option>
               {modelOptions.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </FilterField>
-          <FilterField label="Provider">
+          <FilterField label={t("filterProvider")}>
             <select
               value={filters.provider}
               onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value }))}
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             >
-              <option value="">All</option>
+              <option value="">{t("filterAll")}</option>
               {providerOptions.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
           </FilterField>
-          <FilterField label="Status">
+          <FilterField label={t("filterStatus")}>
             <select
               value={filters.status}
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             >
-              <option value="">All</option>
-              <option value="success">Success</option>
-              <option value="failed">Failed</option>
+              <option value="">{t("filterAll")}</option>
+              <option value="success">{t("statusSuccess")}</option>
+              <option value="failed">{t("statusFailed")}</option>
             </select>
           </FilterField>
-          <FilterField label="From">
+          <FilterField label={t("filterFrom")}>
             <input
               type="date"
               value={filters.from}
@@ -549,7 +553,7 @@ export function ApiKeyManager({
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             />
           </FilterField>
-          <FilterField label="To">
+          <FilterField label={t("filterTo")}>
             <input
               type="date"
               value={filters.to}
@@ -557,12 +561,12 @@ export function ApiKeyManager({
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             />
           </FilterField>
-          <FilterField label="Search">
+          <FilterField label={t("filterSearch")}>
             <input
               type="text"
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              placeholder="model, ip…"
+              placeholder={t("searchPlaceholder")}
               className="w-full px-2 py-1.5 border rounded-md bg-background text-xs"
             />
           </FilterField>
@@ -571,13 +575,13 @@ export function ApiKeyManager({
               onClick={applyFilters}
               className="flex-1 bg-foreground text-background px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90"
             >
-              Apply
+              {t("applyButton")}
             </button>
             <button
               onClick={resetFilters}
               className="border px-3 py-1.5 rounded-md text-xs hover:bg-muted"
             >
-              Reset
+              {t("resetButton")}
             </button>
           </div>
         </div>
@@ -586,40 +590,40 @@ export function ApiKeyManager({
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/30">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Date</th>
-                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">API Key</th>
-                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Endpoint</th>
-                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Model</th>
-                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Provider</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">In</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Out</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Total</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Cost</th>
-                <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground">Status</th>
-                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Time</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("thDate")}</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("thApiKey")}</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("thEndpoint")}</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("thModel")}</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("thProvider")}</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("thIn")}</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("thOut")}</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("thTotal")}</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("thCost")}</th>
+                <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground">{t("thStatus")}</th>
+                <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("thTime")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {loadingLogs ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground text-sm">Loading…</td>
+                  <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground text-sm">{t("loading")}</td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground text-sm">No requests</td>
+                  <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground text-sm">{t("noRequests")}</td>
                 </tr>
               ) : (
                 rows.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/30 transition">
-                    <td className="px-3 py-2 text-xs whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
+                    <td className="px-3 py-2 text-xs whitespace-nowrap">{fmtDateTime(r.createdAt, locale)}</td>
                     <td className="px-3 py-2 text-xs">{r.keyName}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground font-mono">{r.endpoint}</td>
                     <td className="px-3 py-2 text-xs font-medium">{r.model}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{r.provider}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs">{r.inputTokens.toLocaleString("id-ID")}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs">{r.outputTokens.toLocaleString("id-ID")}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs">{r.totalTokens.toLocaleString("id-ID")}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs text-red-500">{toks(r.totalCost, 6)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">{r.inputTokens.toLocaleString(locale)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">{r.outputTokens.toLocaleString(locale)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">{r.totalTokens.toLocaleString(locale)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs text-red-500">{toks(r.totalCost, 6, locale)}</td>
                     <td className="px-3 py-2 text-center"><StatusBadge success={r.success} /></td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{r.responseTime}ms</td>
                   </tr>
@@ -631,7 +635,7 @@ export function ApiKeyManager({
 
         <div className="flex items-center justify-between mt-3 text-xs">
           <span className="text-muted-foreground">
-            {total.toLocaleString("id-ID")} total · Page {page} / {totalPages}
+            {t("paginationInfo", { total: total.toLocaleString(locale), page, totalPages })}
           </span>
           <div className="flex gap-2">
             <button
@@ -639,14 +643,14 @@ export function ApiKeyManager({
               disabled={page <= 1 || loadingLogs}
               className="border px-3 py-1.5 rounded-md hover:bg-muted disabled:opacity-40"
             >
-              ← Prev
+              {t("prevButton")}
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loadingLogs}
               className="border px-3 py-1.5 rounded-md hover:bg-muted disabled:opacity-40"
             >
-              Next →
+              {t("nextButton")}
             </button>
           </div>
         </div>
@@ -654,22 +658,22 @@ export function ApiKeyManager({
 
       {/* Create modal */}
       {showCreate && (
-        <Modal title="Generate New API Key" onClose={() => setShowCreate(false)}>
+        <Modal title={t("createModalTitle")} onClose={() => setShowCreate(false)}>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Name *</label>
+              <label className="text-xs text-muted-foreground block mb-1">{t("labelName")}</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Production, Development, Discord Bot…"
+                placeholder={t("namePlaceholder")}
                 className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm"
                 maxLength={60}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Expiration (optional)</label>
+                <label className="text-xs text-muted-foreground block mb-1">{t("labelExpiration")}</label>
                 <input
                   type="date"
                   value={form.expiresAt}
@@ -678,7 +682,7 @@ export function ApiKeyManager({
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Rate limit /min (optional)</label>
+                <label className="text-xs text-muted-foreground block mb-1">{t("labelRateLimit")}</label>
                 <input
                   type="number"
                   value={form.rateLimit}
@@ -689,7 +693,7 @@ export function ApiKeyManager({
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">IP whitelist (optional, comma/newline)</label>
+              <label className="text-xs text-muted-foreground block mb-1">{t("labelIpWhitelist")}</label>
               <textarea
                 value={form.ipWhitelist}
                 onChange={(e) => setForm((f) => ({ ...f, ipWhitelist: e.target.value }))}
@@ -699,7 +703,7 @@ export function ApiKeyManager({
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Allowed models (optional)</label>
+              <label className="text-xs text-muted-foreground block mb-1">{t("labelAllowedModels")}</label>
               <div className="flex flex-wrap gap-1.5">
                 {enabledModels.map((m) => {
                   const checked = form.allowedModels.includes(m);
@@ -724,21 +728,21 @@ export function ApiKeyManager({
                   );
                 })}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Leave empty to allow all enabled models.</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("allowedModelsHint")}</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowCreate(false)}
                 className="border px-3 py-1.5 rounded-md text-xs hover:bg-muted"
               >
-                Cancel
+                {t("cancelButton")}
               </button>
               <button
                 onClick={createKey}
                 disabled={busy}
                 className="bg-foreground text-background px-4 py-1.5 rounded-md text-xs font-medium hover:opacity-90 disabled:opacity-50"
               >
-                {busy ? "Generating…" : "Generate"}
+                {busy ? t("generatingButton") : t("generateSubmit")}
               </button>
             </div>
           </div>
@@ -747,11 +751,10 @@ export function ApiKeyManager({
 
       {/* One-time reveal modal */}
       {revealed && (
-        <Modal title="Your API Key — Copy Now" onClose={() => setRevealed(null)}>
+        <Modal title={t("revealModalTitle")} onClose={() => setRevealed(null)}>
           <div className="space-y-3">
             <div className="border border-yellow-500/40 bg-yellow-500/10 rounded-md p-3 text-xs text-yellow-700">
-              This is the only time the full key will be shown. Store it securely.
-              You will not be able to see it again.
+              {t("revealWarning")}
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">{revealed.name}</label>
@@ -763,7 +766,7 @@ export function ApiKeyManager({
                   onClick={() => copyText(revealed.key)}
                   className="border px-3 py-2 rounded-md text-xs hover:bg-muted shrink-0"
                 >
-                  {copied ? "✓ Copied" : "Copy"}
+                  {copied ? t("copiedButton") : t("copyButton")}
                 </button>
               </div>
             </div>
@@ -772,7 +775,7 @@ export function ApiKeyManager({
                 onClick={() => setRevealed(null)}
                 className="bg-foreground text-background px-4 py-1.5 rounded-md text-xs font-medium hover:opacity-90"
               >
-                Done
+                {t("doneButton")}
               </button>
             </div>
           </div>

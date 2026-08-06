@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { maskKey } from "@/app/lib/apikey";
 
 export function RevealKey({
   rawKey,
   isExpired,
-  labels = { show: "Show", hide: "Hide", copy: "Copy" },
+  labels,
 }: {
   rawKey: string;
   isExpired: boolean;
   labels?: { show: string; hide: string; copy: string };
 }) {
+  const t = useTranslations("Overview");
+  const resolvedLabels = labels ?? { show: t("keyShow"), hide: t("keyHide"), copy: t("keyCopy") };
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,14 +60,14 @@ export function RevealKey({
         type="button"
         className="text-[10px] text-muted-foreground hover:text-foreground transition shrink-0 border px-1.5 py-0.5 rounded"
       >
-        {revealed ? labels.hide : labels.show}
+        {revealed ? resolvedLabels.hide : resolvedLabels.show}
       </button>
       <button
         onClick={copy}
         type="button"
         className="text-[10px] text-muted-foreground hover:text-foreground transition shrink-0 border px-1.5 py-0.5 rounded"
       >
-        {copied ? "✓" : labels.copy}
+        {copied ? "✓" : resolvedLabels.copy}
       </button>
     </div>
   );

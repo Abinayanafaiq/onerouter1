@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { getWalletSummary } from "@/app/lib/usage-stats";
@@ -84,41 +85,14 @@ function InfoIcon({ className }: IconProps) {
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-function fmtToks(toks: number, max = 4): string {
-  return toks.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: max });
+function fmtToks(toks: number, locale: string, max = 4): string {
+  return toks.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: max });
 }
 
-function fmtDate(iso: string | null): string {
+function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
-
-const TRUST_BADGES = [
-  "Top Up Instan",
-  "Konfirmasi Otomatis",
-  "Pembayaran Aman",
-  "Refund Tersedia",
-  "Tanpa Langganan Bulanan",
-];
-
-const FAQS = [
-  {
-    q: "Berapa lama saldo masuk?",
-    a: "Biasanya kurang dari 1 menit setelah pembayaran terkonfirmasi.",
-  },
-  {
-    q: "Bagaimana jika pembayaran gagal?",
-    a: "Tim kami akan memverifikasi transaksi dan membantu refund bila perlu, menghubungi via WhatsApp yang kamu berikan.",
-  },
-  {
-    q: "Apakah kredit kedaluwarsa?",
-    a: "Tidak. Kredit tidak terpakai tetap tersimpan di dompetmu.",
-  },
-  {
-    q: "Apakah ada langganan bulanan?",
-    a: "Tidak. Bayar hanya untuk yang kamu pakai — sesuai pemakaian token aktual.",
-  },
-];
 
 /* ------------------------------------------------------------------ */
 /* Collapsible FAQ (client island)                                     */
@@ -149,6 +123,8 @@ function FaqList({ faqs }: { faqs: { q: string; a: string }[] }) {
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
 export default async function WalletPage() {
+  const t = await getTranslations("Wallet");
+  const locale = await getLocale();
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
@@ -173,38 +149,55 @@ export default async function WalletPage() {
   const supportUrl = telegramGroupUrl || `mailto:${ADMIN_EMAIL}`;
   const supportIsTelegram = !!telegramGroupUrl;
 
+  const trustBadges = [
+    t("trustInstantTopUp"),
+    t("trustAutoConfirm"),
+    t("trustSecurePayment"),
+    t("trustRefundAvailable"),
+    t("trustNoSubscription"),
+  ];
+
+  const faqs = [
+    { q: t("faq1Q"), a: t("faq1A") },
+    { q: t("faq2Q"), a: t("faq2A") },
+    { q: t("faq3Q"), a: t("faq3A") },
+    { q: t("faq4Q"), a: t("faq4A") },
+  ];
+
   const overview = [
     {
-      label: "Saldo Kredit",
-      value: `${fmtToks(summary.balanceToks)} ${TOKS_LABEL}`,
-      sub: `≈ Rp${balance.toLocaleString("id-ID", { maximumFractionDigits: 2 })}`,
+      label: t("statBalanceLabel"),
+      value: `${fmtToks(summary.balanceToks, locale)} ${TOKS_LABEL}`,
+      sub: t("statBalanceSub", {
+        amount: balance.toLocaleString(locale, { maximumFractionDigits: 2 }),
+      }),
       icon: <WalletIcon className="h-5 w-5" />,
       accent: isEmpty ? "text-red-500" : "text-green-500",
     },
     {
-      label: "Total Dibeli",
-      value: `${fmtToks(idrToToks(summary.totalPurchased))} ${TOKS_LABEL}`,
-      sub: "Total top up",
+      label: t("statPurchasedLabel"),
+      value: `${fmtToks(idrToToks(summary.totalPurchased), locale)} ${TOKS_LABEL}`,
+      sub: t("statPurchasedSub"),
       icon: <TrendingUpIcon className="h-5 w-5" />,
       accent: "text-foreground",
     },
     {
-      label: "Total Terpakai",
-      value: `${fmtToks(idrToToks(summary.totalUsed))} ${TOKS_LABEL}`,
-      sub: `${summary.totalRequests.toLocaleString("id-ID")} request`,
+      label: t("statUsedLabel"),
+      value: `${fmtToks(idrToToks(summary.totalUsed), locale)} ${TOKS_LABEL}`,
+      sub: t("statUsedSub", { count: summary.totalRequests }),
       icon: <ActivityIcon className="h-5 w-5" />,
       accent: "text-foreground",
     },
     {
-      label: "Estimasi Sisa Request",
+      label: t("statRemainingLabel"),
       value:
         summary.estimatedRemainingRequests === null
           ? "—"
-          : summary.estimatedRemainingRequests.toLocaleString("id-ID"),
+          : summary.estimatedRemainingRequests.toLocaleString(locale),
       sub:
         summary.avgCostPerRequest > 0
-          ? `~${fmtToks(idrToToks(summary.avgCostPerRequest), 6)} ${TOKS_LABEL}/req`
-          : "Belum ada pemakaian",
+          ? `~${fmtToks(idrToToks(summary.avgCostPerRequest), locale, 6)} ${TOKS_LABEL}/req`
+          : t("statRemainingNoUsage"),
       icon: <ClockIcon className="h-5 w-5" />,
       accent: "text-foreground",
     },
@@ -215,9 +208,9 @@ export default async function WalletPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dompet</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Top up kredit {TOKS_LABEL}, bayar AI sesuai pemakaian — tanpa langganan.
+            {t("subtitle", { unit: TOKS_LABEL })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -225,13 +218,13 @@ export default async function WalletPage() {
             href="/dashboard"
             className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-muted-foreground transition hover:text-foreground hover:border-white/20"
           >
-            ← Dashboard
+            ← {t("backToDashboard")}
           </Link>
           <Link
             href="/dashboard/usage"
             className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-muted-foreground transition hover:text-foreground hover:border-white/20"
           >
-            Usage Analytics →
+            {t("usageAnalytics")} →
           </Link>
         </div>
       </div>
@@ -262,7 +255,7 @@ export default async function WalletPage() {
       {/* Empty-state warning */}
       {isEmpty && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-4 text-sm text-red-400">
-          Kredit habis. Layanan AI terkunci sampai kamu top up. Isi kredit di bawah untuk melanjutkan.
+          {t("emptyWarning")}
         </div>
       )}
 
@@ -271,10 +264,9 @@ export default async function WalletPage() {
         {/* LEFT 70% — Top Up */}
         <div className="glass card-hover rounded-[24px] p-6 sm:p-8">
           <div className="mb-7">
-            <h2 className="text-xl font-bold tracking-tight">Top Up Kredit</h2>
+            <h2 className="text-xl font-bold tracking-tight">{t("topUpTitle")}</h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Beli {TOKS_LABEL} untuk akses semua model AI. Bayar hanya untuk yang kamu pakai —
-              tanpa langganan bulanan.
+              {t("topUpDesc", { unit: TOKS_LABEL })}
             </p>
           </div>
 
@@ -293,10 +285,9 @@ export default async function WalletPage() {
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-green-500/15 text-green-400 shadow-[0_0_24px_-6px_var(--accent-glow)]">
                 <MessageCircleIcon className="h-6 w-6" />
               </div>
-              <h3 className="mt-4 text-base font-semibold text-foreground">Butuh Bantuan?</h3>
+              <h3 className="mt-4 text-base font-semibold text-foreground">{t("supportTitle")}</h3>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Jika pembayaranmu mengalami masalah, saldo tertunda, atau diperlukan refund,
-                tim support kami akan menghubungimu via nomor WhatsApp yang kamu berikan.
+                {t("supportDesc")}
               </p>
               <a
                 href={supportUrl}
@@ -305,20 +296,20 @@ export default async function WalletPage() {
                 className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-green-500 px-4 text-sm font-semibold text-black transition hover:brightness-110"
               >
                 <MessageCircleIcon className="h-4 w-4" />
-                Hubungi Support
+                {t("supportButton")}
               </a>
               <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground">
                 <ShieldCheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                <span>Nomor WhatsApp-mu hanya digunakan untuk komunikasi terkait transaksi.</span>
+                <span>{t("supportWaNote")}</span>
               </p>
             </div>
           </div>
 
           {/* FAQ Card */}
           <div className="rounded-[20px] border border-white/[0.08] bg-card p-6">
-            <h3 className="text-base font-semibold text-foreground">Pertanyaan Umum</h3>
+            <h3 className="text-base font-semibold text-foreground">{t("faqTitle")}</h3>
             <div className="mt-4">
-              <FaqList faqs={FAQS} />
+              <FaqList faqs={faqs} />
             </div>
           </div>
 
@@ -326,33 +317,33 @@ export default async function WalletPage() {
           <div className="rounded-[20px] border border-white/[0.08] bg-card p-6">
             <div className="flex items-center gap-2">
               <InfoIcon className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-base font-semibold text-foreground">Informasi Pembayaran</h3>
+              <h3 className="text-base font-semibold text-foreground">{t("paymentInfoTitle")}</h3>
             </div>
             <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
-                <span>1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString("id-ID")}</span>
+                <span>1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString(locale)}</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
-                <span>QRIS auto-konfirmasi setelah pembayaran terverifikasi.</span>
+                <span>{t("paymentInfoQris")}</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
-                <span>USDT BEP20 diverifikasi otomatis via blockchain (~36 detik).</span>
+                <span>{t("paymentInfoUsdt")}</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 text-green-400"><CheckIcon className="h-3.5 w-3.5" /></span>
-                <span>Kredit dipotong otomatis per request AI berdasarkan token aktual.</span>
+                <span>{t("paymentInfoDeduction")}</span>
               </li>
             </ul>
           </div>
 
           {/* Trust Badges */}
           <div className="rounded-[20px] border border-white/[0.08] bg-card p-6">
-            <h3 className="text-base font-semibold text-foreground">Jaminan Kepercayaan</h3>
+            <h3 className="text-base font-semibold text-foreground">{t("trustTitle")}</h3>
             <ul className="mt-4 space-y-2.5">
-              {TRUST_BADGES.map((b) => (
+              {trustBadges.map((b) => (
                 <li key={b} className="flex items-center gap-2.5 text-sm text-foreground">
                   <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green-500/15 text-green-400">
                     <CheckIcon className="h-3.5 w-3.5" />
@@ -369,20 +360,20 @@ export default async function WalletPage() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Riwayat Transaksi
+            {t("historyTitle")}
           </h2>
         </div>
         {transactions.length === 0 ? (
           <div className="rounded-2xl border border-white/[0.08] bg-card p-10 text-center">
-            <p className="text-sm text-muted-foreground">Belum ada transaksi</p>
+            <p className="text-sm text-muted-foreground">{t("historyEmpty")}</p>
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-card divide-y divide-white/[0.06]">
-            {transactions.map((t) => {
-              const amt = Number(t.amount);
+            {transactions.map((tx) => {
+              const amt = Number(tx.amount);
               const isPositive = amt > 0;
               return (
-                <div key={t.id} className="flex items-center justify-between gap-3 p-4 transition hover:bg-white/[0.02]">
+                <div key={tx.id} className="flex items-center justify-between gap-3 p-4 transition hover:bg-white/[0.02]">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span
@@ -392,13 +383,13 @@ export default async function WalletPage() {
                             : "bg-red-500/15 text-red-400"
                         }`}
                       >
-                        {t.type}
+                        {tx.type}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {t.createdAt.toLocaleString("id-ID")}
+                        {tx.createdAt.toLocaleString(locale)}
                       </span>
                     </div>
-                    <div className="mt-1 truncate text-xs text-muted-foreground">{t.description}</div>
+                    <div className="mt-1 truncate text-xs text-muted-foreground">{tx.description}</div>
                   </div>
                   <div
                     className={`shrink-0 text-right font-mono text-sm font-bold ${
@@ -407,10 +398,10 @@ export default async function WalletPage() {
                   >
                     <div>
                       {isPositive ? "+" : "-"}
-                      {idrToToks(Math.abs(amt)).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
+                      {idrToToks(Math.abs(amt)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
                     </div>
                     <div className="text-[10px] font-normal text-muted-foreground">
-                      Rp{Math.abs(amt).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+                      Rp{Math.abs(amt).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
                     </div>
                   </div>
                 </div>

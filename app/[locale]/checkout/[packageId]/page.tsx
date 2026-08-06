@@ -1,5 +1,5 @@
 import { auth } from "@/app/lib/auth";
-import { findPackage } from "@/app/lib/packages";
+import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { isPakasirConfigured } from "@/app/lib/pakasir";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
@@ -130,9 +130,9 @@ export default async function CheckoutPage({
             packageId={packageId}
             amount={pkg.price}
             chains={[...CRYPTO_CHAINS]}
-            btcpayConfigured={isBtcpayConfigured()}
+            btcpayConfigured={PACKAGE_CRYPTO_ENABLED && isBtcpayConfigured()}
             pakasirConfigured={pakasirConfigured}
-            bscConfigured={bscConfigured}
+            bscConfigured={PACKAGE_CRYPTO_ENABLED && bscConfigured}
           />
           <p className="mt-4 text-center text-[12px] text-muted-foreground">
             {tt.rich("agreePurchase", {

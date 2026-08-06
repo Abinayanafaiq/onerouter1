@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { TOKS_LABEL } from "@/app/lib/constants";
 
@@ -20,6 +21,8 @@ type Summary = {
 };
 
 export function CreditBadge({ initialToks }: { initialToks: number }) {
+  const t = useTranslations("CreditBadge");
+  const locale = useLocale();
   const [toks, setToks] = useState(initialToks);
   const [loading, setLoading] = useState(false);
 
@@ -66,7 +69,7 @@ export function CreditBadge({ initialToks }: { initialToks: number }) {
           ? "border-red-500/40 bg-red-500/10 text-red-500 hover:bg-red-500/20"
           : "border-green-500/30 bg-green-500/10 text-green-500 hover:bg-green-500/20"
       }`}
-      title="Saldo kredit — klik untuk top up"
+      title={t("title")}
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
@@ -74,7 +77,7 @@ export function CreditBadge({ initialToks }: { initialToks: number }) {
         } ${loading ? "animate-pulse" : ""}`}
       />
       <span className="font-mono">
-        {toks.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+        {toks.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
       </span>
       <span>{TOKS_LABEL}</span>
     </Link>

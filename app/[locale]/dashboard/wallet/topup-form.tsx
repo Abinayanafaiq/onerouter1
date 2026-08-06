@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { IDR_PER_TOKS, TOKS_LABEL, toksToIdr } from "@/app/lib/constants";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
@@ -149,6 +149,8 @@ export function WalletTopUpForm({
 }) {
   const router = useRouter();
   const tt = useTranslations("Terms");
+  const t = useTranslations("Wallet");
+  const locale = useLocale();
   const [amount, setAmount] = useState("");
   const [wa, setWa] = useState(whatsapp || "");
   const [method, setMethod] = useState<"PAKASIR" | "BSC">(
@@ -226,11 +228,11 @@ export function WalletTopUpForm({
   async function handlePakasirCreate() {
     const toks = parseInt(amount, 10);
     if (!toks || toks < MIN_TOKS) {
-      setError(`Minimal top up ${MIN_TOKS} ${TOKS_LABEL}`);
+      setError(t("errorMinTopUp", { min: MIN_TOKS, unit: TOKS_LABEL }));
       return;
     }
     if (!wa.trim()) {
-      setError("Nomor WhatsApp wajib diisi");
+      setError(t("errorWaRequired"));
       return;
     }
     const idrAmount = toksToIdr(toks);
@@ -262,10 +264,10 @@ export function WalletTopUpForm({
         });
         startPolling(data.orderId, false);
       } else {
-        setError(data.error || "Gagal membuat invoice QRIS");
+        setError(data.error || t("errorInvoiceFailed"));
       }
     } catch {
-      setError("Koneksi gagal");
+      setError(t("errorConnection"));
     }
     setSubmitting(false);
   }
@@ -273,11 +275,11 @@ export function WalletTopUpForm({
   async function handleBscCreate() {
     const toks = parseInt(amount, 10);
     if (!toks || toks < MIN_TOKS) {
-      setError(`Minimal top up ${MIN_TOKS} ${TOKS_LABEL}`);
+      setError(t("errorMinTopUp", { min: MIN_TOKS, unit: TOKS_LABEL }));
       return;
     }
     if (!wa.trim()) {
-      setError("Nomor WhatsApp wajib diisi");
+      setError(t("errorWaRequired"));
       return;
     }
     const idrAmount = toksToIdr(toks);
@@ -309,10 +311,10 @@ export function WalletTopUpForm({
         });
         startPolling(data.orderId, true);
       } else {
-        setBscError(data.error || "Gagal membuat order");
+        setBscError(data.error || t("errorOrderFailed"));
       }
     } catch {
-      setBscError("Koneksi gagal");
+      setBscError(t("errorConnection"));
     }
     setSubmitting(false);
   }
@@ -338,7 +340,7 @@ export function WalletTopUpForm({
   const waValid = /^\+?\d{8,15}$/.test(wa.trim());
   const canSubmit = hasValidAmount && waValid && !submitting;
   const methodLabel = method === "BSC" ? "USDT (BEP20)" : "QRIS";
-  const processingEstimate = method === "BSC" ? "~36 detik" : "Kurang dari 1 menit";
+  const processingEstimate = method === "BSC" ? t("estimateBsc") : t("estimateQris");
 
   /* ---------------- SUCCESS state ---------------- */
   if (paymentStatus === "APPROVED") {
@@ -347,15 +349,15 @@ export function WalletTopUpForm({
         <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-green-500/15 text-green-400 shadow-[0_0_24px_-4px_var(--accent-glow)]">
           <CheckIcon className="h-7 w-7" />
         </div>
-        <h3 className="text-base font-semibold text-green-400">Top Up Berhasil!</h3>
+        <h3 className="text-base font-semibold text-green-400">{t("successTitle")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kredit {TOKS_LABEL} telah ditambahkan ke dompetmu.
+          {t("successDesc", { unit: TOKS_LABEL })}
         </p>
         <button
           onClick={resetForm}
           className="mt-5 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium transition hover:border-white/20 hover:bg-white/[0.06]"
         >
-          Top Up Lagi
+          {t("topUpAgain")}
         </button>
       </div>
     );
@@ -370,24 +372,24 @@ export function WalletTopUpForm({
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-amber-500/15 text-amber-400">
               <CryptoIcon className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold">Transfer USDT (BEP20)</h3>
+            <h3 className="text-base font-semibold">{t("bscTransferTitle")}</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Kirim tepat jumlah di bawah ke jaringan BSC.
+              {t("bscTransferDesc")}
             </p>
           </div>
 
           <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 text-sm space-y-3">
             <div>
               <span className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
-                Kredit
+                {t("creditLabel")}
               </span>
               <p className="text-base font-semibold">
-                {bscResult.toks.toLocaleString("id-ID")} {TOKS_LABEL}
+                {bscResult.toks.toLocaleString(locale)} {TOKS_LABEL}
               </p>
             </div>
             <div>
               <span className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
-                Kirim tepat
+                {t("bscSendExactLabel")}
               </span>
               <code className="text-lg font-mono font-bold break-all text-amber-400">
                 {bscResult.payAmount} USDT
@@ -395,7 +397,7 @@ export function WalletTopUpForm({
             </div>
             <div>
               <span className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
-                Ke address (BEP20 / BSC)
+                {t("bscToAddressLabel")}
               </span>
               <div className="flex items-start gap-2">
                 <code className="flex-1 break-all rounded-lg border border-white/[0.06] bg-background p-2.5 text-xs font-mono">
@@ -407,13 +409,12 @@ export function WalletTopUpForm({
                   className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-2 text-xs text-muted-foreground transition hover:text-foreground hover:border-white/20"
                 >
                   <CopyIcon className="h-3.5 w-3.5" />
-                  Copy
+                  {t("copy")}
                 </button>
               </div>
             </div>
             <p className="text-xs text-amber-500/90 pt-1">
-              Transfer harus PERSIS {bscResult.payAmount} USDT di jaringan BEP20 (BSC).
-              Jumlah unik untuk mengidentifikasi ordermu.
+              {t("bscExactWarning", { amount: bscResult.payAmount })}
             </p>
           </div>
 
@@ -425,12 +426,12 @@ export function WalletTopUpForm({
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
                 </span>
                 {bscConfirmations !== null
-                  ? `Terdeteksi di blockchain. Menunggu konfirmasi... (${bscConfirmations})`
-                  : "Menunggu pembayaran..."}
+                  ? t("bscDetected", { count: bscConfirmations })
+                  : t("waitingPayment")}
               </>
             )}
             {paymentStatus === "CANCELLED" && (
-              <span className="text-red-500">Order dibatalkan.</span>
+              <span className="text-red-500">{t("orderCancelled")}</span>
             )}
           </div>
 
@@ -439,12 +440,12 @@ export function WalletTopUpForm({
               onClick={resetForm}
               className="block w-full rounded-xl border border-white/10 py-2.5 text-sm font-medium transition hover:bg-white/[0.04]"
             >
-              Buat Order Baru
+              {t("createNewOrder")}
             </button>
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            Verifikasi otomatis via BSC. Konfirmasi ~36 detik setelah transaksi terdeteksi.
+            {t("bscVerifyNote")}
           </p>
         </div>
       </div>
@@ -460,9 +461,9 @@ export function WalletTopUpForm({
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent">
               <QrIcon className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold">Invoice QRIS Dibuat</h3>
+            <h3 className="text-base font-semibold">{t("qrisInvoiceTitle")}</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Klik tombol di bawah untuk membayar via QRIS di halaman Pakasir.
+              {t("qrisInvoiceDesc")}
             </p>
           </div>
 
@@ -473,30 +474,30 @@ export function WalletTopUpForm({
               rel="noopener noreferrer"
               className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition hover:opacity-90"
             >
-              Bayar Sekarang
+              {t("payNow")}
             </a>
           ) : (
             <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-xs text-amber-400">
-              Link pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
+              {t("paymentLinkUnavailable")}
             </p>
           )}
 
           <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 text-sm space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Kredit</span>
+              <span className="text-muted-foreground">{t("creditLabel")}</span>
               <span className="font-semibold">
-                {pakasirResult.toks.toLocaleString("id-ID")} {TOKS_LABEL}
+                {pakasirResult.toks.toLocaleString(locale)} {TOKS_LABEL}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total Pembayaran</span>
+              <span className="text-muted-foreground">{t("totalPaymentLabel")}</span>
               <span className="font-semibold text-accent">
-                Rp{pakasirResult.totalPayment.toLocaleString("id-ID")}
+                Rp{pakasirResult.totalPayment.toLocaleString(locale)}
               </span>
             </div>
             {pakasirResult.expiredAt && (
               <p className="text-xs text-muted-foreground pt-1">
-                Bayar sebelum {new Date(pakasirResult.expiredAt).toLocaleString("id-ID")}
+                {t("payBefore", { date: new Date(pakasirResult.expiredAt).toLocaleString(locale) })}
               </p>
             )}
           </div>
@@ -508,11 +509,11 @@ export function WalletTopUpForm({
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
                 </span>
-                Menunggu pembayaran...
+                {t("waitingPayment")}
               </>
             )}
             {paymentStatus === "CANCELLED" && (
-              <span className="text-red-500">Invoice kadaluarsa. Buat invoice baru.</span>
+              <span className="text-red-500">{t("invoiceExpired")}</span>
             )}
           </div>
 
@@ -521,12 +522,12 @@ export function WalletTopUpForm({
               onClick={resetForm}
               className="block w-full rounded-xl border border-white/10 py-2.5 text-sm font-medium transition hover:bg-white/[0.04]"
             >
-              Buat Invoice Baru
+              {t("createNewInvoice")}
             </button>
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            Pembayaran diverifikasi otomatis via API. Saldo langsung masuk setelah bayar.
+            {t("qrisVerifyNote")}
           </p>
         </div>
       </div>
@@ -541,12 +542,11 @@ export function WalletTopUpForm({
         <div className="flex items-center gap-2">
           <MessageCircleIcon className="h-4 w-4 text-accent" />
           <label htmlFor="wa-input" className="text-sm font-semibold text-foreground">
-            Nomor WhatsApp <span className="text-accent">(Wajib)</span>
+            {t("waLabel")} <span className="text-accent">{t("waRequired")}</span>
           </label>
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Nomor ini hanya kami gunakan jika ada masalah pembayaran, saldo tertunda,
-          permintaan refund, atau kami perlu menghubungimu terkait transaksi.
+          {t("waDesc")}
         </p>
         <div className="relative">
           <input
@@ -575,31 +575,31 @@ export function WalletTopUpForm({
         <div className="rounded-xl border border-green-500/20 bg-green-500/[0.06] p-4 space-y-2.5">
           <div className="flex items-center gap-2 text-sm font-medium text-green-400">
             <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-            <span>Nomor WhatsApp-mu hanya digunakan untuk dukungan transaksi.</span>
+            <span>{t("waTrustTitle")}</span>
           </div>
           <p className="text-xs text-muted-foreground pl-6">
-            Kami akan menghubungimu hanya jika:
+            {t("waTrustIntro")}
           </p>
           <ul className="space-y-1 pl-6 text-xs text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-green-400/70" />
-              Verifikasi pembayaran diperlukan
+              {t("waTrustPoint1")}
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-green-400/70" />
-              Saldomu belum masuk
+              {t("waTrustPoint2")}
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-green-400/70" />
-              Perlu memproses refund
+              {t("waTrustPoint3")}
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-green-400/70" />
-              Ada masalah dengan transaksimu
+              {t("waTrustPoint4")}
             </li>
           </ul>
           <p className="text-xs text-muted-foreground/80 pl-6 pt-1">
-            Kami tidak pernah menggunakan nomor WhatsApp-mu untuk marketing, iklan, atau spam.
+            {t("waTrustNoSpam")}
           </p>
         </div>
       </section>
@@ -608,7 +608,7 @@ export function WalletTopUpForm({
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <CoinsIcon className="h-4 w-4 text-accent" />
-          <h3 className="text-sm font-semibold text-foreground">Jumlah Kredit</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("amountTitle")}</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -637,7 +637,7 @@ export function WalletTopUpForm({
                   {p} <span className="text-xs font-semibold text-muted-foreground">{TOKS_LABEL}</span>
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Rp{(p * IDR_PER_TOKS).toLocaleString("id-ID")}
+                  Rp{(p * IDR_PER_TOKS).toLocaleString(locale)}
                 </div>
               </button>
             );
@@ -646,7 +646,7 @@ export function WalletTopUpForm({
 
         {/* Custom amount */}
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Atau masukkan jumlah custom</p>
+          <p className="text-xs text-muted-foreground">{t("customAmountHint")}</p>
           <div className="flex items-stretch rounded-xl border border-white/[0.08] bg-background focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/30 transition">
             <input
               type="number"
@@ -661,7 +661,7 @@ export function WalletTopUpForm({
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString("id-ID")}
+            1 {TOKS_LABEL} = Rp{IDR_PER_TOKS.toLocaleString(locale)}
           </p>
         </div>
 
@@ -669,11 +669,11 @@ export function WalletTopUpForm({
         {hasValidAmount && (
           <div className="flex items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-gradient-to-r from-accent/[0.06] to-transparent px-4 py-3 animate-fade-up">
             <span className="text-lg font-bold text-accent">
-              {parsedToks.toLocaleString("id-ID")} {TOKS_LABEL}
+              {parsedToks.toLocaleString(locale)} {TOKS_LABEL}
             </span>
             <span className="text-muted-foreground">=</span>
             <span className="text-lg font-bold">
-              Rp{previewIdr.toLocaleString("id-ID")}
+              Rp{previewIdr.toLocaleString(locale)}
             </span>
           </div>
         )}
@@ -683,7 +683,7 @@ export function WalletTopUpForm({
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <ZapIcon className="h-4 w-4 text-accent" />
-          <h3 className="text-sm font-semibold text-foreground">Metode Pembayaran</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("methodTitle")}</h3>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -708,7 +708,7 @@ export function WalletTopUpForm({
               </span>
               <span className="text-sm font-semibold">QRIS</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mb-1.5">Mendukung:</p>
+            <p className="text-[11px] text-muted-foreground mb-1.5">{t("supportsLabel")}</p>
             <div className="flex flex-wrap gap-1.5 mb-3">
               {["GoPay", "OVO", "DANA", "ShopeePay", "Bank Transfer"].map((w) => (
                 <span key={w} className="rounded-md border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -718,7 +718,7 @@ export function WalletTopUpForm({
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-green-400">
               <CheckIcon className="h-3.5 w-3.5" />
-              Konfirmasi instan
+              {t("qrisInstantConfirm")}
             </div>
           </button>
 
@@ -744,7 +744,7 @@ export function WalletTopUpForm({
                 </span>
                 <span className="text-sm font-semibold">USDT (BEP20)</span>
               </div>
-              <p className="text-[11px] text-muted-foreground mb-1.5">Mendukung:</p>
+              <p className="text-[11px] text-muted-foreground mb-1.5">{t("supportsLabel")}</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {["Binance", "OKX", "Bybit"].map((w) => (
                   <span key={w} className="rounded-md border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -754,48 +754,46 @@ export function WalletTopUpForm({
               </div>
               <div className="flex items-center gap-1.5 text-[11px] font-medium text-green-400">
                 <CheckIcon className="h-3.5 w-3.5" />
-                Tanpa biaya gateway
+                {t("bscNoGatewayFee")}
               </div>
             </button>
           )}
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          {method === "BSC"
-            ? "Bayar langsung dengan USDT di jaringan BEP20 (BSC). Tanpa minimum gateway, tanpa biaya. Jumlah USDT dihitung saat order dibuat (kurs real-time)."
-            : "Bayar via QRIS Pakasir — kredit otomatis masuk setelah pembayaran terkonfirmasi."}
+          {method === "BSC" ? t("methodDescBsc") : t("methodDescQris")}
         </p>
       </section>
 
       {/* Payment Summary */}
       <section className="rounded-2xl border border-white/[0.08] bg-card-2 p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Ringkasan Pembayaran</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t("summaryTitle")}</h3>
         <div className="space-y-2.5 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Kredit</span>
+            <span className="text-muted-foreground">{t("creditLabel")}</span>
             <span className="font-semibold">
-              {hasValidAmount ? `${parsedToks.toLocaleString("id-ID")} ${TOKS_LABEL}` : "—"}
+              {hasValidAmount ? `${parsedToks.toLocaleString(locale)} ${TOKS_LABEL}` : "—"}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Harga</span>
+            <span className="text-muted-foreground">{t("priceLabel")}</span>
             <span className="font-semibold">
-              {hasValidAmount ? `Rp${previewIdr.toLocaleString("id-ID")}` : "—"}
+              {hasValidAmount ? `Rp${previewIdr.toLocaleString(locale)}` : "—"}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Metode Pembayaran</span>
+            <span className="text-muted-foreground">{t("methodTitle")}</span>
             <span className="font-semibold">{methodLabel}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Kamu Terima</span>
+            <span className="text-muted-foreground">{t("youReceiveLabel")}</span>
             <span className="font-semibold text-accent">
-              {hasValidAmount ? `${parsedToks.toLocaleString("id-ID")} ${TOKS_LABEL}` : "—"}
+              {hasValidAmount ? `${parsedToks.toLocaleString(locale)} ${TOKS_LABEL}` : "—"}
             </span>
           </div>
           <div className="h-px bg-white/[0.06]" />
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Estimasi Proses</span>
+            <span className="text-muted-foreground">{t("processingEstimateLabel")}</span>
             <span className="flex items-center gap-1.5 font-medium text-green-400">
               <ZapIcon className="h-3.5 w-3.5" />
               {processingEstimate}
@@ -825,11 +823,11 @@ export function WalletTopUpForm({
         {submitting ? (
           <>
             <SpinnerIcon className="h-5 w-5 animate-spin" />
-            Membuat Order...
+            {t("creatingOrder")}
           </>
         ) : (
           <>
-            Buat Order
+            {t("createOrder")}
             <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 transition-transform group-hover:translate-x-0.5">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
