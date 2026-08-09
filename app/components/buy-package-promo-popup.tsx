@@ -5,19 +5,24 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
 /**
- * Popup promo "Beli Paket lebih murah" untuk pengguna dashboard.
+ * Popup promo "Paket aktif 7 hari, lebih hemat dari PAYG" untuk pengguna
+ * dashboard.
  *
  * Menampilkan paket dengan nilai terbaik (highlight dari admin, atau token
  * per rupiah tertinggi) supaya user sadar ada alternatif yang lebih hemat
- * dibanding terus memakai saldo PAYG.
+ * dibanding terus memakai saldo PAYG — plus pengumuman bahwa semua paket
+ * kini aktif 7 hari.
  *
  * Frekuensi (sengaja tidak agresif):
  * - Muncul sekali per SNOOZE_MS (24 jam) per browser, dengan delay kecil
  *   setelah halaman termuat agar tidak menumpuk popup lain.
  * - Tidak tampil di halaman yang sudah berkaitan dengan pembelian paket
  *   (/dashboard/beli-paket, /checkout) — user sudah dalam alur beli.
+ *
+ * Key localStorage di-bump (suffix "7d") saat isi promo berubah besar supaya
+ * user yang sudah pernah menutup versi lama tetap melihat pengumuman baru.
  */
-const DISMISS_KEY = "9i_package_promo_dismissed_until";
+const DISMISS_KEY = "9i_package_promo_7d_dismissed_until";
 const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24 jam
 const SHOW_DELAY_MS = 3000;
 const EXCLUDED_PREFIXES = ["/dashboard/beli-paket", "/checkout"];
