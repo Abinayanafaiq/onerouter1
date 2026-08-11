@@ -145,11 +145,6 @@ export async function POST(request: Request) {
   }
 
   body.model = model.upstreamId;
-  // Upstream paket menolak parameter reasoning_effort (mis. "minimal") — buang agar tidak di-forward.
-  if ("reasoning_effort" in body) {
-    console.log(`[${ts()}] [v1/package/chat] drop reasoning_effort=${JSON.stringify(body.reasoning_effort)} key=${apiKey.id}`);
-    delete body.reasoning_effort;
-  }
   const isStream = body.stream === true;
   if (isStream) {
     const existing = body.stream_options;
