@@ -12,7 +12,7 @@ export const APP_TAGLINE = "Token AI Murah - Multi Model Premium";
  * checkUserRateLimit() in the v1 chat completions routes. Admin can override
  * or clear it (null/0 = unlimited) via the admin users API.
  */
-export const DEFAULT_USER_RATE_LIMIT_RPM = 15;
+export const DEFAULT_USER_RATE_LIMIT_RPM = 10;
 
 /**
  * Credit unit: TOKS.
