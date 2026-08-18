@@ -15,8 +15,13 @@
  */
 
 export const PROVIDER_MODEL_MAP = {
-  Alibaba: ["qwen3.7-plus", "qwen3-coder-next"],
-  DeepSeek: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-3.2"],
+  Alibaba: ["qwen3.7-plus", "qwen3-coder-next", "qwen3.8-max"],
+  DeepSeek: [
+    "deepseek-v4-flash",
+    "deepseek-v4-pro",
+    "deepseek-v4-pro-0813",
+    "deepseek-3.2",
+  ],
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast"],
   MiniMax: ["minimax-m3"],
   "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast", "kimi-k3"],
@@ -256,5 +261,29 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 15,
+  },
+  {
+    modelId: "deepseek-v4-pro-0813",
+    masterId: "deepseek-v4-pro-0813",
+    name: "DeepSeek V4 Pro 0813",
+    provider: "DeepSeek",
+    description: "DeepSeek V4 Pro snapshot 0813 — coding & reasoning kelas atas",
+    contextWindow: "1M",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 16,
+  },
+  {
+    modelId: "qwen3.8-max",
+    masterId: "qwen3.8-max",
+    name: "Qwen 8 Max",
+    provider: "Alibaba",
+    description: "Qwen 8 Max — model flagship Alibaba for chat and general tasks",
+    contextWindow: "200K",
+    supportsText: true,
+    supportsImages: true,
+    supportsStreaming: true,
+    sort: 17,
   },
 ];
