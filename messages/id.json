@@ -681,7 +681,7 @@
     "processing": "Memproses…",
     "regenerateButton": "Regenerasi Key Baru",
     "renewButton": "Perpanjang Paket",
-    "renewNote": "API key tetap sama — kuota & masa aktif ditambahkan."
+    "renewNote": "API key tetap sama. Sisa kuota hangus — kuota dimulai ulang dari penuh & masa aktif diperpanjang."
   },
   "BuyPackage": {
     "eyebrow": "Beli paket",

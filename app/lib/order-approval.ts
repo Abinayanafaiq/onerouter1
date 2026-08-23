@@ -55,8 +55,9 @@ export async function approvePaidOrder(
     const isWalletTopUp = order.packageId === WALLET_TOPUP_PACKAGE_ID;
     const isTokenPackage = pkg.productType === "TOKEN_PACKAGE";
     // Renew: order yang apiKeyId-nya sudah terisi sejak dibuat adalah
-    // perpanjangan key paket lama — kuota & masa aktif ditambahkan ke key
-    // yang sama, TIDAK menerbitkan key baru.
+    // perpanjangan key paket lama — masa aktif ditambahkan ke key yang sama
+    // dan kuota DIRESET penuh (sisa kuota lama hangus), TIDAK menerbitkan
+    // key baru.
     const isRenewal = !isWalletTopUp && isTokenPackage && order.apiKeyId != null;
 
     // Pre-generate API key material for package orders (outside the tx is fine;
@@ -102,10 +103,14 @@ export async function approvePaidOrder(
           // tanggal berakhirnya; yang sudah kedaluwarsa mulai dari sekarang.
           const base = Math.max(now.getTime(), existing.expiresAt?.getTime() ?? 0);
           const renewedExpiresAt = new Date(base + durationHours * 60 * 60 * 1000);
+          // Sisa kuota lama HANGUS (tidak ditumpuk): kuota direset penuh
+          // sesuai paket dan pemakaian di-nol-kan — persis seperti membeli
+          // paket baru, tapi API key tetap sama.
           await tx.apiKey.update({
             where: { id: existing.id },
             data: {
-              tokenQuota: { increment: quota },
+              tokenQuota: quota,
+              tokenUsed: 0,
               expiresAt: renewedExpiresAt,
             },
           });
@@ -113,11 +118,11 @@ export async function approvePaidOrder(
             where: { id: order.id },
             data: {
               expiresAt: renewedExpiresAt,
-              adminNote: `Renew paket diaktifkan via ${paymentMethodLabel}`,
+              adminNote: `Renew paket diaktifkan via ${paymentMethodLabel} (kuota direset)`,
             },
           });
           console.log(
-            `[approvePaidOrder] RENEWED key=${existing.id} order=${orderId} +quota=${quota.toString()} expiresAt=${renewedExpiresAt.toISOString()}`,
+            `[approvePaidOrder] RENEWED key=${existing.id} order=${orderId} quota-reset=${quota.toString()} expiresAt=${renewedExpiresAt.toISOString()}`,
           );
           return { alreadyProcessed: false as const, newBalance: null };
         }

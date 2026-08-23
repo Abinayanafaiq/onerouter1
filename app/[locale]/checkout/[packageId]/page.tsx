@@ -47,6 +47,8 @@ export default async function CheckoutPage({
     prefix: string | null;
     last4: string | null;
     expiresAt: Date | null;
+    tokenQuota: bigint;
+    tokenUsed: bigint;
   } | null = null;
   if (renewKeyId && userId) {
     const key = await prisma.apiKey.findUnique({
@@ -58,6 +60,8 @@ export default async function CheckoutPage({
         prefix: true,
         last4: true,
         expiresAt: true,
+        tokenQuota: true,
+        tokenUsed: true,
       },
     });
     if (key && key.userId === userId && key.billingMode === "TOKEN_PACKAGE") {
@@ -166,24 +170,39 @@ export default async function CheckoutPage({
           )}
 
           {renewalKey && (
-            <div className="mt-3.5 rounded-xl border border-accent/25 bg-accent/[0.07] px-3.5 py-2.5">
-              <p className="text-xs leading-relaxed text-foreground">
-                Perpanjangan paket — <span className="font-semibold text-accent">API key Anda tidak berubah</span>{" "}
-                (<code className="font-mono">{renewalKey.prefix || "sk_live_"}••••••{renewalKey.last4 || "••••"}</code>).
-                Kuota dan masa aktif akan ditambahkan ke key tersebut, jadi tidak perlu mengubah
-                konfigurasi di aplikasi Anda.
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Masa aktif sekarang:{" "}
-                {renewalKey.expiresAt
-                  ? renewalKey.expiresAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })
-                  : "tanpa batas"}
-                {" "}→ ditambah {pkg.durationDays} hari
-                {renewalKey.expiresAt && renewalKey.expiresAt > new Date()
-                  ? " dari tanggal berakhir tersebut"
-                  : " mulai sekarang"}
-                .
-              </p>
+            <div className="mt-3.5 space-y-2.5">
+              <div className="rounded-xl border border-accent/25 bg-accent/[0.07] px-3.5 py-2.5">
+                <p className="text-xs leading-relaxed text-foreground">
+                  Perpanjangan paket — <span className="font-semibold text-accent">API key Anda tidak berubah</span>{" "}
+                  (<code className="font-mono">{renewalKey.prefix || "sk_live_"}••••••{renewalKey.last4 || "••••"}</code>),
+                  jadi tidak perlu mengubah konfigurasi di aplikasi Anda.
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Masa aktif sekarang:{" "}
+                  {renewalKey.expiresAt
+                    ? renewalKey.expiresAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })
+                    : "tanpa batas"}
+                  {" "}→ ditambah {pkg.durationDays} hari
+                  {renewalKey.expiresAt && renewalKey.expiresAt > new Date()
+                    ? " dari tanggal berakhir tersebut"
+                    : " mulai sekarang"}
+                  .
+                </p>
+              </div>
+              <div className="rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-2.5">
+                <p className="text-xs leading-relaxed text-amber-300">
+                  Perhatian: sisa kuota saat ini (
+                  <span className="font-semibold">
+                    {Number(
+                      renewalKey.tokenQuota > renewalKey.tokenUsed
+                        ? renewalKey.tokenQuota - renewalKey.tokenUsed
+                        : 0n,
+                    ).toLocaleString("id-ID")} token
+                  </span>
+                  ) akan <span className="font-semibold">hangus</span> — kuota dimulai ulang
+                  dari penuh sesuai paket, tidak ditumpuk.
+                </p>
+              </div>
             </div>
           )}
 
@@ -193,7 +212,7 @@ export default async function CheckoutPage({
             </svg>
             <p className="text-xs text-muted-foreground">
               {renewalKey
-                ? "Kuota & masa aktif otomatis ditambahkan setelah pembayaran terkonfirmasi."
+                ? "Kuota kembali penuh & masa aktif diperpanjang otomatis setelah pembayaran terkonfirmasi."
                 : "API key & kuota otomatis aktif setelah pembayaran terkonfirmasi."}
             </p>
           </div>

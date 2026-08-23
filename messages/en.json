@@ -681,7 +681,7 @@
     "processing": "Processing…",
     "regenerateButton": "Regenerate New Key",
     "renewButton": "Renew Package",
-    "renewNote": "Same API key — quota & active period are topped up."
+    "renewNote": "Same API key. Remaining quota is forfeited — quota restarts at full & active period is extended."
   },
   "BuyPackage": {
     "eyebrow": "Buy package",

@@ -253,7 +253,7 @@ export function CheckoutForm({
         <h2 className="gradient-text mt-4 text-xl font-bold tracking-tight">Pembayaran Berhasil</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {renewApiKeyId
-            ? "Paket berhasil diperpanjang — kuota & masa aktif sudah ditambahkan ke API key Anda yang sama."
+            ? "Paket berhasil diperpanjang — kuota kembali penuh & masa aktif diperpanjang pada API key Anda yang sama."
             : "API key telah dibuat dan siap dipakai."}
         </p>
         <button
@@ -558,7 +558,7 @@ export function CheckoutForm({
             <>
               <p className="text-sm text-muted-foreground">
                 {renewApiKeyId
-                  ? "Bayar via QRIS. Setelah pembayaran terkonfirmasi, kuota & masa aktif otomatis ditambahkan ke API key Anda yang sekarang."
+                  ? "Bayar via QRIS. Setelah pembayaran terkonfirmasi, kuota diisi ulang penuh & masa aktif diperpanjang pada API key Anda yang sekarang. Sisa kuota lama hangus."
                   : "Bayar via QRIS. Setelah pembayaran terkonfirmasi, API key otomatis dibuat."}
               </p>
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-sm">
