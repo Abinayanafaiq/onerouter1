@@ -1,4 +1,5 @@
 import { auth } from "@/app/lib/auth";
+import { prisma } from "@/app/lib/prisma";
 import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { isPakasirConfigured } from "@/app/lib/pakasir";
@@ -14,8 +15,10 @@ export const metadata: Metadata = {
 
 export default async function CheckoutPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ packageId: string; locale: string }>;
+  searchParams: Promise<{ renew?: string }>;
 }) {
   const session = await auth();
   const locale = await getLocale();
@@ -26,10 +29,52 @@ export default async function CheckoutPage({
   }
 
   const { packageId } = await params;
+  const { renew } = await searchParams;
+  const renewKeyId = renew?.trim() || null;
+
   const pkg = await findPackage(packageId);
   if (!pkg) {
     redirect({ href: "/pricing", locale });
     return null;
+  }
+
+  const userId = (session.user as { id?: string }).id;
+
+  // Mode renew: ?renew=<apiKeyId> — perpanjang key paket yang sama.
+  // Key harus milik user, bertipe TOKEN_PACKAGE, dan berasal dari paket ini.
+  let renewalKey: {
+    id: string;
+    prefix: string | null;
+    last4: string | null;
+    expiresAt: Date | null;
+  } | null = null;
+  if (renewKeyId && userId) {
+    const key = await prisma.apiKey.findUnique({
+      where: { id: renewKeyId },
+      select: {
+        id: true,
+        userId: true,
+        billingMode: true,
+        prefix: true,
+        last4: true,
+        expiresAt: true,
+      },
+    });
+    if (key && key.userId === userId && key.billingMode === "TOKEN_PACKAGE") {
+      const source = await prisma.order.findFirst({
+        where: { apiKeyId: key.id },
+        orderBy: { createdAt: "asc" },
+        select: { packageId: true },
+      });
+      if (source && source.packageId === packageId) {
+        renewalKey = key;
+      }
+    }
+    if (!renewalKey) {
+      // Target renew tidak valid — kembalikan ke daftar paket user.
+      redirect({ href: "/dashboard/packages", locale });
+      return null;
+    }
   }
 
   const [pakasirConfigured, bscConfigured] = await Promise.all([
@@ -61,17 +106,23 @@ export default async function CheckoutPage({
       <main className="flex-1 container mx-auto px-4 py-12 max-w-lg">
         {/* Back link */}
         <Link
-          href="/pricing"
+          href={renewalKey ? "/dashboard/packages" : "/pricing"}
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
             <path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Kembali ke Paket
+          {renewalKey ? "Kembali ke Paket Saya" : "Kembali ke Paket"}
         </Link>
 
-        <h1 className="gradient-text mt-4 text-3xl font-bold tracking-tight">Checkout</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Selesaikan pembayaran untuk mengaktifkan paket Anda.</p>
+        <h1 className="gradient-text mt-4 text-3xl font-bold tracking-tight">
+          {renewalKey ? "Perpanjang Paket" : "Checkout"}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {renewalKey
+            ? "Selesaikan pembayaran untuk memperpanjang paket Anda."
+            : "Selesaikan pembayaran untuk mengaktifkan paket Anda."}
+        </p>
 
         {/* Order summary card */}
         <div className="glass relative mt-6 overflow-hidden rounded-2xl p-5">
@@ -114,12 +165,36 @@ export default async function CheckoutPage({
             </div>
           )}
 
+          {renewalKey && (
+            <div className="mt-3.5 rounded-xl border border-accent/25 bg-accent/[0.07] px-3.5 py-2.5">
+              <p className="text-xs leading-relaxed text-foreground">
+                Perpanjangan paket — <span className="font-semibold text-accent">API key Anda tidak berubah</span>{" "}
+                (<code className="font-mono">{renewalKey.prefix || "sk_live_"}••••••{renewalKey.last4 || "••••"}</code>).
+                Kuota dan masa aktif akan ditambahkan ke key tersebut, jadi tidak perlu mengubah
+                konfigurasi di aplikasi Anda.
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Masa aktif sekarang:{" "}
+                {renewalKey.expiresAt
+                  ? renewalKey.expiresAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })
+                  : "tanpa batas"}
+                {" "}→ ditambah {pkg.durationDays} hari
+                {renewalKey.expiresAt && renewalKey.expiresAt > new Date()
+                  ? " dari tanggal berakhir tersebut"
+                  : " mulai sekarang"}
+                .
+              </p>
+            </div>
+          )}
+
           <div className="mt-3.5 flex items-center gap-2 rounded-xl border border-accent/15 bg-accent/[0.05] px-3.5 py-2.5">
             <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-accent">
               <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13L13 2Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p className="text-xs text-muted-foreground">
-              API key & kuota otomatis aktif setelah pembayaran terkonfirmasi.
+              {renewalKey
+                ? "Kuota & masa aktif otomatis ditambahkan setelah pembayaran terkonfirmasi."
+                : "API key & kuota otomatis aktif setelah pembayaran terkonfirmasi."}
             </p>
           </div>
         </div>
@@ -133,6 +208,7 @@ export default async function CheckoutPage({
             btcpayConfigured={PACKAGE_CRYPTO_ENABLED && isBtcpayConfigured()}
             pakasirConfigured={pakasirConfigured}
             bscConfigured={PACKAGE_CRYPTO_ENABLED && bscConfigured}
+            renewApiKeyId={renewalKey?.id ?? null}
           />
           <p className="mt-4 text-center text-[12px] text-muted-foreground">
             {tt.rich("agreePurchase", {

@@ -27,6 +27,7 @@ export function CheckoutForm({
   btcpayConfigured,
   pakasirConfigured,
   bscConfigured,
+  renewApiKeyId,
 }: {
   packageId: string;
   amount: number;
@@ -34,11 +35,17 @@ export function CheckoutForm({
   btcpayConfigured: boolean;
   pakasirConfigured: boolean;
   bscConfigured: boolean;
+  renewApiKeyId?: string | null;
 }) {
   const router = useRouter();
+  // Renew hanya didukung via QRIS (endpoint crypto belum meneruskan
+  // renewApiKeyId) — sembunyikan tab crypto supaya tidak terbit key baru
+  // tanpa disadari user yang berniat memperpanjang key lama.
+  const cryptoEnabled = btcpayConfigured && !renewApiKeyId;
+  const bscEnabled = bscConfigured && !renewApiKeyId;
   const defaultTab: "PAKASIR" | "CRYPTO" | "BSC" = pakasirConfigured
     ? "PAKASIR"
-    : bscConfigured
+    : bscEnabled
       ? "BSC"
       : "CRYPTO";
   const [method, setMethod] = useState<"PAKASIR" | "CRYPTO" | "BSC">(defaultTab);
@@ -201,7 +208,11 @@ export function CheckoutForm({
       const res = await fetch("/api/orders/pakasir/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId, whatsapp: whatsapp.trim() }),
+        body: JSON.stringify({
+          packageId,
+          whatsapp: whatsapp.trim(),
+          ...(renewApiKeyId ? { renewApiKeyId } : {}),
+        }),
       });
       const data = (await res.json()) as {
         success: boolean;
@@ -241,13 +252,15 @@ export function CheckoutForm({
         </div>
         <h2 className="gradient-text mt-4 text-xl font-bold tracking-tight">Pembayaran Berhasil</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          API key telah dibuat dan siap dipakai.
+          {renewApiKeyId
+            ? "Paket berhasil diperpanjang — kuota & masa aktif sudah ditambahkan ke API key Anda yang sama."
+            : "API key telah dibuat dan siap dipakai."}
         </p>
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push(renewApiKeyId ? "/dashboard/packages" : "/dashboard")}
           className="btn-accent mt-6 block w-full rounded-xl py-3 text-sm font-medium"
         >
-          Lihat API Key di Dashboard
+          {renewApiKeyId ? "Lihat Paket Saya" : "Lihat API Key di Dashboard"}
         </button>
       </div>
     );
@@ -319,7 +332,7 @@ export function CheckoutForm({
               QRIS
             </button>
           )}
-          {bscConfigured && (
+          {bscEnabled && (
             <button
               type="button"
               onClick={() => setMethod("BSC")}
@@ -332,7 +345,7 @@ export function CheckoutForm({
               USDT BEP20
             </button>
           )}
-          {btcpayConfigured && (
+          {cryptoEnabled && (
             <button
               type="button"
               onClick={() => setMethod("CRYPTO")}
@@ -348,13 +361,13 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {!showPakasirTab && !btcpayConfigured && !bscConfigured && (
+      {!showPakasirTab && !cryptoEnabled && !bscEnabled && (
         <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
           Pembayaran belum dikonfigurasi. Hubungi admin.
         </div>
       )}
 
-      {method === "CRYPTO" && btcpayConfigured && (
+      {method === "CRYPTO" && cryptoEnabled && (
         <form onSubmit={handleCrypto} className="glass rounded-2xl p-5 space-y-4">
           <p className="text-sm text-muted-foreground">
             Bayar dengan crypto via BTCPay. Kurs otomatis dihitung saat pembayaran.
@@ -388,7 +401,7 @@ export function CheckoutForm({
         </form>
       )}
 
-      {method === "BSC" && bscConfigured && (
+      {method === "BSC" && bscEnabled && (
         <div className="space-y-3">
           {bscResult ? (
             <div className="glass rounded-2xl p-5 space-y-3">
@@ -544,7 +557,9 @@ export function CheckoutForm({
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                Bayar via QRIS. Setelah pembayaran terkonfirmasi, API key otomatis dibuat.
+                {renewApiKeyId
+                  ? "Bayar via QRIS. Setelah pembayaran terkonfirmasi, kuota & masa aktif otomatis ditambahkan ke API key Anda yang sekarang."
+                  : "Bayar via QRIS. Setelah pembayaran terkonfirmasi, API key otomatis dibuat."}
               </p>
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-sm">
                 <p>

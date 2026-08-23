@@ -679,7 +679,9 @@
     "copied": "✓ Tersalin",
     "keyNotStored": "Key asli tidak tersimpan (pernah di-regenerate), jadi tidak bisa ditampilkan.",
     "processing": "Memproses…",
-    "regenerateButton": "Regenerasi Key Baru"
+    "regenerateButton": "Regenerasi Key Baru",
+    "renewButton": "Perpanjang Paket",
+    "renewNote": "API key tetap sama — kuota & masa aktif ditambahkan."
   },
   "BuyPackage": {
     "eyebrow": "Beli paket",

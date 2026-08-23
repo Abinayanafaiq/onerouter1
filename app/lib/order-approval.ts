@@ -54,13 +54,17 @@ export async function approvePaidOrder(
     const now = new Date();
     const isWalletTopUp = order.packageId === WALLET_TOPUP_PACKAGE_ID;
     const isTokenPackage = pkg.productType === "TOKEN_PACKAGE";
+    // Renew: order yang apiKeyId-nya sudah terisi sejak dibuat adalah
+    // perpanjangan key paket lama — kuota & masa aktif ditambahkan ke key
+    // yang sama, TIDAK menerbitkan key baru.
+    const isRenewal = !isWalletTopUp && isTokenPackage && order.apiKeyId != null;
 
     // Pre-generate API key material for package orders (outside the tx is fine;
-    // it's only persisted if the tx commits).
+    // it's only persisted if the tx commits). Renewal orders skip this entirely.
     const quota = order.tokenQuotaSnapshot ?? pkg.tokenQuota;
     const durationHours = order.durationHoursSnapshot ?? pkg.durationDays * 24;
     const expiresAt = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
-    const generated = isWalletTopUp ? null : generateApiKey();
+    const generated = isWalletTopUp || isRenewal ? null : generateApiKey();
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Idempotency guard: claim the order. Only one caller can flip
@@ -82,8 +86,44 @@ export async function approvePaidOrder(
       }
 
       // Token packages grant quota only. They must never credit the PAYG wallet.
-      if (isTokenPackage && generated) {
-        const apiKey = await tx.apiKey.create({
+      if (isTokenPackage) {
+        // RENEW: perpanjang key lama. Lempar error di sini me-rollback
+        // transaksi — order tetap PENDING dan bisa dicoba ulang.
+        if (isRenewal && order.apiKeyId) {
+          const existing = await tx.apiKey.findUnique({ where: { id: order.apiKeyId } });
+          if (
+            !existing ||
+            existing.userId !== order.userId ||
+            existing.billingMode !== "TOKEN_PACKAGE"
+          ) {
+            throw new Error("Renewal target key is invalid");
+          }
+          // Masa aktif ditumpuk: paket yang masih aktif diperpanjang dari
+          // tanggal berakhirnya; yang sudah kedaluwarsa mulai dari sekarang.
+          const base = Math.max(now.getTime(), existing.expiresAt?.getTime() ?? 0);
+          const renewedExpiresAt = new Date(base + durationHours * 60 * 60 * 1000);
+          await tx.apiKey.update({
+            where: { id: existing.id },
+            data: {
+              tokenQuota: { increment: quota },
+              expiresAt: renewedExpiresAt,
+            },
+          });
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              expiresAt: renewedExpiresAt,
+              adminNote: `Renew paket diaktifkan via ${paymentMethodLabel}`,
+            },
+          });
+          console.log(
+            `[approvePaidOrder] RENEWED key=${existing.id} order=${orderId} +quota=${quota.toString()} expiresAt=${renewedExpiresAt.toISOString()}`,
+          );
+          return { alreadyProcessed: false as const, newBalance: null };
+        }
+
+        if (generated) {
+          const apiKey = await tx.apiKey.create({
           data: {
             userId: order.userId,
             key: generated.key,
@@ -114,6 +154,7 @@ export async function approvePaidOrder(
           },
         });
         return { alreadyProcessed: false as const, newBalance: null };
+        }
       }
 
       // Legacy packages retain their historical wallet-credit behavior.

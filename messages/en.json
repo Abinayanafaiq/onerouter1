@@ -679,7 +679,9 @@
     "copied": "✓ Copied",
     "keyNotStored": "The original key is not stored (it was regenerated before), so it cannot be revealed.",
     "processing": "Processing…",
-    "regenerateButton": "Regenerate New Key"
+    "regenerateButton": "Regenerate New Key",
+    "renewButton": "Renew Package",
+    "renewNote": "Same API key — quota & active period are topped up."
   },
   "BuyPackage": {
     "eyebrow": "Buy package",

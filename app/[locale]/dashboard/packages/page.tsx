@@ -68,6 +68,10 @@ export default async function PackagesPage() {
     prisma.apiKey.findMany({
       where: { userId, billingMode: "TOKEN_PACKAGE" },
       orderBy: { createdAt: "desc" },
+      include: {
+        // Order pertama yang menerbitkan key ini = paket asal (untuk renew).
+        orders: { orderBy: { createdAt: "asc" }, take: 1, select: { packageId: true } },
+      },
     }),
     prisma.order.findMany({
       where: {
@@ -83,6 +87,23 @@ export default async function PackagesPage() {
     }),
     getEnabledPackageModels(),
   ]);
+
+  // Paket yang masih bisa di-renew (aktif & bertipe TOKEN_PACKAGE), dipetakan
+  // per id untuk tombol Renew pada setiap kartu key.
+  const sourcePackageIds = [
+    ...new Set(
+      keys
+        .map((key) => key.orders[0]?.packageId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const renewablePackages = sourcePackageIds.length
+    ? await prisma.package.findMany({
+        where: { id: { in: sourcePackageIds }, isActive: true, productType: "TOKEN_PACKAGE" },
+        select: { id: true, price: true },
+      })
+    : [];
+  const renewableById = new Map(renewablePackages.map((p) => [p.id, p]));
 
   const now = new Date();
   const activeKeys = keys.filter((key) =>
@@ -251,6 +272,25 @@ export default async function PackagesPage() {
                       <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t("baseUrlLabel")}</div>
                       <code className="mt-1.5 block break-all text-[11px] text-accent">{PACKAGE_BASE_URL}</code>
                     </div>
+
+                    {(() => {
+                      const sourcePackageId = key.orders[0]?.packageId;
+                      const renewPkg = sourcePackageId ? renewableById.get(sourcePackageId) : undefined;
+                      if (!sourcePackageId || !renewPkg) return null;
+                      return (
+                        <div className="mt-4 border-t border-white/[0.06] pt-4">
+                          <Link
+                            href={`/checkout/${sourcePackageId}?renew=${key.id}`}
+                            className="inline-flex w-full items-center justify-center rounded-xl border border-accent/25 bg-accent/[0.08] px-4 py-2.5 text-xs font-semibold text-accent transition hover:bg-accent/[0.14]"
+                          >
+                            {t("renewButton")} · Rp{renewPkg.price.toLocaleString(locale)}
+                          </Link>
+                          <p className="mt-1.5 text-center text-[10px] leading-relaxed text-muted-foreground">
+                            {t("renewNote")}
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </article>
               );

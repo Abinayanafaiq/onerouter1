@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
+import { validateRenewalKey } from "@/app/lib/package-renewal";
 import {
   createTransaction,
   buildPaymentUrl,
@@ -32,11 +33,16 @@ export async function POST(request: Request) {
         },
       );
     }
-    const body = (await request.json()) as { packageId: string; whatsapp?: string };
+    const body = (await request.json()) as {
+      packageId: string;
+      whatsapp?: string;
+      renewApiKeyId?: string;
+    };
 
     if (!body.packageId) {
       return NextResponse.json({ success: false, error: "Package ID diperlukan" }, { status: 400 });
     }
+
     if (!body.whatsapp || !body.whatsapp.trim()) {
       return NextResponse.json({ success: false, error: "Nomor WhatsApp wajib diisi" }, { status: 400 });
     }
@@ -45,7 +51,29 @@ export async function POST(request: Request) {
     if (!pkg) {
       return NextResponse.json({ success: false, error: "Paket tidak ditemukan" }, { status: 404 });
     }
-    if (pkg.stock <= 0) {
+
+    // Renew: perpanjang key paket lama (apiKeyId terisi sejak order dibuat).
+    // Tidak menerbitkan key baru, jadi tidak memeriksa/mengurangi stok.
+    const renewApiKeyId =
+      typeof body.renewApiKeyId === "string" && body.renewApiKeyId.trim()
+        ? body.renewApiKeyId.trim()
+        : null;
+    if (renewApiKeyId) {
+      if (pkg.productType !== "TOKEN_PACKAGE") {
+        return NextResponse.json(
+          { success: false, error: "Hanya paket token yang bisa diperpanjang" },
+          { status: 400 },
+        );
+      }
+      const renewal = await validateRenewalKey({
+        userId,
+        apiKeyId: renewApiKeyId,
+        packageId: body.packageId,
+      });
+      if (!renewal.ok) {
+        return NextResponse.json({ success: false, error: renewal.error }, { status: 400 });
+      }
+    } else if (pkg.stock <= 0) {
       return NextResponse.json({ success: false, error: "Stok habis" }, { status: 400 });
     }
 
@@ -65,6 +93,7 @@ export async function POST(request: Request) {
         paymentMethod: "PAKASIR",
         pakasirMethod: "qris",
         status: "PENDING",
+        apiKeyId: renewApiKeyId,
         productTypeSnapshot: pkg.productType,
         tokenQuotaSnapshot: pkg.tokenQuota,
         durationHoursSnapshot: pkg.durationDays * 24,
@@ -76,11 +105,12 @@ export async function POST(request: Request) {
       data: { whatsapp: body.whatsapp.trim() },
     }).catch(() => {});
 
-    await prisma.package.update({
-      where: { id: body.packageId },
-      data: { stock: { decrement: 1 } },
-    });
-
+    if (!renewApiKeyId) {
+      await prisma.package.update({
+        where: { id: body.packageId },
+        data: { stock: { decrement: 1 } },
+      });
+    }
     // Hybrid: buat transaksi via API supaya transactiondetail bisa cek status,
     // lalu bangun URL Pakasir untuk user bayar di halaman Pakasir.
     const createResult = await createTransaction({
@@ -101,10 +131,13 @@ export async function POST(request: Request) {
         where: { id: order.id },
         data: { status: "CANCELLED", adminNote: createResult.error },
       });
-      await prisma.package.update({
-        where: { id: body.packageId },
-        data: { stock: { increment: 1 } },
-      });
+      // Renew tidak pernah mengurangi stok, jadi tidak ada yang dikembalikan.
+      if (!renewApiKeyId) {
+        await prisma.package.update({
+          where: { id: body.packageId },
+          data: { stock: { increment: 1 } },
+        });
+      }
       return NextResponse.json({ success: false, error: createResult.error }, { status: 502 });
     }
 
