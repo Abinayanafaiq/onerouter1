@@ -6,6 +6,7 @@ import { WalletAdjustForm } from "./adjust-form";
 import { RateLimitForm } from "./rate-limit-form";
 import { WhatsAppForm } from "./whatsapp-form";
 import { DeleteUserForm } from "./delete-user-form";
+import { GrantPackageForm } from "./grant-package-form";
 
 export default async function AdminWalletDetailPage({
   params,
@@ -35,6 +36,16 @@ export default async function AdminWalletDetailPage({
   const totalInput = usageAgg._sum.inputTokens || 0;
   const totalOutput = usageAgg._sum.outputTokens || 0;
   const totalRequests = usageAgg._count || 0;
+
+  // Paket yang bisa diberikan manual ke user. tokenQuota (BigInt) tidak bisa
+  // melewati boundary server->client, jadi di-string-kan di sini.
+  const grantablePackages = (
+    await prisma.package.findMany({
+      where: { isActive: true },
+      orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true, productType: true, tokenQuota: true, durationDays: true },
+    })
+  ).map((p) => ({ ...p, tokenQuota: p.tokenQuota.toString() }));
 
   return (
     <div className="space-y-4 max-w-lg">
@@ -79,6 +90,9 @@ export default async function AdminWalletDetailPage({
 
       {/* Rate limit */}
       <RateLimitForm userId={userId} currentLimit={user.rateLimit} />
+
+      {/* Berikan paket manual tanpa pembayaran */}
+      <GrantPackageForm userId={userId} packages={grantablePackages} />
 
       {/* Adjust balance */}
       <WalletAdjustForm userId={userId} currentBalance={balance} />
