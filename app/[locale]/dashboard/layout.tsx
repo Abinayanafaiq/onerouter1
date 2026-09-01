@@ -7,7 +7,7 @@ import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { getAllPackages } from "@/app/lib/packages";
 import { DashboardShell } from "@/app/components/dashboard-shell";
-import { PakasirPendingVerifier } from "@/app/components/pending-verifier";
+import { SumopodPendingVerifier } from "@/app/components/pending-verifier";
 import { CompatNoticePopup } from "@/app/components/compat-notice-popup";
 import { BuyPackagePromoPopup } from "@/app/components/buy-package-promo-popup";
 
@@ -74,7 +74,7 @@ export default async function DashboardLayout({
         await signOut({ redirectTo: "/" });
       }}
     >
-      <PakasirPendingVerifier />
+      <SumopodPendingVerifier />
       <CompatNoticePopup />
       <BuyPackagePromoPopup bestPackage={promoPackage} />
       {children}

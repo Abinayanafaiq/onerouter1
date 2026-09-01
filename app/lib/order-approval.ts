@@ -13,8 +13,9 @@ export type ApproveResult =
  * Atomically & idempotently approve a paid order.
  *
  * This is the single source of truth for crediting a wallet after payment.
- * Both the Pakasir webhook and the status-polling route call this, so the
- * wallet is credited regardless of whether the webhook is reachable.
+ * Both the payment-gateway webhooks (Sumopod, Pakasir legacy) and the
+ * status-polling routes call this, so the wallet is credited regardless of
+ * whether the webhook is reachable.
  *
  * Idempotency: the very first statement inside the transaction is a conditional
  * `updateMany` that flips PENDING -> APPROVED and only matches once. If the

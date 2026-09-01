@@ -122,6 +122,8 @@ model Order {
   pakasirMethod        String?
   pakasirPaymentNumber String?
   pakasirExpiredAt     DateTime?
+  sumopodPaymentId     String?
+  sumopodExpiredAt     DateTime?
   status          String   @default("PENDING")
   paymentProof    String?
   adminNote       String?

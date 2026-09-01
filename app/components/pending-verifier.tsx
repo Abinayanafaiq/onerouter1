@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 /**
- * Auto-recovery untuk order Pakasir PENDING.
+ * Housekeeping order Sumopod PENDING.
  *
- * Di localhost webhook Pakasir tidak bisa mencapai server, dan dengan
- * integrasi via URL user membayar di tab baru sehingga polling di form
- * bisa berhenti. Komponen ini memanggil endpoint verify-pending saat:
- *   - mount (halaman dashboard pertama kali dibuka / redirect balik dari Pakasir)
+ * API Sumopod tidak punya endpoint cek status — approval order sepenuhnya
+ * lewat webhook. Komponen ini memanggil endpoint verify-pending untuk
+ * membatalkan order yang payment link-nya sudah expired, saat:
+ *   - mount (halaman dashboard pertama kali dibuka / redirect balik dari Sumopod)
  *   - window focus (user kembali ke tab ini)
- *   - setiap 15 detik (menangani delay konfirmasi Pakasir)
+ *   - setiap 15 detik
  *
- * Jika ada order yang baru di-approve, trigger wallet refresh + router refresh
- * agar saldo / API key langsung tampil.
+ * Jika ada perubahan (approved/cancelled), trigger wallet refresh +
+ * router refresh agar UI langsung sinkron.
  */
-export function PakasirPendingVerifier() {
+export function SumopodPendingVerifier() {
   const router = useRouter();
   const lastRunRef = useRef(0);
 
@@ -29,7 +29,7 @@ export function PakasirPendingVerifier() {
       if (now - lastRunRef.current < 4000) return;
       lastRunRef.current = now;
       try {
-        const res = await fetch("/api/orders/pakasir/verify-pending", {
+        const res = await fetch("/api/orders/sumopod/verify-pending", {
           cache: "no-store",
         });
         if (!active || !res.ok) return;
@@ -38,7 +38,7 @@ export function PakasirPendingVerifier() {
           approved?: number;
           cancelled?: number;
         };
-        if (data.success && (data.approved || 0) > 0) {
+        if (data.success && ((data.approved || 0) > 0 || (data.cancelled || 0) > 0)) {
           triggerWalletRefresh();
           router.refresh();
         }

@@ -54,6 +54,12 @@ export default async function AdminOrderDetailPage({
         {order.pakasirExpiredAt && (
           <Row label="Pakasir Expired" value={order.pakasirExpiredAt.toLocaleString("id-ID")} />
         )}
+        {order.sumopodPaymentId && (
+          <Row label="Sumopod Payment ID" value={<span className="font-mono text-xs break-all max-w-[260px] inline-block">{order.sumopodPaymentId}</span>} />
+        )}
+        {order.sumopodExpiredAt && (
+          <Row label="Sumopod Expired" value={order.sumopodExpiredAt.toLocaleString("id-ID")} />
+        )}
         <Row
           label="Status"
           value={
