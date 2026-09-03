@@ -7,7 +7,7 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 type Chain = { id: string; label: string; chain: string };
 
-type SumopodResult = {
+type PakasirResult = {
   checkoutLink: string | null;
   totalPayment: number;
   expiredAt: string | null;
@@ -25,7 +25,7 @@ export function CheckoutForm({
   amount,
   chains,
   btcpayConfigured,
-  sumopodConfigured,
+  pakasirConfigured,
   bscConfigured,
   renewApiKeyId,
 }: {
@@ -33,7 +33,7 @@ export function CheckoutForm({
   amount: number;
   chains: readonly Chain[];
   btcpayConfigured: boolean;
-  sumopodConfigured: boolean;
+  pakasirConfigured: boolean;
   bscConfigured: boolean;
   renewApiKeyId?: string | null;
 }) {
@@ -43,12 +43,12 @@ export function CheckoutForm({
   // tanpa disadari user yang berniat memperpanjang key lama.
   const cryptoEnabled = btcpayConfigured && !renewApiKeyId;
   const bscEnabled = bscConfigured && !renewApiKeyId;
-  const defaultTab: "SUMOPOD" | "CRYPTO" | "BSC" = sumopodConfigured
-    ? "SUMOPOD"
+  const defaultTab: "PAKASIR" | "CRYPTO" | "BSC" = pakasirConfigured
+    ? "PAKASIR"
     : bscEnabled
       ? "BSC"
       : "CRYPTO";
-  const [method, setMethod] = useState<"SUMOPOD" | "CRYPTO" | "BSC">(defaultTab);
+  const [method, setMethod] = useState<"PAKASIR" | "CRYPTO" | "BSC">(defaultTab);
   const [chain, setChain] = useState(chains[0]?.id ?? "");
   const [whatsapp, setWhatsapp] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,8 +59,8 @@ export function CheckoutForm({
   const [bscError, setBscError] = useState<string | null>(null);
   const [bscStatus, setBscStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const [bscConfirmations, setBscConfirmations] = useState<number | null>(null);
-  const [sumopodResult, setSumopodResult] = useState<SumopodResult | null>(null);
-  const [sumopodError, setSumopodError] = useState<string | null>(null);
+  const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
+  const [pakasirError, setPakasirError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -76,15 +76,15 @@ export function CheckoutForm({
     return () => stopPolling();
   }, [stopPolling]);
 
-  const view: "approved" | "crypto" | "bsc" | "sumopod" | "input" =
+  const view: "approved" | "crypto" | "bsc" | "pakasir" | "input" =
     paymentStatus === "APPROVED" || bscStatus === "APPROVED"
       ? "approved"
       : cryptoResult?.ok
         ? "crypto"
         : bscResult
           ? "bsc"
-          : sumopodResult
-            ? "sumopod"
+          : pakasirResult
+            ? "pakasir"
             : "input";
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function CheckoutForm({
       stopPolling();
       const endpoint = isBsc
         ? `/api/orders/bsc/status?orderId=${encodeURIComponent(orderId)}`
-        : `/api/orders/sumopod/status?orderId=${encodeURIComponent(orderId)}`;
+        : `/api/orders/pakasir/status?orderId=${encodeURIComponent(orderId)}`;
       pollRef.current = setInterval(async () => {
         try {
           const res = await fetch(endpoint, { cache: "no-store" });
@@ -195,17 +195,17 @@ export function CheckoutForm({
     setSubmitting(false);
   }
 
-  async function handleSumopodCreate() {
+  async function handlePakasirCreate() {
     if (!whatsapp.trim()) {
-      setSumopodError("Nomor WhatsApp wajib diisi");
+      setPakasirError("Nomor WhatsApp wajib diisi");
       return;
     }
-    setSumopodError(null);
+    setPakasirError(null);
     setSubmitting(true);
-    setSumopodResult(null);
+    setPakasirResult(null);
     setPaymentStatus("PENDING");
     try {
-      const res = await fetch("/api/orders/sumopod/create", {
+      const res = await fetch("/api/orders/pakasir/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -223,7 +223,7 @@ export function CheckoutForm({
         orderId?: string;
       };
       if (data.success && data.orderId) {
-        setSumopodResult({
+        setPakasirResult({
           checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? amount,
           expiredAt: data.expiredAt ?? null,
@@ -231,10 +231,10 @@ export function CheckoutForm({
         });
         startPolling(data.orderId, false);
       } else {
-        setSumopodError(data.error || "Gagal membuat invoice QRIS");
+        setPakasirError(data.error || "Gagal membuat invoice QRIS");
       }
     } catch {
-      setSumopodError("Koneksi gagal");
+      setPakasirError("Koneksi gagal");
     }
     setSubmitting(false);
   }
@@ -294,7 +294,7 @@ export function CheckoutForm({
     );
   }
 
-  const showSumopodTab = sumopodConfigured;
+  const showPakasirTab = pakasirConfigured;
 
   return (
     <div ref={rootRef} className="scroll-mt-20 space-y-5">
@@ -319,12 +319,12 @@ export function CheckoutForm({
           Metode Pembayaran
         </label>
         <div className="grid grid-flow-col auto-cols-fr gap-1 rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
-          {showSumopodTab && (
+          {showPakasirTab && (
             <button
               type="button"
-              onClick={() => setMethod("SUMOPOD")}
+              onClick={() => setMethod("PAKASIR")}
               className={`rounded-lg py-2.5 text-sm font-medium transition ${
-                method === "SUMOPOD"
+                method === "PAKASIR"
                   ? "bg-foreground text-background shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
               }`}
@@ -361,7 +361,7 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {!showSumopodTab && !cryptoEnabled && !bscEnabled && (
+      {!showPakasirTab && !cryptoEnabled && !bscEnabled && (
         <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
           Pembayaran belum dikonfigurasi. Hubungi admin.
         </div>
@@ -482,20 +482,20 @@ export function CheckoutForm({
         </div>
       )}
 
-      {method === "SUMOPOD" && showSumopodTab && (
+      {method === "PAKASIR" && showPakasirTab && (
         <div className="glass rounded-2xl p-5 space-y-4">
-          {sumopodResult ? (
+          {pakasirResult ? (
             <>
               <div className="text-center">
                 <p className="text-sm font-semibold">Invoice QRIS Dibuat</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Klik tombol di bawah untuk membayar via QRIS di halaman pembayaran Sumopod.
+                  Klik tombol di bawah untuk membayar via QRIS di halaman pembayaran Pakasir.
                 </p>
               </div>
 
-              {sumopodResult.checkoutLink ? (
+              {pakasirResult.checkoutLink ? (
                 <a
-                  href={sumopodResult.checkoutLink}
+                  href={pakasirResult.checkoutLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-accent block w-full rounded-xl py-3 text-sm font-medium text-center"
@@ -511,11 +511,11 @@ export function CheckoutForm({
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-sm space-y-1">
                 <p>
                   <span className="text-muted-foreground">Total Pembayaran:</span>{" "}
-                  <span className="font-bold">Rp{sumopodResult.totalPayment.toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp{pakasirResult.totalPayment.toLocaleString("id-ID")}</span>
                 </p>
-                {sumopodResult.expiredAt && (
+                {pakasirResult.expiredAt && (
                   <p className="text-xs text-muted-foreground">
-                    Berlaku s/d {new Date(sumopodResult.expiredAt).toLocaleString("id-ID")}
+                    Berlaku s/d {new Date(pakasirResult.expiredAt).toLocaleString("id-ID")}
                   </p>
                 )}
               </div>
@@ -541,7 +541,7 @@ export function CheckoutForm({
                 <button
                   type="button"
                   onClick={() => {
-                    setSumopodResult(null);
+                    setPakasirResult(null);
                     setPaymentStatus("PENDING");
                   }}
                   className="block w-full rounded-xl border border-white/[0.1] bg-white/[0.03] py-2.5 text-sm font-medium transition hover:bg-white/[0.06]"
@@ -567,12 +567,12 @@ export function CheckoutForm({
                   <span className="font-bold">Rp{amount.toLocaleString("id-ID")}</span>
                 </p>
               </div>
-              {sumopodError && (
-                <p className="text-sm text-red-400">{sumopodError}</p>
+              {pakasirError && (
+                <p className="text-sm text-red-400">{pakasirError}</p>
               )}
               <button
                 type="button"
-                onClick={handleSumopodCreate}
+                onClick={handlePakasirCreate}
                 disabled={submitting}
                 className="btn-accent block w-full rounded-xl py-3 text-sm font-medium disabled:opacity-50"
               >

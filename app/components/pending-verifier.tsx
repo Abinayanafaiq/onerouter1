@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 /**
- * Housekeeping order Sumopod PENDING.
+ * Housekeeping order Pakasir PENDING.
  *
- * API Sumopod tidak punya endpoint cek status — approval order sepenuhnya
- * lewat webhook. Komponen ini memanggil endpoint verify-pending untuk
- * membatalkan order yang payment link-nya sudah expired, saat:
- *   - mount (halaman dashboard pertama kali dibuka / redirect balik dari Sumopod)
+ * Approval order bisa lewat webhook, tapi komponen ini memanggil endpoint
+ * verify-pending untuk mengecek status langsung ke API Pakasir
+ * (transactiondetail), saat:
+ *   - mount (halaman dashboard pertama kali dibuka / redirect balik dari Pakasir)
  *   - window focus (user kembali ke tab ini)
  *   - setiap 15 detik
  *
  * Jika ada perubahan (approved/cancelled), trigger wallet refresh +
  * router refresh agar UI langsung sinkron.
  */
-export function SumopodPendingVerifier() {
+export function PakasirPendingVerifier() {
   const router = useRouter();
   const lastRunRef = useRef(0);
 
@@ -29,7 +29,7 @@ export function SumopodPendingVerifier() {
       if (now - lastRunRef.current < 4000) return;
       lastRunRef.current = now;
       try {
-        const res = await fetch("/api/orders/sumopod/verify-pending", {
+        const res = await fetch("/api/orders/pakasir/verify-pending", {
           cache: "no-store",
         });
         if (!active || !res.ok) return;

@@ -15,7 +15,7 @@ function usdRef(idr: number): string {
   });
 }
 
-type SumopodResult = {
+type PakasirResult = {
   orderId: string;
   checkoutLink: string | null;
   totalPayment: number;
@@ -161,12 +161,12 @@ export function WalletTopUpForm({
   const locale = useLocale();
   const [amount, setAmount] = useState("");
   const [wa, setWa] = useState(whatsapp || "");
-  const [method, setMethod] = useState<"SUMOPOD" | "BSC">(
-    bscConfigured ? "BSC" : "SUMOPOD",
+  const [method, setMethod] = useState<"PAKASIR" | "BSC">(
+    bscConfigured ? "BSC" : "PAKASIR",
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sumopodResult, setSumopodResult] = useState<SumopodResult | null>(null);
+  const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
   const [bscResult, setBscResult] = useState<BscResult | null>(null);
   const [bscError, setBscError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
@@ -183,13 +183,13 @@ export function WalletTopUpForm({
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  const view: "approved" | "bsc" | "sumopod" | "input" =
+  const view: "approved" | "bsc" | "pakasir" | "input" =
     paymentStatus === "APPROVED"
       ? "approved"
       : bscResult
         ? "bsc"
-        : sumopodResult
-          ? "sumopod"
+        : pakasirResult
+          ? "pakasir"
           : "input";
 
   useEffect(() => {
@@ -202,7 +202,7 @@ export function WalletTopUpForm({
       stopPolling();
       const endpoint = isBsc
         ? `/api/orders/bsc/status?orderId=${encodeURIComponent(orderId)}`
-        : `/api/orders/sumopod/status?orderId=${encodeURIComponent(orderId)}`;
+        : `/api/orders/pakasir/status?orderId=${encodeURIComponent(orderId)}`;
       pollRef.current = setInterval(async () => {
         try {
           const res = await fetch(endpoint, { cache: "no-store" });
@@ -233,7 +233,7 @@ export function WalletTopUpForm({
     [stopPolling, router],
   );
 
-  async function handleSumopodCreate() {
+  async function handlePakasirCreate() {
     const toks = parseInt(amount, 10);
     if (!toks || toks < MIN_TOKS) {
       setError(t("errorMinTopUp", { min: MIN_TOKS, unit: TOKS_LABEL }));
@@ -246,10 +246,10 @@ export function WalletTopUpForm({
     const idrAmount = toksToIdr(toks);
     setError(null);
     setSubmitting(true);
-    setSumopodResult(null);
+    setPakasirResult(null);
     setPaymentStatus("PENDING");
     try {
-      const res = await fetch("/api/wallet/topup-sumopod/create", {
+      const res = await fetch("/api/wallet/topup-pakasir/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: idrAmount, whatsapp: wa.trim() }),
@@ -263,7 +263,7 @@ export function WalletTopUpForm({
         orderId?: string;
       };
       if (data.success && data.orderId) {
-        setSumopodResult({
+        setPakasirResult({
           orderId: data.orderId,
           checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? idrAmount,
@@ -330,11 +330,11 @@ export function WalletTopUpForm({
   function handleSubmit() {
     if (submitting) return;
     if (method === "BSC") handleBscCreate();
-    else handleSumopodCreate();
+    else handlePakasirCreate();
   }
 
   function resetForm() {
-    setSumopodResult(null);
+    setPakasirResult(null);
     setBscResult(null);
     setBscConfirmations(null);
     setPaymentStatus("PENDING");
@@ -461,7 +461,7 @@ export function WalletTopUpForm({
   }
 
   /* ---------------- QRIS invoice state ---------------- */
-  if (sumopodResult) {
+  if (pakasirResult) {
     return (
       <div ref={rootRef} className="scroll-mt-20 space-y-4 animate-fade-up">
         <div className="rounded-2xl border border-white/[0.08] bg-card p-6 space-y-4">
@@ -475,9 +475,9 @@ export function WalletTopUpForm({
             </p>
           </div>
 
-          {sumopodResult.checkoutLink ? (
+          {pakasirResult.checkoutLink ? (
             <a
-              href={sumopodResult.checkoutLink}
+              href={pakasirResult.checkoutLink}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition hover:opacity-90"
@@ -494,18 +494,18 @@ export function WalletTopUpForm({
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("creditLabel")}</span>
               <span className="font-semibold">
-                {sumopodResult.toks.toLocaleString(locale)} {TOKS_LABEL}
+                {pakasirResult.toks.toLocaleString(locale)} {TOKS_LABEL}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("totalPaymentLabel")}</span>
               <span className="font-semibold text-accent">
-                Rp{sumopodResult.totalPayment.toLocaleString(locale)}
+                Rp{pakasirResult.totalPayment.toLocaleString(locale)}
               </span>
             </div>
-            {sumopodResult.expiredAt && (
+            {pakasirResult.expiredAt && (
               <p className="text-xs text-muted-foreground pt-1">
-                {t("payBefore", { date: new Date(sumopodResult.expiredAt).toLocaleString(locale) })}
+                {t("payBefore", { date: new Date(pakasirResult.expiredAt).toLocaleString(locale) })}
               </p>
             )}
           </div>
@@ -702,20 +702,20 @@ export function WalletTopUpForm({
           {/* QRIS */}
           <button
             type="button"
-            onClick={() => setMethod("SUMOPOD")}
+            onClick={() => setMethod("PAKASIR")}
             className={`relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${
-              method === "SUMOPOD"
+              method === "PAKASIR"
                 ? "border-accent/60 bg-accent/[0.07] shadow-[0_0_0_1px_rgba(0,255,136,0.2),0_12px_36px_-16px_var(--accent-glow)]"
                 : "border-white/[0.08] bg-card hover:border-white/20 hover:bg-white/[0.03]"
             }`}
           >
-            {method === "SUMOPOD" && (
+            {method === "PAKASIR" && (
               <span className="absolute right-2.5 top-2.5 grid h-5 w-5 place-items-center rounded-full bg-accent text-black">
                 <CheckIcon className="h-3.5 w-3.5" />
               </span>
             )}
             <div className="flex items-center gap-2.5 mb-3">
-              <span className={`grid h-9 w-9 place-items-center rounded-xl ${method === "SUMOPOD" ? "bg-accent/15 text-accent" : "bg-white/[0.04] text-muted-foreground"}`}>
+              <span className={`grid h-9 w-9 place-items-center rounded-xl ${method === "PAKASIR" ? "bg-accent/15 text-accent" : "bg-white/[0.04] text-muted-foreground"}`}>
                 <QrIcon className="h-5 w-5" />
               </span>
               <span className="text-sm font-semibold">QRIS</span>

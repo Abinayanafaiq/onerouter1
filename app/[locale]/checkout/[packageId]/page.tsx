@@ -2,7 +2,7 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
-import { isSumopodConfigured } from "@/app/lib/sumopod";
+import { isPakasirConfigured } from "@/app/lib/pakasir";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { redirect, Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -81,8 +81,8 @@ export default async function CheckoutPage({
     }
   }
 
-  const [sumopodConfigured, bscConfigured] = await Promise.all([
-    isSumopodConfigured(),
+  const [pakasirConfigured, bscConfigured] = await Promise.all([
+    isPakasirConfigured(),
     isBscConfigured(),
   ]);
 
@@ -225,7 +225,7 @@ export default async function CheckoutPage({
             amount={pkg.price}
             chains={[...CRYPTO_CHAINS]}
             btcpayConfigured={PACKAGE_CRYPTO_ENABLED && isBtcpayConfigured()}
-            sumopodConfigured={sumopodConfigured}
+            pakasirConfigured={pakasirConfigured}
             bscConfigured={PACKAGE_CRYPTO_ENABLED && bscConfigured}
             renewApiKeyId={renewalKey?.id ?? null}
           />

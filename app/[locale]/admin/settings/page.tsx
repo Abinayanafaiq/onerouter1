@@ -1,8 +1,8 @@
-import { getSumopodSettings } from "@/app/lib/sumopod";
+import { getPakasirSettings } from "@/app/lib/pakasir";
 import { getBscSettings } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { getAdmin2FASettings } from "@/app/lib/admin-2fa";
-import { SumopodForm } from "./sumopod-form";
+import { PakasirForm } from "./pakasir-form";
 import { BscForm } from "./bsc-form";
 import { TelegramForm } from "./telegram-form";
 import { Admin2FAForm } from "./admin-2fa-form";
@@ -11,7 +11,7 @@ import { prisma } from "@/app/lib/prisma";
 
 export default async function AdminSettingsPage() {
   const [settings, bscSettings, telegramUrl, admin2FA, favicon] = await Promise.all([
-    getSumopodSettings(),
+    getPakasirSettings(),
     getBscSettings(),
     getTelegramGroupUrl(),
     getAdmin2FASettings(),
@@ -37,11 +37,11 @@ export default async function AdminSettingsPage() {
           answerSet: !!admin2FA.answerHash,
         }}
       />
-      <SumopodForm
+      <PakasirForm
         initial={{
+          slug: settings.slug,
           apiKeyMasked: maskedApiKey,
           apiKeySet: !!settings.apiKey,
-          webhookTokenSet: !!settings.webhookToken,
           webhookSecretSet: !!settings.webhookSecret,
         }}
       />
