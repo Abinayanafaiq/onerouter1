@@ -2,7 +2,9 @@ import { getPakasirSettings } from "@/app/lib/pakasir";
 import { getBscSettings } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { getAdmin2FASettings } from "@/app/lib/admin-2fa";
+import { getBlockedEmailDomains } from "@/app/lib/email-blacklist";
 import { PakasirForm } from "./pakasir-form";
+import { EmailBlacklistForm } from "./email-blacklist-form";
 import { BscForm } from "./bsc-form";
 import { TelegramForm } from "./telegram-form";
 import { Admin2FAForm } from "./admin-2fa-form";
@@ -10,12 +12,13 @@ import { FaviconUploader } from "./favicon-uploader";
 import { prisma } from "@/app/lib/prisma";
 
 export default async function AdminSettingsPage() {
-  const [settings, bscSettings, telegramUrl, admin2FA, favicon] = await Promise.all([
+  const [settings, bscSettings, telegramUrl, admin2FA, favicon, blockedDomains] = await Promise.all([
     getPakasirSettings(),
     getBscSettings(),
     getTelegramGroupUrl(),
     getAdmin2FASettings(),
     prisma.setting.findUnique({ where: { key: "site_favicon" }, select: { value: true } }),
+    getBlockedEmailDomains(),
   ]);
   const maskedApiKey = settings.apiKey
     ? `${settings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, settings.apiKey.length - 8))}${settings.apiKey.slice(-4)}`
@@ -53,6 +56,7 @@ export default async function AdminSettingsPage() {
           isConfigured: !!bscSettings.walletAddress,
         }}
       />
+      <EmailBlacklistForm initial={{ domains: blockedDomains }} />
       <TelegramForm initialUrl={telegramUrl} />
     </div>
   );

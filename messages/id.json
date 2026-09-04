@@ -294,6 +294,7 @@
     "errorMinPassword": "Password minimal 6 karakter",
     "errorConfirm": "Konfirmasi password tidak cocok",
     "errorEmailTaken": "Email sudah terdaftar, silakan login",
+    "errorEmailDomainBlocked": "Domain email ini tidak dapat digunakan untuk pendaftaran.",
     "errorInvalid": "Email atau password salah",
     "errorBotCheck": "Verifikasi keamanan gagal. Silakan muat ulang halaman lalu coba lagi.",
     "errorRateLimitLogin": "Terlalu banyak percobaan masuk. Coba lagi dalam {minutes} menit.",

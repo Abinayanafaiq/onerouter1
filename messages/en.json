@@ -294,6 +294,7 @@
     "errorMinPassword": "Password must be at least 6 characters",
     "errorConfirm": "Password confirmation does not match",
     "errorEmailTaken": "Email already registered, please sign in",
+    "errorEmailDomainBlocked": "This email domain is not allowed for registration.",
     "errorInvalid": "Invalid email or password",
     "errorBotCheck": "Security verification failed. Please reload the page and try again.",
     "errorRateLimitLogin": "Too many login attempts. Try again in {minutes} minutes.",

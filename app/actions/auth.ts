@@ -23,6 +23,7 @@ import {
 import { getClientIp } from "@/app/lib/proxy-utils";
 import { DEFAULT_USER_RATE_LIMIT_RPM } from "@/app/lib/constants";
 import { sendMail } from "@/app/lib/mail";
+import { isEmailDomainBlocked } from "@/app/lib/email-blacklist";
 import {
   issueEmailCode,
   verifyEmailCode,
@@ -52,6 +53,12 @@ export async function requestRegisterCodeAction(
 
   if (!email || !EMAIL_RE.test(email)) {
     return { error: t("errorInvalidEmail") };
+  }
+
+  // Blacklist domain email: tolak sedini mungkin — sebelum Turnstile & sebelum
+  // kode verifikasi dikirim (hemat captcha + biaya email untuk domain abuser).
+  if (await isEmailDomainBlocked(email)) {
+    return { error: t("errorEmailDomainBlocked") };
   }
 
   // Turnstile hanya di step ini (token-nya single-use). Step 2 & 3 aman karena
@@ -158,6 +165,12 @@ export async function registerAction(formData: FormData) {
   // jadi verifikasi ini murah dan tidak menyentuh DB.
   if (!verifyVerifiedEmail(email, verifiedToken)) {
     return { error: t("errorEmailNotVerified") };
+  }
+
+  // Defense-in-depth: token verifikasi bisa saja diterbitkan SEBELUM domain
+  // ini di-blacklist — cek ulang di langkah final sebelum akun dibuat.
+  if (await isEmailDomainBlocked(email)) {
+    return { error: t("errorEmailDomainBlocked") };
   }
 
   // Brute-force / mass-account protection: cap registrations per source IP.
