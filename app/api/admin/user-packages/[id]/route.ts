@@ -20,6 +20,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *   { action: "setEnabled", enabled: boolean }-> aktifkan / matikan paket.
  *   { action: "setAllowedModels", models: string[] } -> batasi paket ke model
  *        tertentu (paket khusus). Array kosong = cabut batasan (semua model).
+ *   { action: "delete", confirmEmail: string } -> HAPUS PERMANEN paket user.
+ *        Key dihapus dari DB sehingga user langsung tidak bisa akses lagi.
+ *        Konsekuensi: riwayat UsageLog/ApiRequestLog/TokenReservation key ini
+ *        ikut terhapus (FK cascade); Order pembayaran TETAP ada (apiKeyId
+ *        di-null-kan dulu secara eksplisit). Wajib confirmEmail = email user
+ *        pemilik paket sebagai pengaman salah-klik.
  */
 export async function PATCH(
   request: Request,
@@ -154,9 +160,44 @@ export async function PATCH(
         return NextResponse.json({ success: true, allowedModels: cleaned });
       }
 
+      case "delete": {
+        // Ambil email pemilik untuk konfirmasi wajib (pengaman salah-klik)
+        // dan untuk jejak audit (riwayat usage ikut terhapus cascade).
+        const owner = await prisma.user.findUnique({
+          where: { id: key.userId },
+          select: { email: true },
+        });
+        const confirmEmail =
+          typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : "";
+        if (!owner || confirmEmail !== owner.email.toLowerCase()) {
+          return NextResponse.json(
+            { success: false, error: "confirmEmail harus sama dengan email user pemilik paket" },
+            { status: 400 },
+          );
+        }
+
+        await prisma.$transaction(async (tx) => {
+          // Lepaskan tautan order -> key secara eksplisit supaya delete berhasil
+          // apa pun FK action di DB produksi; record pembayaran tetap tersimpan.
+          await tx.order.updateMany({
+            where: { apiKeyId: id },
+            data: { apiKeyId: null },
+          });
+          // UsageLog, ApiRequestLog, TokenReservation ikut terhapus (cascade).
+          await tx.apiKey.delete({ where: { id } });
+        });
+
+        await writeAuditLog({
+          actorUserId: actorId,
+          action: "userPackage.delete",
+          target: `${id} (${key.name ?? key.label ?? "paket"}) milik ${owner.email}, sisa token ${(key.tokenQuota - key.tokenUsed).toString()}`,
+        });
+        return NextResponse.json({ success: true, deleted: true });
+      }
+
       default:
         return NextResponse.json(
-          { success: false, error: "action harus extend | addQuota | setEnabled | setAllowedModels" },
+          { success: false, error: "action harus extend | addQuota | setEnabled | setAllowedModels | delete" },
           { status: 400 },
         );
     }

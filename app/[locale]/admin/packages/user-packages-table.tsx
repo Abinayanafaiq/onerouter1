@@ -69,6 +69,31 @@ export function UserPackagesTable({
     await doAction(p.id, { action: "setEnabled", enabled: !p.enabled });
   }
 
+  async function handleDelete(p: AdminUserPackageView) {
+    const remaining = Math.max(0, p.tokenQuota - p.tokenUsed);
+    if (
+      !window.confirm(
+        `HAPUS PERMANEN paket "${p.name}" milik ${p.userEmail}?\n\n` +
+          `- User LANGSUNG tidak bisa akses lagi\n` +
+          `- Sisa ${num(remaining)} token akan hangus\n` +
+          `- Riwayat pemakaian key ini ikut terhapus\n` +
+          `- Data pembayaran (order) tetap tersimpan\n\n` +
+          `Aksi ini TIDAK BISA dibatalkan. Lanjutkan?`,
+      )
+    ) {
+      return;
+    }
+    const typed = window.prompt(
+      `Ketik email user (${p.userEmail}) untuk konfirmasi penghapusan:`,
+    );
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== p.userEmail.toLowerCase()) {
+      setErrorMsg("Email konfirmasi tidak cocok — penghapusan dibatalkan");
+      return;
+    }
+    await doAction(p.id, { action: "delete", confirmEmail: typed.trim() });
+  }
+
   function openExpand(p: AdminUserPackageView, mode: "extend" | "quota") {
     setErrorMsg(null);
     setAmount("");
@@ -248,6 +273,14 @@ export function UserPackagesTable({
                             }`}
                           >
                             {isBusy ? "…" : p.enabled ? "Matikan" : "Aktifkan"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleDelete(p)}
+                            className="rounded-md border border-red-600/60 bg-red-950/40 px-2 py-1 text-[10px] font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            Hapus
                           </button>
                         </div>
                         {errorMsg && busyId === null && expand?.id !== p.id && (
