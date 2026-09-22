@@ -3,11 +3,10 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import {
   createTransaction,
-  buildPaymentUrl,
+  qrToDataUrl,
   isPakasirConfigured,
 } from "@/app/lib/pakasir";
 import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
-import { getSiteUrl } from "@/app/lib/site";
 
 const WALLET_TOPUP_PACKAGE_ID = "wallet-topup";
 const MIN_TOPUP = 1000;
@@ -80,8 +79,8 @@ export async function POST(request: Request) {
       data: { whatsapp: body.whatsapp.trim() },
     }).catch(() => {});
 
-    // Hybrid: buat transaksi via API supaya transactiondetail bisa cek status,
-    // lalu bangun URL Pakasir untuk user bayar di halaman Pakasir.
+    // API v2: buat transaksi QRIS — response berisi txn_id (disimpan untuk
+    // cek status) dan qr_string (ditampilkan sebagai QR di halaman wallet).
     const createResult = await createTransaction({
       method: "qris",
       orderId: order.id,
@@ -89,12 +88,6 @@ export async function POST(request: Request) {
     });
 
     if (!createResult.ok) {
-      if (createResult.error.includes("already completed")) {
-        return NextResponse.json(
-          { success: false, error: "Invoice ini sudah dibayar sebelumnya. Saldo akan masuk otomatis." },
-          { status: 409 },
-        );
-      }
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "CANCELLED", adminNote: createResult.error },
@@ -102,34 +95,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: createResult.error }, { status: 502 });
     }
 
-    const expiredAt = createResult.payment.expired_at
-      ? new Date(createResult.payment.expired_at)
-      : null;
+    const txn = createResult.transaction;
+    const expiredAt = txn.expired_at ? new Date(txn.expired_at) : null;
 
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        pakasirPaymentNumber: createResult.payment.payment_number,
+        pakasirPaymentNumber: txn.txn_id,
         pakasirExpiredAt: expiredAt,
       },
     });
 
-    const urlResult = await buildPaymentUrl({
-      orderId: order.id,
-      amount: roundedAmount,
-      redirectUrl: `${getSiteUrl()}/dashboard/wallet`,
-      qrisOnly: true,
-    });
-
-    if (!urlResult.ok) {
-      console.error("[wallet/topup-pakasir/create] buildPaymentUrl failed:", urlResult.error);
+    const qrImage = await qrToDataUrl(txn.qr_string);
+    if (!qrImage) {
+      console.error("[wallet/topup-pakasir/create] qrToDataUrl failed for order:", order.id);
     }
 
     return NextResponse.json({
       success: true,
       orderId: order.id,
-      checkoutLink: urlResult.ok ? urlResult.url : null,
-      totalPayment: createResult.payment.total_payment,
+      qrImage,
+      totalPayment: txn.total_payment,
       expiredAt: expiredAt?.toISOString() ?? null,
     });
   } catch (e) {

@@ -8,7 +8,7 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
 type Chain = { id: string; label: string; chain: string };
 
 type PakasirResult = {
-  checkoutLink: string | null;
+  qrImage: string | null;
   totalPayment: number;
   expiredAt: string | null;
   orderId: string;
@@ -217,14 +217,14 @@ export function CheckoutForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        checkoutLink?: string | null;
+        qrImage?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
       };
       if (data.success && data.orderId) {
         setPakasirResult({
-          checkoutLink: data.checkoutLink ?? null,
+          qrImage: data.qrImage ?? null,
           totalPayment: data.totalPayment ?? amount,
           expiredAt: data.expiredAt ?? null,
           orderId: data.orderId,
@@ -489,22 +489,21 @@ export function CheckoutForm({
               <div className="text-center">
                 <p className="text-sm font-semibold">Invoice QRIS Dibuat</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Klik tombol di bawah untuk membayar via QRIS di halaman pembayaran Pakasir.
+                  Scan QR di bawah dengan aplikasi pembayaran (GoPay, OVO, DANA, ShopeePay, atau mobile banking).
                 </p>
               </div>
 
-              {pakasirResult.checkoutLink ? (
-                <a
-                  href={pakasirResult.checkoutLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-accent block w-full rounded-xl py-3 text-sm font-medium text-center"
-                >
-                  Bayar Sekarang
-                </a>
+              {pakasirResult.qrImage ? (
+                <div className="mx-auto w-fit rounded-xl bg-white p-3">
+                  <img
+                    src={pakasirResult.qrImage}
+                    alt="QRIS Pembayaran"
+                    className="h-56 w-56"
+                  />
+                </div>
               ) : (
                 <p className="text-sm text-amber-400 text-center">
-                  Link pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
+                  QR pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
                 </p>
               )}
 

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import {
-  verifyWebhookSignature,
-  getTransactionDetail,
-  checkTransactionCompletedViaCreate,
+  verifyWebhookSecret,
+  getTransactionStatus,
   getPakasirSettings,
   type PakasirWebhookPayload,
 } from "@/app/lib/pakasir";
@@ -12,32 +11,26 @@ import { approvePaidOrder } from "@/app/lib/order-approval";
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    const sig =
-      request.headers.get("Pakasir-Sig") ||
-      request.headers.get("X-Pakasir-Signature") ||
-      "";
+    const secretHeader = request.headers.get("X-Secret") || "";
     const settings = await getPakasirSettings();
 
     console.log("[pakasir/webhook] payment received:", rawBody.slice(0, 300));
 
-    // 1. Signature verification (optional — Pakasir does not sign webhooks).
-    //    If a signature header IS present, verify it with the configured secret.
-    //    If no signature header, skip HMAC and rely on the Transaction Detail
-    //    API re-verification below (step 3) for authenticity.
-    if (sig && settings.webhookSecret) {
-      if (!(await verifyWebhookSignature(rawBody, sig))) {
-        console.error("[pakasir/webhook] REJECTED: invalid signature");
-        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+    // 1. Verifikasi X-Secret (API v2). Jika secret dikonfigurasi, header wajib
+    //    cocok. Jika belum dikonfigurasi, webhook tetap diamankan via
+    //    re-verifikasi API pada langkah 3 di bawah.
+    if (settings.webhookSecret) {
+      if (!(await verifyWebhookSecret(secretHeader))) {
+        console.error("[pakasir/webhook] REJECTED: invalid X-Secret");
+        return NextResponse.json({ error: "Invalid secret" }, { status: 403 });
       }
+    } else {
+      console.warn("[pakasir/webhook] webhookSecret belum diset — hanya mengandalkan re-verifikasi API");
     }
 
     const event = JSON.parse(rawBody) as PakasirWebhookPayload;
 
-    if (!event.order_id || !event.project) {
-      return NextResponse.json({ ok: true, ignored: true });
-    }
-    if (settings.slug && event.project !== settings.slug) {
-      console.log("[pakasir/webhook] ignored: project mismatch");
+    if (!event.order_id) {
       return NextResponse.json({ ok: true, ignored: true });
     }
     if (event.status !== "completed") {
@@ -65,31 +58,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
     }
 
-    // 3. Server-side re-verification via the detail API (never trust the
-    //    webhook body alone). Fallback: jika transactiondetail 404 (terjadi
-    //    untuk URL-integration transactions), cek via createTransaction.
-    const detail = await getTransactionDetail({ orderId: order.id, amount: order.amount });
-    if (!detail.ok || detail.transaction.status !== "completed") {
-      const fallback = await checkTransactionCompletedViaCreate({
-        orderId: order.id,
-        amount: order.amount,
-      });
-      if (!fallback.completed) {
-        console.error(
-          "[pakasir/webhook] verification failed:",
-          detail.ok ? detail.transaction.status : detail.error,
-        );
-        return NextResponse.json({ error: "Verification failed" }, { status: 400 });
-      }
-      console.log(`[pakasir/webhook] payment verified (fallback) for order=${order.id}`);
-    } else {
-      console.log(`[pakasir/webhook] payment verified for order=${order.id}`);
+    // 3. Server-side re-verification via the status API (never trust the
+    //    webhook body alone). txn_id diambil dari payload webhook, fallback ke
+    //    yang tersimpan di order (kolom pakasirPaymentNumber menyimpan txn_id).
+    const txnId = event.txn_id || order.pakasirPaymentNumber || "";
+    if (!txnId) {
+      console.error(`[pakasir/webhook] no txn_id available for order=${order.id}`);
+      return NextResponse.json({ error: "Missing txn_id" }, { status: 400 });
+    }
+    if (order.pakasirPaymentNumber && event.txn_id && event.txn_id !== order.pakasirPaymentNumber) {
+      console.warn(
+        `[pakasir/webhook] txn_id mismatch: webhook=${event.txn_id} stored=${order.pakasirPaymentNumber} order=${order.id}`,
+      );
     }
 
+    const detail = await getTransactionStatus({ txnId });
+    if (
+      !detail.ok ||
+      detail.transaction.status !== "completed" ||
+      detail.transaction.order_id !== order.id ||
+      detail.transaction.amount !== order.amount
+    ) {
+      console.error(
+        "[pakasir/webhook] verification failed:",
+        detail.ok ? JSON.stringify(detail.transaction) : detail.error,
+      );
+      return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+    }
+    console.log(`[pakasir/webhook] payment verified for order=${order.id}`);
+
     // 4. Credit atomically & idempotently.
-    const paymentMethodLabel = detail.ok
-      ? `Pakasir/${event.payment_method || detail.transaction.payment_method}`
-      : `Pakasir/${event.payment_method || order.pakasirMethod || "qris"}`;
+    const paymentMethodLabel = `Pakasir/${order.pakasirMethod || "qris"}`;
     const approved = await approvePaidOrder(order.id, paymentMethodLabel);
     if (!approved.ok) {
       // Do NOT report success — let Pakasir retry the webhook.

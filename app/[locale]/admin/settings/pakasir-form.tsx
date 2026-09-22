@@ -68,7 +68,7 @@ export function PakasirForm({ initial }: { initial: InitialData }) {
   }
 
   async function handleClearSecret() {
-    if (!confirm("Hapus Webhook Secret? Verifikasi HMAC webhook akan dilewati.")) return;
+    if (!confirm("Hapus Webhook Secret? Verifikasi header X-Secret webhook akan dilewati.")) return;
     setSaving(true);
     setError(null);
     try {
@@ -111,7 +111,7 @@ export function PakasirForm({ initial }: { initial: InitialData }) {
           className={inputCls}
         />
         <p className="text-[10px] text-neutral-600 mt-1">
-          Slug proyek dari dashboard Pakasir. Dipakai untuk membangun URL pembayaran.
+          Slug proyek dari dashboard Pakasir. Dipakai pada path API v2 (create/status/cancel transaction).
         </p>
       </div>
 
@@ -153,8 +153,8 @@ export function PakasirForm({ initial }: { initial: InitialData }) {
           )}
         </div>
         <p className="text-[10px] text-neutral-600 mt-1">
-          Jika diset, webhook dengan header signature diverifikasi via HMAC-SHA256. Kosongkan bila
-          Pakasir tidak mengirim signature — webhook tetap diamankan via re-verifikasi API.
+          Secret dari halaman detail proyek Pakasir. Jika diset, setiap webhook wajib membawa
+          header X-Secret yang cocok. Webhook juga tetap diverifikasi ulang via API status transaksi.
         </p>
       </div>
 

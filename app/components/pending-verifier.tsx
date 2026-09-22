@@ -9,8 +9,8 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
  *
  * Approval order bisa lewat webhook, tapi komponen ini memanggil endpoint
  * verify-pending untuk mengecek status langsung ke API Pakasir
- * (transactiondetail), saat:
- *   - mount (halaman dashboard pertama kali dibuka / redirect balik dari Pakasir)
+ * (transaction-status v2), saat:
+ *   - mount (halaman dashboard pertama kali dibuka)
  *   - window focus (user kembali ke tab ini)
  *   - setiap 15 detik
  *

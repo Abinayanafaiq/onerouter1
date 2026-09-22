@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import {
-  getTransactionDetail,
-  checkTransactionCompletedViaCreate,
+  createTransaction,
+  getTransactionStatus,
+  type PakasirMethod,
 } from "@/app/lib/pakasir";
 import { approvePaidOrder } from "@/app/lib/order-approval";
 
@@ -36,25 +37,33 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, status: order.status });
     }
 
-    const detail = await getTransactionDetail({ orderId: order.id, amount: order.amount });
-    if (!detail.ok) {
-      // Fallback: transactiondetail returns 404 untuk URL-integration transactions.
-      // Cek via createTransaction — jika "already completed", transaksi sudah dibayar.
-      const fallback = await checkTransactionCompletedViaCreate({
+    // API v2: cek status butuh txn_id (disimpan di kolom pakasirPaymentNumber).
+    // Jika kosong (mis. update gagal tepat setelah create), pulihkan via
+    // create-transaction yang bersifat find-or-create dengan param yang sama.
+    let txnId = order.pakasirPaymentNumber;
+    if (!txnId) {
+      const recovered = await createTransaction({
+        method: (order.pakasirMethod as PakasirMethod | null) ?? "qris",
         orderId: order.id,
         amount: order.amount,
       });
-      if (fallback.completed) {
-        console.log(`[pakasir/status] payment completed (fallback), crediting order=${order.id}`);
-        const approved = await approvePaidOrder(
-          order.id,
-          `Pakasir/${order.pakasirMethod || "qris"}`,
-        );
-        if (!approved.ok) {
-          return NextResponse.json({ success: true, status: "PENDING", note: approved.error });
-        }
-        return NextResponse.json({ success: true, status: "APPROVED" });
+      if (!recovered.ok) {
+        return NextResponse.json({ success: true, status: "PENDING", note: recovered.error });
       }
+      txnId = recovered.transaction.txn_id;
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          pakasirPaymentNumber: txnId,
+          pakasirExpiredAt: recovered.transaction.expired_at
+            ? new Date(recovered.transaction.expired_at)
+            : null,
+        },
+      });
+    }
+
+    const detail = await getTransactionStatus({ txnId });
+    if (!detail.ok) {
       return NextResponse.json({ success: true, status: "PENDING", note: detail.error });
     }
 
@@ -66,7 +75,7 @@ export async function GET(request: Request) {
       console.log(`[pakasir/status] payment completed, crediting order=${order.id}`);
       const approved = await approvePaidOrder(
         order.id,
-        `Pakasir/${detail.transaction.payment_method || order.pakasirMethod || "qris"}`,
+        `Pakasir/${order.pakasirMethod || "qris"}`,
       );
       if (!approved.ok) {
         console.error(`[pakasir/status] crediting failed order=${order.id}:`, approved.error);
@@ -75,7 +84,7 @@ export async function GET(request: Request) {
       }
       return NextResponse.json({ success: true, status: "APPROVED" });
     }
-    if (detail.transaction.status === "expired" || detail.transaction.status === "cancelled") {
+    if (detail.transaction.status === "canceled") {
       await prisma.order.updateMany({
         where: { id: order.id, status: "PENDING" },
         data: { status: "CANCELLED" },

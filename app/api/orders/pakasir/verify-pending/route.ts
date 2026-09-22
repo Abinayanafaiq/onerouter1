@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import {
-  getTransactionDetail,
-  checkTransactionCompletedViaCreate,
+  createTransaction,
+  getTransactionStatus,
+  type PakasirMethod,
 } from "@/app/lib/pakasir";
 import { approvePaidOrder } from "@/app/lib/order-approval";
 
@@ -16,7 +17,7 @@ export async function GET() {
     const userId = (session.user as { id: string }).id;
 
     // Hanya cek order PENDING dalam 24 jam terakhir — transaksi Pakasir
-    // biasanya kadaluarsa dalam beberapa menit, jadi order lama pasti expired.
+    // otomatis canceled setelah 1x24 jam, jadi order lama pasti expired.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const pendingOrders = await prisma.order.findMany({
       where: {
@@ -32,45 +33,43 @@ export async function GET() {
     let approved = 0;
     let cancelled = 0;
     for (const order of pendingOrders) {
-      // 1. Cek via transactiondetail API (utama — works untuk API-created transactions)
-      const detail = await getTransactionDetail({
-        orderId: order.id,
-        amount: order.amount,
-      });
-
-      if (detail.ok) {
-        if (detail.transaction.status === "completed") {
-          const res = await approvePaidOrder(
-            order.id,
-            `Pakasir/${detail.transaction.payment_method || order.pakasirMethod || "qris"}`,
-          );
-          if (res.ok) approved++;
-        } else if (
-          detail.transaction.status === "expired" ||
-          detail.transaction.status === "cancelled"
-        ) {
-          const r = await prisma.order.updateMany({
-            where: { id: order.id, status: "PENDING" },
-            data: { status: "CANCELLED" },
-          });
-          if (r.count > 0) cancelled++;
-        }
-        continue;
+      // API v2: cek status butuh txn_id (tersimpan di pakasirPaymentNumber).
+      // Jika kosong, pulihkan via create-transaction (find-or-create).
+      let txnId = order.pakasirPaymentNumber;
+      if (!txnId) {
+        const recovered = await createTransaction({
+          method: (order.pakasirMethod as PakasirMethod | null) ?? "qris",
+          orderId: order.id,
+          amount: order.amount,
+        });
+        if (!recovered.ok) continue;
+        txnId = recovered.transaction.txn_id;
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            pakasirPaymentNumber: txnId,
+            pakasirExpiredAt: recovered.transaction.expired_at
+              ? new Date(recovered.transaction.expired_at)
+              : null,
+          },
+        });
       }
 
-      // 2. Fallback: jika transactiondetail 404 (terjadi untuk URL-integration
-      //    transactions), cek via createTransaction — jika return "already
-      //    completed", transaksi sudah dibayar.
-      const fallback = await checkTransactionCompletedViaCreate({
-        orderId: order.id,
-        amount: order.amount,
-      });
-      if (fallback.completed) {
+      const detail = await getTransactionStatus({ txnId });
+      if (!detail.ok) continue;
+
+      if (detail.transaction.status === "completed") {
         const res = await approvePaidOrder(
           order.id,
           `Pakasir/${order.pakasirMethod || "qris"}`,
         );
         if (res.ok) approved++;
+      } else if (detail.transaction.status === "canceled") {
+        const r = await prisma.order.updateMany({
+          where: { id: order.id, status: "PENDING" },
+          data: { status: "CANCELLED" },
+        });
+        if (r.count > 0) cancelled++;
       }
     }
 

@@ -17,7 +17,7 @@ function usdRef(idr: number): string {
 
 type PakasirResult = {
   orderId: string;
-  checkoutLink: string | null;
+  qrImage: string | null;
   totalPayment: number;
   expiredAt: string | null;
   toks: number;
@@ -257,7 +257,7 @@ export function WalletTopUpForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        checkoutLink?: string | null;
+        qrImage?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
@@ -265,7 +265,7 @@ export function WalletTopUpForm({
       if (data.success && data.orderId) {
         setPakasirResult({
           orderId: data.orderId,
-          checkoutLink: data.checkoutLink ?? null,
+          qrImage: data.qrImage ?? null,
           totalPayment: data.totalPayment ?? idrAmount,
           expiredAt: data.expiredAt ?? null,
           toks,
@@ -475,18 +475,17 @@ export function WalletTopUpForm({
             </p>
           </div>
 
-          {pakasirResult.checkoutLink ? (
-            <a
-              href={pakasirResult.checkoutLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition hover:opacity-90"
-            >
-              {t("payNow")}
-            </a>
+          {pakasirResult.qrImage ? (
+            <div className="mx-auto w-fit rounded-xl bg-white p-3">
+              <img
+                src={pakasirResult.qrImage}
+                alt="QRIS Pembayaran"
+                className="h-56 w-56"
+              />
+            </div>
           ) : (
             <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-xs text-amber-400">
-              {t("paymentLinkUnavailable")}
+              {t("qrUnavailable")}
             </p>
           )}
 

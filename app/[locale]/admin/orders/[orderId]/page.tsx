@@ -43,10 +43,12 @@ export default async function AdminOrderDetailPage({
         {order.pakasirMethod && <Row label="Pakasir Method" value={order.pakasirMethod} />}
         {order.pakasirPaymentNumber && (
           <Row
-            label="Pakasir QR/VA"
+            label="Pakasir Txn ID"
             value={
               <span className="font-mono text-xs break-all max-w-[260px] inline-block">
-                {order.pakasirPaymentNumber.slice(0, 40)}...
+                {order.pakasirPaymentNumber.length > 40
+                  ? `${order.pakasirPaymentNumber.slice(0, 40)}...`
+                  : order.pakasirPaymentNumber}
               </span>
             }
           />
