@@ -22,7 +22,13 @@ import {
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
-import { MASTER_API_URL, MASTER_API_KEY } from "@/app/lib/constants";
+import {
+  MASTER_API_URL,
+  MASTER_API_KEY,
+  BACKUP_API_URL,
+  BACKUP_API_KEY,
+  getBackupUpstreamModelId,
+} from "@/app/lib/constants";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -169,13 +175,24 @@ export async function POST(request: Request) {
     return errorResponse(`Model '${model}' is not allowed for this API key`, 403, "model_not_allowed");
   }
 
-  // 5b. Resolve master key from DB (with env fallback when zero DB keys)
+  // 5c. Backup upstream routing: some public model IDs are served by a
+  // secondary upstream with its own endpoint, key, and upstream model IDs.
+  // When BACKUP_API_KEY is unset the model falls back to the master upstream.
+  const backupUpstreamModelId = getBackupUpstreamModelId(resolvedModel.modelId);
+  const useBackupUpstream = backupUpstreamModelId !== null;
+  if (useBackupUpstream) {
+    console.log(`[v1/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstreamModelId}`);
+  }
+
+  // 5b. Resolve master key from DB (with env fallback when zero DB keys).
+  // Backup-routed models authenticate with BACKUP_API_KEY instead, so they
+  // don't need a master key at all.
   const enabledKeyCount = await countEnabledMasterKeys();
   const usingEnvFallback = enabledKeyCount === 0 && !!MASTER_API_KEY;
-  if (usingEnvFallback) {
+  if (usingEnvFallback && !useBackupUpstream) {
     console.warn("[v1/chat] WARNING: using MASTER_API_KEY env fallback (no DB master keys configured)");
   }
-  if (enabledKeyCount === 0 && !MASTER_API_KEY) {
+  if (!useBackupUpstream && enabledKeyCount === 0 && !MASTER_API_KEY) {
     console.log("[v1/chat] no master key available (DB empty, env unset)");
     return errorResponse("API key not fully activated (no master key available)", 403, "configuration_error");
   }
@@ -268,9 +285,11 @@ export async function POST(request: Request) {
   console.log("[v1/chat] provider request ALLOWED");
 
   // 9. Forward to upstream provider with failover
-  body.model = resolvedModel.masterId;
+  body.model = useBackupUpstream ? backupUpstreamModelId : resolvedModel.masterId;
   const clientWantsStream = body.stream === true;
-  const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
+  const upstreamUrl = useBackupUpstream
+    ? `${BACKUP_API_URL}/chat/completions`
+    : `${MASTER_API_URL}/chat/completions`;
   console.log("[v1/chat] forwarding to:", upstreamUrl, "client stream:", clientWantsStream);
 
   // WORKAROUND: the upstream origin crashes (Cloudflare 520) on NON-streaming
@@ -304,7 +323,9 @@ export async function POST(request: Request) {
     console.log("[v1/chat] stripped temperature for kimi-k3 (reasoning model)");
   }
 
-  const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
+  // The backup upstream uses a single dedicated key (no DB rotation), so
+  // like the env fallback there is only one attempt.
+  const MAX_ATTEMPTS = usingEnvFallback || useBackupUpstream ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
 
@@ -315,7 +336,9 @@ export async function POST(request: Request) {
   try {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
-      if (usingEnvFallback) {
+      if (useBackupUpstream) {
+        currentKey = { id: "backup-upstream", plaintext: BACKUP_API_KEY };
+      } else if (usingEnvFallback) {
         currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
       } else {
         const next = await getActiveMasterKeyForRequest();
@@ -326,7 +349,11 @@ export async function POST(request: Request) {
         currentKey = next;
       }
 
-      const maskedLog = usingEnvFallback ? "env-fallback" : maskForKeyLog(currentKey.plaintext);
+      const maskedLog = useBackupUpstream
+        ? "backup-upstream"
+        : usingEnvFallback
+          ? "env-fallback"
+          : maskForKeyLog(currentKey.plaintext);
       console.log(`[v1/chat] attempt ${attempt + 1}/${MAX_ATTEMPTS} with key ${maskedLog}`);
 
       let upstream = await fetchUpstream(upstreamUrl, {
@@ -393,7 +420,10 @@ export async function POST(request: Request) {
         upstream.status === 401 ||
         upstream.status === 403 ||
         upstream.status === 429;
-      const isRetryable = !usingEnvFallback && (isKeyError || upstream.status >= 500);
+      // Backup-routed requests use a non-DB dedicated key — never mark it
+      // errored and don't retry (there is no other key to rotate to).
+      const isRetryable =
+        !usingEnvFallback && !useBackupUpstream && (isKeyError || upstream.status >= 500);
 
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
@@ -443,7 +473,7 @@ export async function POST(request: Request) {
         return errorResponse(safe.message, safe.status, "api_error");
       }
 
-      if (!usingEnvFallback) {
+      if (!usingEnvFallback && !useBackupUpstream) {
         await markKeySuccess(currentKey.id);
       }
 

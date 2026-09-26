@@ -1,6 +1,34 @@
 export const MASTER_API_URL = process.env.MASTER_API_URL || "https://limitrouter.com/v1";
 export const MASTER_API_KEY = process.env.MASTER_API_KEY || "";
 
+/**
+ * Secondary (backup) upstream. Certain model IDs are routed here instead of
+ * the master upstream. The upstream uses different model IDs than the ones
+ * we expose publicly — BACKUP_UPSTREAM_MODEL_MAP does the translation.
+ *
+ * BACKUP_API_KEY must be set via environment variable (never committed).
+ * When it is missing, models in the map gracefully fall back to the master
+ * upstream using their regular masterId.
+ */
+export const BACKUP_API_URL = process.env.BACKUP_API_URL || "https://backup.limitrouter.com/v1";
+export const BACKUP_API_KEY = process.env.BACKUP_API_KEY || "";
+
+/** Public (client-facing) modelId → model ID expected by the backup upstream. */
+export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
+  "deepseek-v4-flash-0731": "wdb-DeepSeek-V4-Flash-0731",
+  "deepseek-v4-pro-0813": "wdb-DeepSeek-V4-Pro-0813",
+};
+
+/**
+ * Resolve the upstream model ID on the backup endpoint for a public modelId.
+ * Returns null when the model is not backup-routed OR when BACKUP_API_KEY is
+ * not configured (caller then uses the master upstream as usual).
+ */
+export function getBackupUpstreamModelId(modelId: string): string | null {
+  if (!BACKUP_API_KEY) return null;
+  return BACKUP_UPSTREAM_MODEL_MAP[modelId] ?? null;
+}
+
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@onerouter.id";
 
 export const APP_NAME = "9inference";

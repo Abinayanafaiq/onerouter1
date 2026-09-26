@@ -18,6 +18,7 @@ export const PROVIDER_MODEL_MAP = {
   Alibaba: ["qwen3.7-plus", "qwen3-coder-next", "qwen3.8-max"],
   DeepSeek: [
     "deepseek-v4-flash",
+    "deepseek-v4-flash-0731",
     "deepseek-v4-pro",
     "deepseek-v4-pro-0813",
     "deepseek-3.2",
@@ -261,6 +262,18 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 15,
+  },
+  {
+    modelId: "deepseek-v4-flash-0731",
+    masterId: "deepseek-v4-flash-0731",
+    name: "DeepSeek V4 Flash 0731",
+    provider: "DeepSeek",
+    description: "DeepSeek V4 Flash snapshot 0731 — cepat dan hemat untuk throughput tinggi",
+    contextWindow: "1M",
+    supportsText: true,
+    supportsImages: false,
+    supportsStreaming: true,
+    sort: 4,
   },
   {
     modelId: "deepseek-v4-pro-0813",

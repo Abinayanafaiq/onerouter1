@@ -21,7 +21,13 @@ import {
   sleep,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
-import { MASTER_API_URL, MASTER_API_KEY } from "@/app/lib/constants";
+import {
+  MASTER_API_URL,
+  MASTER_API_KEY,
+  BACKUP_API_URL,
+  BACKUP_API_KEY,
+  getBackupUpstreamModelId,
+} from "@/app/lib/constants";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -232,8 +238,18 @@ export async function POST(request: Request) {
   console.log("[api/dashboard/chat] provider request ALLOWED");
 
   // 8. Forward to upstream provider
-  body.model = resolvedModel.masterId;
-  const upstreamUrl = `${MASTER_API_URL}/chat/completions`;
+  // Backup upstream routing: some public model IDs are served by a secondary
+  // upstream with its own endpoint, key, and upstream model IDs. When
+  // BACKUP_API_KEY is unset the model falls back to the master upstream.
+  const backupUpstreamModelId = getBackupUpstreamModelId(resolvedModel.modelId);
+  const useBackupUpstream = backupUpstreamModelId !== null;
+  if (useBackupUpstream) {
+    console.log(`[api/dashboard/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstreamModelId}`);
+  }
+  body.model = useBackupUpstream ? backupUpstreamModelId : resolvedModel.masterId;
+  const upstreamUrl = useBackupUpstream
+    ? `${BACKUP_API_URL}/chat/completions`
+    : `${MASTER_API_URL}/chat/completions`;
 
   // Kimi K3 is a reasoning model that rejects `temperature` with HTTP 400.
   // Strip it before forwarding so clients that always send temperature don't
@@ -257,14 +273,18 @@ export async function POST(request: Request) {
     include_usage: true,
   };
 
-  const MAX_ATTEMPTS = usingEnvFallback ? 1 : 3;
+  // The backup upstream uses a single dedicated key (no DB rotation), so
+  // like the env fallback there is only one attempt.
+  const MAX_ATTEMPTS = usingEnvFallback || useBackupUpstream ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
 
   try {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
-      if (usingEnvFallback) {
+      if (useBackupUpstream) {
+        currentKey = { id: "backup-upstream", plaintext: BACKUP_API_KEY };
+      } else if (usingEnvFallback) {
         currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
       } else {
         const next = await getActiveMasterKeyForRequest();
@@ -290,7 +310,10 @@ export async function POST(request: Request) {
         upstream.status === 401 ||
         upstream.status === 403 ||
         upstream.status === 429;
-      const isRetryable = !usingEnvFallback && (isKeyError || upstream.status >= 500);
+      // Backup-routed requests use a non-DB dedicated key — never mark it
+      // errored and don't retry (there is no other key to rotate to).
+      const isRetryable =
+        !usingEnvFallback && !useBackupUpstream && (isKeyError || upstream.status >= 500);
 
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
@@ -338,7 +361,7 @@ export async function POST(request: Request) {
         return errorResponse(safe.message, safe.status, "api_error");
       }
 
-      if (!usingEnvFallback) {
+      if (!usingEnvFallback && !useBackupUpstream) {
         await markKeySuccess(currentKey.id);
       }
 
