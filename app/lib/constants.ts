@@ -17,6 +17,7 @@ export const BACKUP_API_KEY = process.env.BACKUP_API_KEY || "";
 export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
   "deepseek-v4-flash-0731": "wdb-DeepSeek-V4-Flash-0731",
   "deepseek-v4-pro-0813": "wdb-DeepSeek-V4-Pro-0813",
+  "deepseek-v4.1-flash": "wdb-DeepSeek-V4.1-Flash",
 };
 
 /**
