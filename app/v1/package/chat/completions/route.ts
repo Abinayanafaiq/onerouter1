@@ -10,6 +10,11 @@ import {
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
 import {
+  BACKUP_API_URL,
+  BACKUP_API_KEY,
+  getBackupUpstreamModelId,
+} from "@/app/lib/constants";
+import {
   releasePackageTokens,
   reservePackageTokens,
   settlePackageTokens,
@@ -144,7 +149,13 @@ export async function POST(request: Request) {
     return apiError("Kuota paket tidak mencukupi. Silakan beli paket baru.", 402, "insufficient_quota", "package_quota_exhausted");
   }
 
-  body.model = model.upstreamId;
+  // Backup upstream routing: model paket tertentu dilayani upstream sekunder
+  // dengan endpoint, key, dan model ID sendiri. Kalau BACKUP_API_KEY tidak
+  // diset, model jatuh kembali ke upstream paket seperti biasa.
+  const backupUpstreamModelId = getBackupUpstreamModelId(model.modelId);
+  const useBackupUpstream = backupUpstreamModelId !== null;
+
+  body.model = useBackupUpstream ? backupUpstreamModelId : model.upstreamId;
   const isStream = body.stream === true;
   if (isStream) {
     const existing = body.stream_options;
@@ -154,9 +165,12 @@ export async function POST(request: Request) {
     };
   }
 
-  const upstreamUrl = `${PACKAGE_UPSTREAM_URL}/chat/completions`;
+  const upstreamUrl = useBackupUpstream
+    ? `${BACKUP_API_URL.replace(/\/$/, "")}/chat/completions`
+    : `${PACKAGE_UPSTREAM_URL}/chat/completions`;
+  const upstreamApiKey = useBackupUpstream ? BACKUP_API_KEY : PACKAGE_UPSTREAM_API_KEY;
   console.log(
-    `[${ts()}] [v1/package/chat] forwarding to: ${upstreamUrl} model=${requestedModel}->${model.upstreamId} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
+    `[${ts()}] [v1/package/chat] forwarding to: ${upstreamUrl} model=${requestedModel}->${body.model}${useBackupUpstream ? " (backup upstream)" : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
   );
 
   let upstream: Response;
@@ -165,7 +179,7 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${PACKAGE_UPSTREAM_API_KEY}`,
+        Authorization: `Bearer ${upstreamApiKey}`,
         "x-session-hash": computeSessionHash(apiKey.userId),
       },
       body: JSON.stringify(body),
