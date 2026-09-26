@@ -13,11 +13,23 @@ export const MASTER_API_KEY = process.env.MASTER_API_KEY || "";
 export const BACKUP_API_URL = process.env.BACKUP_API_URL || "https://backup.limitrouter.com/v1";
 export const BACKUP_API_KEY = process.env.BACKUP_API_KEY || "";
 
-/** Public (client-facing) modelId → model ID expected by the backup upstream. */
+/**
+ * Public (client-facing) modelId → model ID expected by the backup upstream.
+ * Membership in this map is what routes a model to the backup upstream.
+ *
+ * Only models verified live on the backup endpoint are listed here. The
+ * backup also advertises kimi-k2.6 / kimi-k2.7-code (both fireworks and
+ * wandb variants), but those return NOT_FOUND / drop the connection when
+ * actually called — do NOT add them until the provider fixes the deployment.
+ */
 export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
   "deepseek-v4-flash-0731": "wdb-DeepSeek-V4-Flash-0731",
   "deepseek-v4-pro-0813": "wdb-DeepSeek-V4-Pro-0813",
   "deepseek-v4.1-flash": "wdb-DeepSeek-V4.1-Flash",
+  "glm-5.2": "glm-5.2",
+  "glm-5.3-flash": "glm-5.3-flash",
+  "kimi-k3": "kimi-k3",
+  "qwen3.8-max": "qwen3.8-max",
 };
 
 /**
