@@ -27,6 +27,7 @@ export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
   "deepseek-v4-pro-0813": "wdb-DeepSeek-V4-Pro-0813",
   "deepseek-v4.1-flash": "wdb-DeepSeek-V4.1-Flash",
   "glm-5.2": "glm-5.2",
+  "glm-5.3": "glm-5.3",
   "glm-5.3-flash": "glm-5.3-flash",
   "kimi-k3": "kimi-k3",
   "qwen3.8-max": "qwen3.8-max",
