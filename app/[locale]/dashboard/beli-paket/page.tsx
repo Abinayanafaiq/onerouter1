@@ -25,8 +25,9 @@ function groupPackages(packages: PackageDef[]) {
   return groups;
 }
 
-export default async function BuyPackagePage() {
-  const tokenPackages = await getAllPackages();
+export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolean }) {
+  const allPackages = await getAllPackages();
+  const tokenPackages = promoOnly ? allPackages.filter((pkg) => pkg.isPromo) : allPackages;
   const t = await getTranslations("BuyPackage");
   const locale = await getLocale();
   const grouped = groupPackages(tokenPackages);
@@ -39,11 +40,11 @@ export default async function BuyPackagePage() {
         <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-px w-5 bg-accent/60" /> {t("eyebrow")}
+              <span className="h-px w-5 bg-accent/60" /> {t(promoOnly ? "promoEyebrow" : "eyebrow")}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t(promoOnly ? "promoTitle" : "title")}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              {t("subtitle")}
+              {t(promoOnly ? "promoSubtitle" : "subtitle")}
             </p>
           </div>
           <Link
@@ -62,9 +63,9 @@ export default async function BuyPackagePage() {
               <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
             </svg>
           </div>
-          <h3 className="mt-4 text-sm font-semibold">{t("emptyTitle")}</h3>
+            <h3 className="mt-4 text-sm font-semibold">{t(promoOnly ? "promoEmptyTitle" : "emptyTitle")}</h3>
           <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            {t("emptyDesc")}
+              {t(promoOnly ? "promoEmptyDesc" : "emptyDesc")}
           </p>
         </div>
       ) : (
@@ -179,4 +180,8 @@ export default async function BuyPackagePage() {
       </p>
     </div>
   );
+}
+
+export default function BuyPackagePage() {
+  return <PackageCatalog />;
 }

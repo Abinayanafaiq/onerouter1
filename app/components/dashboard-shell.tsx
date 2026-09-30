@@ -71,6 +71,15 @@ const NAV_MAIN_DEFS = [
     ),
   },
   {
+    key: "promoPackages" as const,
+    href: "/dashboard/paket-promo",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+        <path d="M12 3 3 12l9 9 9-9-9-9ZM8.5 8.5h.01M15.5 15.5h.01M8 16l8-8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     key: "packages" as const,
     href: "/dashboard/packages",
     icon: (

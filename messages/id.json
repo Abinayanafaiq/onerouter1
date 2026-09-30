@@ -352,6 +352,7 @@
     "models": "Models",
     "usage": "Usage",
     "buyPackage": "Beli Paket",
+    "promoPackages": "Paket Promo",
     "packages": "Paket Saya",
     "billing": "Billing",
     "documentation": "Documentation",
@@ -685,6 +686,11 @@
     "renewNote": "API key tetap sama. Sisa kuota hangus — kuota dimulai ulang dari penuh & masa aktif diperpanjang."
   },
   "BuyPackage": {
+    "promoEyebrow": "Paket promo",
+    "promoTitle": "Paket Promo Tersedia",
+    "promoSubtitle": "Pilih paket promo berdasarkan model. Stok terbatas dan paket promo tidak dapat diperpanjang.",
+    "promoEmptyTitle": "Belum ada paket promo",
+    "promoEmptyDesc": "Paket promo sedang tidak tersedia. Cek kembali nanti atau lihat paket lainnya di Beli Paket.",
     "eyebrow": "Beli paket",
     "title": "Paket Token Tersedia",
     "subtitle": "Sekali bayar, langsung dapat API key khusus dengan kuota jutaan token. Kuota paket terpisah dari saldo PAYG.",

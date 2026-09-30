@@ -352,6 +352,7 @@
     "models": "Models",
     "usage": "Usage",
     "buyPackage": "Buy Package",
+    "promoPackages": "Promo Packages",
     "packages": "My Packages",
     "billing": "Billing",
     "documentation": "Documentation",
@@ -685,6 +686,11 @@
     "renewNote": "Same API key. Remaining quota is forfeited — quota restarts at full & active period is extended."
   },
   "BuyPackage": {
+    "promoEyebrow": "Promo packages",
+    "promoTitle": "Available Promo Packages",
+    "promoSubtitle": "Choose a promo package by model. Stock is limited and promo packages cannot be renewed.",
+    "promoEmptyTitle": "No promo packages available",
+    "promoEmptyDesc": "There are no promo packages right now. Check back later or browse other packages.",
     "eyebrow": "Buy package",
     "title": "Available Token Packages",
     "subtitle": "One-time payment, instantly get a dedicated API key with millions of tokens. Package quota is separate from your PAYG balance.",
