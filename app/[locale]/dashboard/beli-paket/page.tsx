@@ -3,13 +3,14 @@ import { getAllPackages, formatTokenQuota, formatDuration } from "@/app/lib/pack
 import { getLocale, getTranslations } from "next-intl/server";
 import type { PackageDef } from "@/app/lib/packages";
 import PackagePicker from "./package-picker";
+import { PackageBrandIcon } from "@/app/components/package-brand-icon";
 
 export const dynamic = "force-dynamic";
 
 const modelGroups = [
-  { key: "glm", label: "GLM", symbol: "✳", color: "text-sky-300", background: "bg-sky-400/10 border-sky-400/20" },
-  { key: "kimi", label: "Kimi", symbol: "☾", color: "text-violet-300", background: "bg-violet-400/10 border-violet-400/20" },
-  { key: "deepseek", label: "DeepSeek", symbol: "≋", color: "text-cyan-300", background: "bg-cyan-400/10 border-cyan-400/20" },
+  { key: "glm", label: "GLM", background: "bg-sky-400/10 border-sky-400/20" },
+  { key: "kimi", label: "Kimi", background: "bg-violet-400/10 border-violet-400/20" },
+  { key: "deepseek", label: "DeepSeek", background: "bg-cyan-400/10 border-cyan-400/20" },
 ] as const;
 
 function groupPackages(packages: PackageDef[]) {
@@ -70,11 +71,11 @@ export default async function BuyPackagePage() {
         <PackagePicker groups={groupOrder.filter((key) => grouped.has(key)).map((key) => {
             const model = modelGroups.find((item) => item.key === key);
             const title = model?.label ?? (key === "general" ? t("allModelsGroup") : t("otherModelsGroup"));
-            return { key, title, symbol: model?.symbol ?? "✦", content: (
+            return { key, title, content: (
             <section aria-label={title}>
               <div className="mb-4 flex items-center gap-3">
-                <span aria-hidden="true" className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border text-2xl font-semibold ${model?.background ?? "border-accent/20 bg-accent/10"} ${model?.color ?? "text-accent"}`}>
-                  {model?.symbol ?? "✦"}
+                <span aria-hidden="true" className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border text-accent ${model?.background ?? "border-accent/20 bg-accent/10"}`}>
+                  <PackageBrandIcon group={key} className="h-6 w-6" />
                 </span>
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
@@ -101,6 +102,11 @@ export default async function BuyPackagePage() {
                   {t("bestValue")}
                 </span>
               )}
+              {pkg.isPromo && (
+                <span className="mt-3 w-fit rounded-full border border-rose-400/30 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold text-rose-300">
+                  {t("promoBadge")}
+                </span>
+              )}
               {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
                 <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">
                   {t("specialPackage")}
@@ -115,6 +121,7 @@ export default async function BuyPackagePage() {
               <div className="mt-1 text-xs text-muted-foreground">
                 {t("oneTimePayment", { duration: formatDuration(pkg.durationDays).toLowerCase() })}
               </div>
+              {pkg.isPromo && <p className="mt-1 text-xs text-rose-300">{t("promoNoRenew")}</p>}
               <div
                 className={`mt-1.5 text-xs font-medium ${
                   soldOut ? "text-red-400" : lowStock ? "text-amber-300" : "text-muted-foreground"

@@ -693,6 +693,8 @@
     "emptyDesc": "Paket token sedang tidak tersedia. Silakan coba lagi nanti atau hubungi admin.",
     "bestValue": "Paling hemat",
     "specialPackage": "Paket Khusus",
+    "promoBadge": "Stok promo terbatas",
+    "promoNoRenew": "Harga promo hanya untuk pembelian baru; tidak bisa diperpanjang.",
     "allModelsGroup": "Paket semua model",
     "allModelsDesc": "Pilihan paket untuk berbagai model AI",
     "otherModelsGroup": "Model lainnya",

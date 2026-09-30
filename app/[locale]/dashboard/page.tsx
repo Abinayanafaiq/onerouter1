@@ -10,6 +10,7 @@ import { AnimatedCounter } from "@/app/components/animated-counter";
 import { ModelCard } from "@/app/components/model-card";
 import { toModelCardData } from "@/app/lib/model-card-data";
 import { RevealKey } from "./reveal-key";
+import { getAllPackages } from "@/app/lib/packages";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +136,7 @@ export default async function DashboardPage() {
     monthlySpendAgg,
     avgLatencyAgg,
     sevenDayLogs,
+    promoPackages,
   ] = await Promise.all([
     getWalletSummary(userId),
     getTransactions(walletId, 7),
@@ -162,6 +164,7 @@ export default async function DashboardPage() {
       where: { userId, status: "success", createdAt: { gte: sevenDaysAgo } },
       select: { totalCost: true, createdAt: true },
     }),
+    getAllPackages(),
   ]);
 
   const balanceToks = idrToToks(balance);
@@ -209,6 +212,7 @@ export default async function DashboardPage() {
       : "text-accent border-accent/30 bg-accent/10";
 
   const featuredModels = availableModels.slice(0, 3).map(toModelCardData);
+  const availablePromos = promoPackages.filter((pkg) => pkg.isPromo && pkg.stock > 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -240,6 +244,27 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {availablePromos.length > 0 && (
+        <section className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.05] p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Paket promo tersedia</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Stok terbatas. Harga promo hanya untuk pembelian baru dan tidak bisa diperpanjang.</p>
+            </div>
+            <Link href="/dashboard/beli-paket" className="rounded-lg border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-200 hover:bg-rose-400/10">Lihat semua paket</Link>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {availablePromos.map((pkg) => (
+              <Link key={pkg.id} href={`/checkout/${pkg.id}`} className="rounded-xl border border-white/10 bg-black/20 p-4 transition hover:border-rose-400/40 focus-visible:outline-2 focus-visible:outline-rose-300">
+                <div className="text-sm font-semibold">{pkg.name}</div>
+                <div className="mt-2 text-xl font-bold text-rose-200">Rp{pkg.price.toLocaleString(locale)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Sisa stok promo: {pkg.stock.toLocaleString(locale)}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Metric cards */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">

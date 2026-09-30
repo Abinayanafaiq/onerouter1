@@ -12,6 +12,7 @@ export type PackageData = {
   durationDays: number;
   sort: number;
   stock: number;
+  isPromo: boolean;
   productType: string;
   isActive: boolean;
   allowedModels: string[];
@@ -76,6 +77,7 @@ export function PackageEditor({
     durationDays: String(pkg?.durationDays ?? 1),
     sort: String(pkg?.sort ?? 0),
     stock: String(pkg?.stock ?? 0),
+    isPromo: pkg?.isPromo ?? false,
     productType: pkg?.productType ?? "TOKEN_PACKAGE",
     isActive: pkg?.isActive ?? true,
     allowedModels: pkg?.allowedModels?.join(", ") ?? "",
@@ -102,6 +104,7 @@ export function PackageEditor({
         durationDays: parseInt(form.durationDays, 10) || 1,
         sort: parseInt(form.sort, 10) || 0,
         stock: parseInt(form.stock, 10) || 0,
+        isPromo: form.isPromo,
         productType: form.productType,
         isActive: form.isActive,
         allowedModels: form.allowedModels
@@ -175,6 +178,9 @@ export function PackageEditor({
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-400">
               Paket Khusus
             </span>
+          )}
+          {form.isPromo && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-900/40 text-rose-300">Promo</span>
           )}
         </div>
         {!isCreate && (
@@ -260,6 +266,12 @@ export function PackageEditor({
             onChange={(e) => set("stock", e.target.value)}
             className={inputClass}
           />
+        </Field>
+        <Field label="Paket Promo">
+          <div className="flex items-center gap-2 h-[34px]">
+            <Toggle checked={form.isPromo} onChange={(v) => set("isPromo", v)} label="Paket promo" />
+            <span className="text-xs text-neutral-400">{form.isPromo ? "Promo (tidak bisa diperpanjang)" : "Reguler"}</span>
+          </div>
         </Field>
         {isCreate && (
           <Field label="Status">

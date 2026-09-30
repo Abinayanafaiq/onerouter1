@@ -27,6 +27,7 @@ export default async function AdminPackagesPage() {
     durationDays: p.durationDays,
     sort: p.sort,
     stock: p.stock,
+    isPromo: p.isPromo,
     productType: p.productType,
     isActive: p.isActive,
     allowedModels: p.allowedModels,

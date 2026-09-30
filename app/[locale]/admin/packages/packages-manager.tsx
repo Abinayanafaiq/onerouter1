@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { PackageEditor, type PackageData } from "./package-editor";
+import { PackageBrandIcon } from "@/app/components/package-brand-icon";
 
 const categories = [
-  { key: "general", label: "Semua model", icon: "✦" },
-  { key: "glm", label: "GLM", icon: "✳" },
-  { key: "kimi", label: "Kimi", icon: "☾" },
-  { key: "deepseek", label: "DeepSeek", icon: "≋" },
-  { key: "other", label: "Model lainnya", icon: "◇" },
-  { key: "legacy", label: "Legacy", icon: "▤" },
+  { key: "general", label: "Semua model" },
+  { key: "glm", label: "GLM" },
+  { key: "kimi", label: "Kimi" },
+  { key: "deepseek", label: "DeepSeek" },
+  { key: "other", label: "Model lainnya" },
+  { key: "legacy", label: "Legacy" },
 ] as const;
 
 function categoryOf(pkg: PackageData) {
@@ -52,7 +53,7 @@ export function PackagesManager({
 
       {visibleCategories.length > 0 && (
         <div className="flex flex-wrap gap-2" aria-label="Pilih kategori paket">
-          {visibleCategories.map(({ key, label, icon }) => (
+          {visibleCategories.map(({ key, label }) => (
             <button
               key={key}
               type="button"
@@ -64,7 +65,7 @@ export function PackagesManager({
                   : "border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-500 hover:text-neutral-100"
               }`}
             >
-              <span aria-hidden="true" className="text-base leading-none">{icon}</span>
+              <PackageBrandIcon group={key} className="h-5 w-5" />
               {label}
               <span className={activeCategory === key ? "text-neutral-600" : "text-neutral-500"}>
                 {packages.filter((pkg) => categoryOf(pkg) === key).length}

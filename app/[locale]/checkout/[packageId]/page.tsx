@@ -7,6 +7,7 @@ import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { redirect, Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { CheckoutForm } from "./form";
+import { validateRenewalKey } from "@/app/lib/package-renewal";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -74,7 +75,10 @@ export default async function CheckoutPage({
         renewalKey = key;
       }
     }
-    if (!renewalKey) {
+    const renewal = renewalKey
+      ? await validateRenewalKey({ userId, apiKeyId: renewalKey.id, packageId })
+      : null;
+    if (!renewalKey || !renewal?.ok) {
       // Target renew tidak valid — kembalikan ke daftar paket user.
       redirect({ href: "/dashboard/packages", locale });
       return null;

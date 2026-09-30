@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       description?: string | null;
       tokenQuota?: string | number;
       stock?: number;
+      isPromo?: boolean;
       isActive?: boolean;
       price?: number;
       durationDays?: number;
@@ -83,6 +84,12 @@ export async function POST(request: Request) {
 
     if (typeof body.stock === "number") {
       data.stock = Math.max(0, Math.floor(body.stock));
+    }
+    if (body.isPromo !== undefined) {
+      if (typeof body.isPromo !== "boolean") {
+        return NextResponse.json({ success: false, error: "Status promo tidak valid" }, { status: 400 });
+      }
+      data.isPromo = body.isPromo;
     }
 
     if (typeof body.isActive === "boolean") {

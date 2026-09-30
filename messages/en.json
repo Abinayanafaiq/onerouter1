@@ -693,6 +693,8 @@
     "emptyDesc": "Token packages are currently unavailable. Please try again later or contact the admin.",
     "bestValue": "Best value",
     "specialPackage": "Special Package",
+    "promoBadge": "Limited promo stock",
+    "promoNoRenew": "Promo pricing is for new purchases only; this package cannot be renewed.",
     "allModelsGroup": "All-model packages",
     "allModelsDesc": "Packages for a range of AI models",
     "otherModelsGroup": "Other models",

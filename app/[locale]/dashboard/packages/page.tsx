@@ -100,7 +100,7 @@ export default async function PackagesPage() {
   const renewablePackages = sourcePackageIds.length
     ? await prisma.package.findMany({
         where: { id: { in: sourcePackageIds }, isActive: true, productType: "TOKEN_PACKAGE" },
-        select: { id: true, price: true },
+         select: { id: true, price: true, isPromo: true },
       })
     : [];
   const renewableById = new Map(renewablePackages.map((p) => [p.id, p]));
@@ -276,7 +276,7 @@ export default async function PackagesPage() {
                     {(() => {
                       const sourcePackageId = key.orders[0]?.packageId;
                       const renewPkg = sourcePackageId ? renewableById.get(sourcePackageId) : undefined;
-                      if (!sourcePackageId || !renewPkg) return null;
+                       if (!sourcePackageId || !renewPkg || renewPkg.isPromo) return null;
                       return (
                         <div className="mt-4 border-t border-white/[0.06] pt-4">
                           <Link

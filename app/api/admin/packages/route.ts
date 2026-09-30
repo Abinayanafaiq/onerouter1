@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       durationDays?: number;
       sort?: number;
       stock?: number;
+      isPromo?: boolean;
       productType?: string;
       isActive?: boolean;
       allowedModels?: unknown;
@@ -89,6 +90,9 @@ export async function POST(request: Request) {
     const sort = Math.floor(Number(body.sort) || 0);
     const stock = Math.max(0, Math.floor(Number(body.stock) || 0));
     const isActive = body.isActive !== false;
+    if (body.isPromo !== undefined && typeof body.isPromo !== "boolean") {
+      return NextResponse.json({ success: false, error: "Status promo tidak valid" }, { status: 400 });
+    }
 
     // Model khusus: array modelId yang boleh dipakai key paket ini.
     // Kosong = semua model paket boleh.
@@ -112,6 +116,7 @@ export async function POST(request: Request) {
         durationDays,
         sort,
         stock,
+        isPromo: body.isPromo === true,
         productType,
         isActive,
         allowedModels,

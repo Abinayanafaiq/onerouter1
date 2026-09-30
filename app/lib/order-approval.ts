@@ -60,6 +60,9 @@ export async function approvePaidOrder(
     // dan kuota DIRESET penuh (sisa kuota lama hangus), TIDAK menerbitkan
     // key baru.
     const isRenewal = !isWalletTopUp && isTokenPackage && order.apiKeyId != null;
+    if (isRenewal && pkg.isPromo) {
+      return { ok: false, error: "Paket promo tidak bisa diperpanjang" };
+    }
 
     // Pre-generate API key material for package orders (outside the tx is fine;
     // it's only persisted if the tx commits). Renewal orders skip this entirely.

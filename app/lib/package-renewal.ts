@@ -39,5 +39,10 @@ export async function validateRenewalKey(params: {
     return { ok: false, error: "Paket tidak sesuai dengan API key yang diperpanjang" };
   }
 
+  const pkg = await prisma.package.findUnique({ where: { id: params.packageId }, select: { isPromo: true } });
+  if (pkg?.isPromo) {
+    return { ok: false, error: "Paket promo tidak bisa diperpanjang. Silakan beli paket baru." };
+  }
+
   return { ok: true };
 }

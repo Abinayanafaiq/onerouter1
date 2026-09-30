@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { PackageBrandIcon } from "@/app/components/package-brand-icon";
 
-type Group = { key: string; title: string; symbol: string; content: ReactNode };
+type Group = { key: string; title: string; content: ReactNode };
 
 export default function PackagePicker({ groups }: { groups: Group[] }) {
   const [selected, setSelected] = useState(groups[0]?.key);
@@ -22,7 +23,7 @@ export default function PackagePicker({ groups }: { groups: Group[] }) {
                 : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/25 hover:text-foreground"
             }`}
           >
-            <span aria-hidden="true" className="text-lg leading-none">{group.symbol}</span>
+            <PackageBrandIcon group={group.key} />
             {group.title}
           </button>
         ))}
