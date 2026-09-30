@@ -281,9 +281,14 @@ export function DashboardShell({
           </button>
 
           {/* Brand (mobile) */}
-          <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
-            <span className="grid h-6 w-6 place-items-center rounded-md bg-foreground text-[10px] font-bold text-background">9i</span>
-            <span className="text-sm font-semibold">9inference</span>
+          <Link href="/dashboard" aria-label="9inference" className="flex shrink-0 items-center lg:hidden">
+            <img
+              src="/ChatGPT%20Image%20Oct%201%2C%202026%2C%2012_18_30%20AM.png"
+              alt="9inference"
+              width={120}
+              height={42}
+              className="h-auto w-24 sm:w-30"
+            />
           </Link>
 
           {/* Org context (desktop) */}
@@ -396,14 +401,16 @@ function SidebarContent({
   return (
     <>
       {/* Brand */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-white/[0.06] px-4">
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-          9i
-        </span>
-        <div className="leading-tight">
-          <div className="text-[13px] font-semibold tracking-tight">9inference</div>
-          <div className="text-[10px] text-muted-foreground">{t("platformTagline")}</div>
-        </div>
+      <div className="flex h-14 items-center border-b border-white/[0.06] px-4">
+        <Link href="/dashboard" onClick={onNavigate} aria-label="9inference" className="inline-flex items-center">
+          <img
+            src="/ChatGPT%20Image%20Oct%201%2C%202026%2C%2012_18_30%20AM.png"
+            alt="9inference"
+            width={144}
+            height={50}
+            className="h-auto w-36"
+          />
+        </Link>
       </div>
 
       {/* Nav */}
