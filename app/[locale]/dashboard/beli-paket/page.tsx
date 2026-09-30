@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { PackageDef } from "@/app/lib/packages";
 import PackagePicker from "./package-picker";
 import { PackageBrandIcon } from "@/app/components/package-brand-icon";
+import { PackageCover } from "@/app/components/package-cover";
 
 export const dynamic = "force-dynamic";
 
@@ -90,41 +91,41 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
             return (
             <article
               key={pkg.id}
-              className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white/[0.02] p-6 ${
-                pkg.highlight
+              className={`relative flex flex-col overflow-hidden rounded-[1.8rem] border p-2.5 pb-4 shadow-[0_16px_40px_rgba(0,0,0,0.15)] sm:p-3 sm:pb-5 ${
+                pkg.isPromo
+                  ? "border-rose-400/20 bg-[#171416]"
+                  : pkg.highlight
                   ? "border-accent/30"
                   : (pkg.allowedModels?.length ?? 0) > 0
                     ? "border-amber-400/25"
                     : "border-white/[0.08]"
-              }`}
+              } ${pkg.isPromo ? "" : "bg-white/[0.02]"}`}
             >
-              {pkg.highlight && (
-                <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">
-                  {t("bestValue")}
-                </span>
-              )}
-              {pkg.isPromo && (
-                <span className="mt-3 w-fit rounded-full border border-rose-400/30 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold text-rose-300">
-                  {t("promoBadge")}
-                </span>
-              )}
-              {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
-                <span className="absolute right-4 top-4 rounded-full bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black">
-                  {t("specialPackage")}
-                </span>
-              )}
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {pkg.name}
+              <PackageCover group={key} />
+              <div className="mx-2 mt-4 flex min-h-6 flex-wrap items-center gap-2 sm:mx-3">
+                {pkg.isPromo && (
+                  <span className="rounded-full border border-rose-400/30 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold text-rose-200">
+                    {t("promoBadge")}
+                  </span>
+                )}
+                {pkg.highlight && (
+                  <span className="rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold text-black">{t("bestValue")}</span>
+                )}
+                {!pkg.highlight && (pkg.allowedModels?.length ?? 0) > 0 && (
+                  <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold text-amber-200">{t("specialPackage")}</span>
+                )}
               </div>
-              <div className="mt-4 text-3xl font-bold tracking-tight">
+              <h3 className="mx-2 mt-3 break-words text-lg font-semibold leading-snug tracking-tight text-foreground sm:mx-3">
+                {pkg.name}
+              </h3>
+              <div className="mx-2 mt-3 text-2xl font-bold tracking-tight sm:mx-3">
                 Rp{pkg.price.toLocaleString(locale)}
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="mx-2 mt-1 text-xs text-muted-foreground sm:mx-3">
                 {t("oneTimePayment", { duration: formatDuration(pkg.durationDays).toLowerCase() })}
               </div>
-              {pkg.isPromo && <p className="mt-1 text-xs text-rose-300">{t("promoNoRenew")}</p>}
               <div
-                className={`mt-1.5 text-xs font-medium ${
+                className={`mx-2 mt-3 text-xs font-medium sm:mx-3 ${
                   soldOut ? "text-red-400" : lowStock ? "text-amber-300" : "text-muted-foreground"
                 }`}
               >
@@ -134,18 +135,23 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
                     ? t("stockLeftLow", { stock: pkg.stock.toLocaleString(locale) })
                     : t("stockLeft", { stock: pkg.stock.toLocaleString(locale) })}
               </div>
-              <div className="mt-5 border-y border-white/[0.07] py-4">
-                <div className="text-2xl font-semibold text-accent">{formatTokenQuota(pkg.tokenQuota)}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground">{t("tokenInOut")}</div>
+              <div className="mx-2 mt-4 flex flex-wrap items-baseline justify-between gap-x-3 border-t border-white/10 pt-3 sm:mx-3">
+                <div className="text-lg font-semibold tracking-tight text-accent">{formatTokenQuota(pkg.tokenQuota)}</div>
+                <div className="text-[11px] text-muted-foreground">{t("tokenInOut")}</div>
               </div>
-              <ul className="mt-4 flex-1 space-y-2.5 text-xs text-muted-foreground">
-                {pkg.features.map((feature) => (
+              <ul className="mx-2 mt-3 flex-1 space-y-2 text-xs leading-relaxed text-muted-foreground sm:mx-3">
+                {pkg.features.slice(2).map((feature) => (
                   <li key={feature} className="flex gap-2">
-                    <span className="text-accent">✓</span>
+                    <span aria-hidden="true" className="text-accent">✓</span>
                     {feature}
                   </li>
                 ))}
               </ul>
+              {pkg.isPromo && (
+                <p className="mx-2 mt-4 border-t border-white/[0.07] pt-3 text-[11px] leading-relaxed text-rose-200/80 sm:mx-3">
+                  {t("promoNoRenew")}
+                </p>
+              )}
               {soldOut ? (
                 <span className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-muted-foreground">
                   {t("outOfStockButton")}
@@ -153,8 +159,10 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
               ) : (
                 <Link
                   href={`/checkout/${pkg.id}`}
-                  className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                    pkg.highlight
+                  className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                    pkg.isPromo
+                      ? "bg-rose-300 text-rose-950 hover:bg-rose-200"
+                      : pkg.highlight
                       ? "bg-accent text-black hover:brightness-110"
                       : "border border-white/12 bg-white/[0.04] hover:bg-white/[0.08]"
                   }`}
