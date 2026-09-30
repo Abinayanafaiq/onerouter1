@@ -1,13 +1,34 @@
 import { Link } from "@/i18n/navigation";
 import { getAllPackages, formatTokenQuota, formatDuration } from "@/app/lib/packages";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { PackageDef } from "@/app/lib/packages";
 
 export const dynamic = "force-dynamic";
+
+const modelGroups = [
+  { key: "glm", label: "GLM", symbol: "✳", color: "text-sky-300", background: "bg-sky-400/10 border-sky-400/20" },
+  { key: "kimi", label: "Kimi", symbol: "☾", color: "text-violet-300", background: "bg-violet-400/10 border-violet-400/20" },
+  { key: "deepseek", label: "DeepSeek", symbol: "≋", color: "text-cyan-300", background: "bg-cyan-400/10 border-cyan-400/20" },
+] as const;
+
+function groupPackages(packages: PackageDef[]) {
+  const groups = new Map<string, PackageDef[]>();
+  for (const pkg of packages) {
+    const models = pkg.allowedModels ?? [];
+    const family = models.length === 0
+      ? "general"
+      : modelGroups.find(({ key }) => models.every((model) => model.toLowerCase().includes(key)))?.key ?? "other";
+    groups.set(family, [...(groups.get(family) ?? []), pkg]);
+  }
+  return groups;
+}
 
 export default async function BuyPackagePage() {
   const tokenPackages = await getAllPackages();
   const t = await getTranslations("BuyPackage");
   const locale = await getLocale();
+  const grouped = groupPackages(tokenPackages);
+  const groupOrder = ["general", ...modelGroups.map(({ key }) => key), "other"];
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -45,8 +66,23 @@ export default async function BuyPackagePage() {
           </p>
         </div>
       ) : (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {tokenPackages.map((pkg) => {
+        <div className="space-y-9">
+          {groupOrder.filter((key) => grouped.has(key)).map((key) => {
+            const model = modelGroups.find((item) => item.key === key);
+            const title = model?.label ?? (key === "general" ? t("allModelsGroup") : t("otherModelsGroup"));
+            return (
+            <section key={key} aria-label={title}>
+              <div className="mb-4 flex items-center gap-3">
+                <span aria-hidden="true" className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border text-2xl font-semibold ${model?.background ?? "border-accent/20 bg-accent/10"} ${model?.color ?? "text-accent"}`}>
+                  {model?.symbol ?? "✦"}
+                </span>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+                  <p className="text-xs text-muted-foreground">{key === "general" ? t("allModelsDesc") : t("modelGroupDesc", { model: title })}</p>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {grouped.get(key)!.map((pkg) => {
             const soldOut = pkg.stock <= 0;
             const lowStock = !soldOut && pkg.stock <= 5;
             return (
@@ -121,7 +157,11 @@ export default async function BuyPackagePage() {
             </article>
             );
           })}
-        </section>
+              </div>
+            </section>
+            );
+          })}
+        </div>
       )}
 
       <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
