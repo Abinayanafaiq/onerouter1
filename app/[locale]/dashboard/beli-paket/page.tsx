@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getAllPackages, formatTokenQuota, formatDuration } from "@/app/lib/packages";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { PackageDef } from "@/app/lib/packages";
+import PackagePicker from "./package-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -66,12 +67,11 @@ export default async function BuyPackagePage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-9">
-          {groupOrder.filter((key) => grouped.has(key)).map((key) => {
+        <PackagePicker groups={groupOrder.filter((key) => grouped.has(key)).map((key) => {
             const model = modelGroups.find((item) => item.key === key);
             const title = model?.label ?? (key === "general" ? t("allModelsGroup") : t("otherModelsGroup"));
-            return (
-            <section key={key} aria-label={title}>
+            return { key, title, symbol: model?.symbol ?? "✦", content: (
+            <section aria-label={title}>
               <div className="mb-4 flex items-center gap-3">
                 <span aria-hidden="true" className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border text-2xl font-semibold ${model?.background ?? "border-accent/20 bg-accent/10"} ${model?.color ?? "text-accent"}`}>
                   {model?.symbol ?? "✦"}
@@ -159,9 +159,8 @@ export default async function BuyPackagePage() {
           })}
               </div>
             </section>
-            );
-          })}
-        </div>
+            ) };
+          })} />
       )}
 
       <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
