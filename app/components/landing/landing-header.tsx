@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 
+const brandLogo = "/ChatGPT%20Image%20Oct%201%2C%202026%2C%2012_18_30%20AM.png";
+
 export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
   const t = useTranslations();
   const [scrolled, setScrolled] = useState(false);
@@ -33,16 +35,8 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-sm bg-accent text-[11px] font-black text-background">
-            9i
-          </span>
-          <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight">9inference</div>
-            <div className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:block">
-              {t("Header.tagline")}
-            </div>
-          </div>
+        <Link href="/" aria-label="9inference — beranda" className="flex shrink-0 items-center">
+          <img src={brandLogo} alt="9inference" className="h-auto w-32 object-contain sm:w-40" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
