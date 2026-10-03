@@ -29,6 +29,7 @@ export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
   "glm-5.2": "glm-5.2",
   "glm-5.3": "glm-5.3",
   "glm-5.3-flash": "glm-5.3-flash",
+  "gemini-3.8-flash-high": "gemini-3.8-flash-high",
   "kimi-k3": "kimi-k3",
   "qwen3.8-max": "qwen3.8-max",
 };

@@ -25,6 +25,7 @@ export const PROVIDER_MODEL_MAP = {
     "deepseek-3.2",
   ],
   GLM: ["glm-5.1", "glm-5.2", "glm-5.2-fast", "glm-5.3", "glm-5.3-flash"],
+  Google: ["gemini-3.8-flash-high"],
   MiniMax: ["minimax-m3"],
   "Moonshot AI": ["kimi-k2.7-code", "kimi-k2.7-code-fast", "kimi-k3"],
   NVIDIA: ["nemotron-3-ultra"],
@@ -76,7 +77,7 @@ export type ModelSeedMeta = {
   name: string;
   provider: string;
   description: string;
-  contextWindow: string;
+  contextWindow: string | null;
   supportsText: boolean;
   supportsImages: boolean;
   supportsStreaming: boolean;
@@ -335,5 +336,17 @@ export const MODEL_SEED_DATA: ModelSeedMeta[] = [
     supportsImages: false,
     supportsStreaming: true,
     sort: 19,
+  },
+  {
+    modelId: "gemini-3.8-flash-high",
+    masterId: "gemini-3.8-flash-high",
+    name: "Gemini 3.8 Flash High",
+    provider: "Google",
+    description: "Gemini 3.8 Flash High — model cepat Google untuk tugas harian",
+    contextWindow: null, // belum dipublikasikan upstream — isi via admin dashboard
+    supportsText: true,
+    supportsImages: true,
+    supportsStreaming: true,
+    sort: 20,
   },
 ];
