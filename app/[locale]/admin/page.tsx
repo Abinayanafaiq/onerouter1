@@ -1,7 +1,9 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { Link } from "@/i18n/navigation";
 
 export default async function AdminPage() {
+  await requireAdmin();
   const userCount = await prisma.user.count();
   const orderCount = await prisma.order.count();
   const pendingCount = await prisma.order.count({ where: { status: "PENDING" } });

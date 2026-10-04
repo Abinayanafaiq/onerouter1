@@ -1,9 +1,11 @@
 import { listAllApiKeys, getAdminKeyAnalytics } from "@/app/lib/admin-api-keys";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { AdminApiKeysClient } from "./api-keys-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminApiKeysPage() {
+  await requireAdmin();
   const [keys, analytics] = await Promise.all([
     listAllApiKeys(),
     getAdminKeyAnalytics(),

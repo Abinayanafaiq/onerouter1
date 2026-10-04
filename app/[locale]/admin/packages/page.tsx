@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { listUserTokenPackages } from "@/app/lib/admin-api-keys";
 import { PackagesManager } from "./packages-manager";
 import { UserPackagesTable } from "./user-packages-table";
@@ -6,6 +7,7 @@ import { UserPackagesTable } from "./user-packages-table";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPackagesPage() {
+  await requireAdmin();
   const [packages, userPackages, packageModels] = await Promise.all([
     prisma.package.findMany({
       orderBy: { sort: "asc" },

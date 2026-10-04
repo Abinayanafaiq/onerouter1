@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { Link } from "@/i18n/navigation";
 
 export default async function AdminWalletsPage({
@@ -6,6 +7,7 @@ export default async function AdminWalletsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await requireAdmin();
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ function timeAgo(date: Date): string {
 }
 
 export default async function AdminActivityPage() {
+  await requireAdmin();
   const now = Date.now();
   const dayAgo = new Date(now - 24 * 3600_000);
   const weekAgo = new Date(now - 7 * 24 * 3600_000);

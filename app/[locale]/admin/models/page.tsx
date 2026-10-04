@@ -1,10 +1,12 @@
 import { getAllModels } from "@/app/lib/models";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { ModelEditor } from "./model-editor";
 import { getAllPackageModels } from "@/app/lib/package-models";
 import { PackageModelEditor } from "./package-model-editor";
 import { PackageModelCreator } from "./package-model-creator";
 
 export default async function AdminModelsPage() {
+  await requireAdmin();
   const [models, packageModels] = await Promise.all([getAllModels(), getAllPackageModels()]);
 
   return (

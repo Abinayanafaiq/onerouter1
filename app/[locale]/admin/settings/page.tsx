@@ -3,6 +3,7 @@ import { getBscSettings } from "@/app/lib/crypto-bsc";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { getAdmin2FASettings } from "@/app/lib/admin-2fa";
 import { getBlockedEmailDomains } from "@/app/lib/email-blacklist";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { PakasirForm } from "./pakasir-form";
 import { EmailBlacklistForm } from "./email-blacklist-form";
 import { BscForm } from "./bsc-form";
@@ -12,6 +13,7 @@ import { FaviconUploader } from "./favicon-uploader";
 import { prisma } from "@/app/lib/prisma";
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
   const [settings, bscSettings, telegramUrl, admin2FA, favicon, blockedDomains] = await Promise.all([
     getPakasirSettings(),
     getBscSettings(),

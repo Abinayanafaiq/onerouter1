@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { notFound } from "next/navigation";
 import OrderActions from "./actions";
 
@@ -7,6 +8,7 @@ export default async function AdminOrderDetailPage({
 }: {
   params: Promise<{ orderId: string }>;
 }) {
+  await requireAdmin();
   const { orderId } = await params;
   const order = await prisma.order.findUnique({
     where: { id: orderId },

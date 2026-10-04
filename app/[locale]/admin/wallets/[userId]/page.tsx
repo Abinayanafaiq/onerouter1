@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { notFound } from "next/navigation";
 import { getOrCreateWallet, getTransactions } from "@/app/lib/wallet";
 import { Link } from "@/i18n/navigation";
@@ -13,6 +14,7 @@ export default async function AdminWalletDetailPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
+  await requireAdmin();
   const { userId } = await params;
 
   const user = await prisma.user.findUnique({

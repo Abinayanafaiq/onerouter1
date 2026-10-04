@@ -1,7 +1,9 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { Link } from "@/i18n/navigation";
 
 export default async function AdminOrdersPage() {
+  await requireAdmin();
   const orders = await prisma.order.findMany({
     include: { user: true, package: true },
     orderBy: { createdAt: "desc" },

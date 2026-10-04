@@ -1,10 +1,12 @@
 import { listMasterApiKeys } from "@/app/lib/master-api-keys";
 import { getAuditLogs } from "@/app/lib/audit-log";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { MasterKeysManager } from "./master-keys-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminMasterKeysPage() {
+  await requireAdmin();
   const [keys, auditLogs] = await Promise.all([
     listMasterApiKeys(),
     getAuditLogs(50),

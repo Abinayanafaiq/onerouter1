@@ -1,7 +1,9 @@
 import { prisma } from "@/app/lib/prisma";
+import { requireAdmin } from "@/app/lib/admin-guard";
 import { getAllModels } from "@/app/lib/models";
 
 export default async function AdminAnalyticsPage() {
+  await requireAdmin();
   // Total requests
   const totalRequests = await prisma.usageLog.count();
 
