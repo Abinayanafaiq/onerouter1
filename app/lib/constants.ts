@@ -17,6 +17,10 @@ export const BACKUP_API_KEY = process.env.BACKUP_API_KEY || "";
  * Public (client-facing) modelId → model ID expected by the backup upstream.
  * Membership in this map is what routes a model to the backup upstream.
  *
+ * This is the DEFAULT map. Admin can override it at runtime from
+ * /admin/settings (stored in DB) — see app/lib/backup-routing.ts. The DB
+ * override replaces this whole map when present.
+ *
  * Only models verified live on the backup endpoint are listed here. The
  * backup also advertises kimi-k2.6 / kimi-k2.7-code (both fireworks and
  * wandb variants), but those return NOT_FOUND / drop the connection when
@@ -25,7 +29,7 @@ export const BACKUP_API_KEY = process.env.BACKUP_API_KEY || "";
 export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
   "deepseek-v4-flash-0731": "wdb-DeepSeek-V4-Flash-0731",
   "deepseek-v4-pro-0813": "wdb-DeepSeek-V4-Pro-0813",
-  "deepseek-v4.1-flash": "wdb-DeepSeek-V4.1-Flash",
+  "deepseek-v4.1-flash": "deepseek-v4.1-flash",
   "glm-5.2": "glm-5.2",
   "glm-5.3": "glm-5.3",
   "glm-5.3-flash": "glm-5.3-flash",
@@ -35,9 +39,10 @@ export const BACKUP_UPSTREAM_MODEL_MAP: Record<string, string> = {
 };
 
 /**
- * Resolve the upstream model ID on the backup endpoint for a public modelId.
- * Returns null when the model is not backup-routed OR when BACKUP_API_KEY is
- * not configured (caller then uses the master upstream as usual).
+ * @deprecated Routing backup sekarang dibaca dari database (bisa diubah via
+ * halaman admin). Gunakan `resolveBackupUpstreamModelId` dari
+ * app/lib/backup-routing.ts — versi async yang membaca override DB.
+ * Versi sync ini hanya membaca map default dari kode.
  */
 export function getBackupUpstreamModelId(modelId: string): string | null {
   if (!BACKUP_API_KEY) return null;

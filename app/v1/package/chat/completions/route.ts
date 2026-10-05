@@ -12,8 +12,8 @@ import { resolvePackageModel } from "@/app/lib/package-models";
 import {
   BACKUP_API_URL,
   BACKUP_API_KEY,
-  getBackupUpstreamModelId,
 } from "@/app/lib/constants";
+import { resolveBackupUpstreamModelId } from "@/app/lib/backup-routing";
 import {
   releasePackageTokens,
   reservePackageTokens,
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
   // Backup upstream routing: model paket tertentu dilayani upstream sekunder
   // dengan endpoint, key, dan model ID sendiri. Kalau BACKUP_API_KEY tidak
   // diset, model jatuh kembali ke upstream paket seperti biasa.
-  const backupUpstreamModelId = getBackupUpstreamModelId(model.modelId);
+  const backupUpstreamModelId = await resolveBackupUpstreamModelId(model.modelId);
   const useBackupUpstream = backupUpstreamModelId !== null;
 
   body.model = useBackupUpstream ? backupUpstreamModelId : model.upstreamId;

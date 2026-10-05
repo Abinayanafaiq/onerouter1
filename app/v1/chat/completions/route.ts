@@ -27,8 +27,8 @@ import {
   MASTER_API_KEY,
   BACKUP_API_URL,
   BACKUP_API_KEY,
-  getBackupUpstreamModelId,
 } from "@/app/lib/constants";
+import { resolveBackupUpstreamModelId } from "@/app/lib/backup-routing";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
   // 5c. Backup upstream routing: some public model IDs are served by a
   // secondary upstream with its own endpoint, key, and upstream model IDs.
   // When BACKUP_API_KEY is unset the model falls back to the master upstream.
-  const backupUpstreamModelId = getBackupUpstreamModelId(resolvedModel.modelId);
+  const backupUpstreamModelId = await resolveBackupUpstreamModelId(resolvedModel.modelId);
   const useBackupUpstream = backupUpstreamModelId !== null;
   if (useBackupUpstream) {
     console.log(`[v1/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstreamModelId}`);
