@@ -2,6 +2,8 @@ const brandIcons: Record<string, string> = {
   glm: "chatglm-color.svg",
   kimi: "kimi-color.svg",
   deepseek: "deepseek-color.svg",
+  gemini: "gemini-color.svg",
+  qwen: "qwen-color.svg",
 };
 
 export function PackageBrandIcon({ group, className = "h-5 w-5" }: { group: string; className?: string }) {

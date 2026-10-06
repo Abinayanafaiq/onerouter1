@@ -4,6 +4,8 @@ const themes: Record<string, { base: string; glow: string; line: string; label: 
   glm: { base: "#10223b", glow: "#456fff", line: "#8db8ff", label: "GLM" },
   kimi: { base: "#1d1940", glow: "#7865e7", line: "#b7a9ff", label: "Kimi" },
   deepseek: { base: "#0c2948", glow: "#4d6bfe", line: "#87c6ff", label: "DeepSeek" },
+  gemini: { base: "#14264a", glow: "#5b8cff", line: "#b6c9ff", label: "Gemini" },
+  qwen: { base: "#261341", glow: "#a855f7", line: "#dcbdfc", label: "Qwen" },
   general: { base: "#183227", glow: "#6cca8a", line: "#bcff45", label: "AI" },
   other: { base: "#263047", glow: "#7e9dbf", line: "#bbd8ed", label: "AI" },
 };

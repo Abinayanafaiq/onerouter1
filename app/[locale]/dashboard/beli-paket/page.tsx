@@ -12,6 +12,8 @@ const modelGroups = [
   { key: "glm", label: "GLM", background: "bg-sky-400/10 border-sky-400/20" },
   { key: "kimi", label: "Kimi", background: "bg-violet-400/10 border-violet-400/20" },
   { key: "deepseek", label: "DeepSeek", background: "bg-cyan-400/10 border-cyan-400/20" },
+  { key: "gemini", label: "Gemini", background: "bg-blue-400/10 border-blue-400/20" },
+  { key: "qwen", label: "Qwen", background: "bg-fuchsia-400/10 border-fuchsia-400/20" },
 ] as const;
 
 function groupPackages(packages: PackageDef[]) {
