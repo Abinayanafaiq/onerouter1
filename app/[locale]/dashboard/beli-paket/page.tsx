@@ -18,7 +18,8 @@ const modelGroups = [
 
 function groupPackages(packages: PackageDef[]) {
   const groups = new Map<string, PackageDef[]>();
-  for (const pkg of packages) {
+  const sorted = [...packages].sort((a, b) => a.price - b.price);
+  for (const pkg of sorted) {
     const models = pkg.allowedModels ?? [];
     const family = models.length === 0
       ? "general"
