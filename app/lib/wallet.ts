@@ -19,6 +19,7 @@ export type RequestMeta = {
 export const WALLET_TX_TYPES = {
   TOPUP: "TOPUP",
   USAGE: "USAGE",
+  PURCHASE: "PURCHASE",
   REFUND: "REFUND",
   ADMIN_ADD: "ADMIN_ADD",
   ADMIN_DEDUCT: "ADMIN_DEDUCT",

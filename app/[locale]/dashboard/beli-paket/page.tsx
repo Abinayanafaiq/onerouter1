@@ -124,6 +124,11 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
               <div className="mx-2 mt-3 text-2xl font-bold tracking-tight sm:mx-3">
                 Rp{pkg.price.toLocaleString(locale)}
               </div>
+              {pkg.toksPrice != null && pkg.toksPrice > 0 && (
+                <div className="mx-2 mt-0.5 text-xs font-medium text-accent sm:mx-3">
+                  atau {pkg.toksPrice.toLocaleString(locale)} TOKS
+                </div>
+              )}
               <div className="mx-2 mt-1 text-xs text-muted-foreground sm:mx-3">
                 {t("oneTimePayment", { duration: formatDuration(pkg.durationDays).toLowerCase() })}
               </div>

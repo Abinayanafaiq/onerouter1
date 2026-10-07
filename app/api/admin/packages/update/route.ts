@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       isPromo?: boolean;
       isActive?: boolean;
       price?: number;
+      toksPrice?: number | null;
       durationDays?: number;
       sort?: number;
       productType?: string;
@@ -101,6 +102,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: "Harga tidak valid" }, { status: 400 });
       }
       data.price = Math.floor(body.price);
+    }
+
+    // Harga TOKS: null = pembelian via saldo TOKS dimatikan untuk paket ini.
+    if (body.toksPrice !== undefined) {
+      if (body.toksPrice === null) {
+        data.toksPrice = null;
+      } else if (typeof body.toksPrice === "number") {
+        if (!Number.isFinite(body.toksPrice) || body.toksPrice <= 0) {
+          return NextResponse.json(
+            { success: false, error: "Harga TOKS harus lebih dari 0 (atau kosong untuk menonaktifkan)" },
+            { status: 400 },
+          );
+        }
+        data.toksPrice = Math.floor(body.toksPrice);
+      } else {
+        return NextResponse.json({ success: false, error: "Harga TOKS tidak valid" }, { status: 400 });
+      }
     }
 
     if (typeof body.durationDays === "number") {

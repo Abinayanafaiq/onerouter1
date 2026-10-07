@@ -26,6 +26,7 @@ export default async function AdminPackagesPage() {
     description: p.description,
     tokenQuota: p.tokenQuota.toString(),
     price: p.price,
+    toksPrice: p.toksPrice,
     durationDays: p.durationDays,
     sort: p.sort,
     stock: p.stock,

@@ -4,6 +4,8 @@ import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
 import { isPakasirConfigured } from "@/app/lib/pakasir";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
+import { getWalletBalance } from "@/app/lib/wallet";
+import { formatToks, idrToToks } from "@/app/lib/constants";
 import { redirect, Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { CheckoutForm } from "./form";
@@ -85,10 +87,12 @@ export default async function CheckoutPage({
     }
   }
 
-  const [pakasirConfigured, bscConfigured] = await Promise.all([
+  const [pakasirConfigured, bscConfigured, walletBalanceIdr] = await Promise.all([
     isPakasirConfigured(),
     isBscConfigured(),
+    userId ? getWalletBalance(userId) : Promise.resolve(0),
   ]);
+  const toksBalance = idrToToks(walletBalanceIdr);
 
   const tokenJt = pkg.tokenQuota ? (Number(pkg.tokenQuota) / 1_000_000).toFixed(0) : "?";
 
@@ -149,6 +153,11 @@ export default async function CheckoutPage({
               <div className="gradient-text-accent mt-0.5 text-2xl font-bold tracking-tight">
                 Rp{pkg.price.toLocaleString("id-ID")}
               </div>
+              {pkg.toksPrice != null && pkg.toksPrice > 0 && (
+                <div className="mt-0.5 text-[11px] font-medium text-accent">
+                  atau {formatToks(pkg.toksPrice)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -227,6 +236,8 @@ export default async function CheckoutPage({
           <CheckoutForm
             packageId={packageId}
             amount={pkg.price}
+            toksPrice={pkg.toksPrice}
+            toksBalance={toksBalance}
             chains={[...CRYPTO_CHAINS]}
             btcpayConfigured={PACKAGE_CRYPTO_ENABLED && isBtcpayConfigured()}
             pakasirConfigured={pakasirConfigured}

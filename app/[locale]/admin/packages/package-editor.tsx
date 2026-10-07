@@ -9,6 +9,7 @@ export type PackageData = {
   description: string | null;
   tokenQuota: string;
   price: number;
+  toksPrice: number | null;
   durationDays: number;
   sort: number;
   stock: number;
@@ -74,6 +75,7 @@ export function PackageEditor({
     description: pkg?.description ?? "",
     tokenQuota: pkg?.tokenQuota ?? "",
     price: String(pkg?.price ?? 0),
+    toksPrice: pkg?.toksPrice != null ? String(pkg.toksPrice) : "",
     durationDays: String(pkg?.durationDays ?? 1),
     sort: String(pkg?.sort ?? 0),
     stock: String(pkg?.stock ?? 0),
@@ -101,6 +103,8 @@ export function PackageEditor({
         description: form.description || null,
         tokenQuota: form.tokenQuota,
         price: parseInt(form.price, 10) || 0,
+        // Kosong = null = paket tidak bisa dibeli pakai saldo TOKS.
+        toksPrice: form.toksPrice.trim() === "" ? null : parseInt(form.toksPrice, 10) || null,
         durationDays: parseInt(form.durationDays, 10) || 1,
         sort: parseInt(form.sort, 10) || 0,
         stock: parseInt(form.stock, 10) || 0,
@@ -248,6 +252,16 @@ export function PackageEditor({
               className={inputClass}
             />
           </div>
+        </Field>
+        <Field label="Harga TOKS (kosong = nonaktif)">
+          <input
+            type="number"
+            min="1"
+            value={form.toksPrice}
+            onChange={(e) => set("toksPrice", e.target.value)}
+            className={inputClass}
+            placeholder="contoh: 50"
+          />
         </Field>
         <Field label="Durasi (hari)">
           <input

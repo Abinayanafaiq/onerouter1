@@ -23,6 +23,8 @@ type BscResult = {
 export function CheckoutForm({
   packageId,
   amount,
+  toksPrice,
+  toksBalance,
   chains,
   btcpayConfigured,
   pakasirConfigured,
@@ -31,6 +33,8 @@ export function CheckoutForm({
 }: {
   packageId: string;
   amount: number;
+  toksPrice: number | null;
+  toksBalance: number;
   chains: readonly Chain[];
   btcpayConfigured: boolean;
   pakasirConfigured: boolean;
@@ -43,12 +47,16 @@ export function CheckoutForm({
   // tanpa disadari user yang berniat memperpanjang key lama.
   const cryptoEnabled = btcpayConfigured && !renewApiKeyId;
   const bscEnabled = bscConfigured && !renewApiKeyId;
-  const defaultTab: "PAKASIR" | "CRYPTO" | "BSC" = pakasirConfigured
-    ? "PAKASIR"
-    : bscEnabled
-      ? "BSC"
-      : "CRYPTO";
-  const [method, setMethod] = useState<"PAKASIR" | "CRYPTO" | "BSC">(defaultTab);
+  // Pembayaran instan via saldo TOKS — tersedia juga untuk perpanjangan paket.
+  const toksEnabled = toksPrice != null && toksPrice > 0;
+  const defaultTab: "TOKS" | "PAKASIR" | "CRYPTO" | "BSC" = toksEnabled
+    ? "TOKS"
+    : pakasirConfigured
+      ? "PAKASIR"
+      : bscEnabled
+        ? "BSC"
+        : "CRYPTO";
+  const [method, setMethod] = useState<"TOKS" | "PAKASIR" | "CRYPTO" | "BSC">(defaultTab);
   const [chain, setChain] = useState(chains[0]?.id ?? "");
   const [whatsapp, setWhatsapp] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +69,7 @@ export function CheckoutForm({
   const [bscConfirmations, setBscConfirmations] = useState<number | null>(null);
   const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
   const [pakasirError, setPakasirError] = useState<string | null>(null);
+  const [toksError, setToksError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -195,6 +204,36 @@ export function CheckoutForm({
     setSubmitting(false);
   }
 
+  async function handleToksPurchase() {
+    setToksError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/orders/toks/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          packageId,
+          ...(whatsapp.trim() ? { whatsapp: whatsapp.trim() } : {}),
+          ...(renewApiKeyId ? { renewApiKeyId } : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        success: boolean;
+        error?: string;
+        status?: string;
+      };
+      if (data.success && data.status === "APPROVED") {
+        setPaymentStatus("APPROVED");
+        triggerWalletRefresh();
+      } else {
+        setToksError(data.error || "Gagal memproses pembayaran TOKS");
+      }
+    } catch {
+      setToksError("Koneksi gagal");
+    }
+    setSubmitting(false);
+  }
+
   async function handlePakasirCreate() {
     if (!whatsapp.trim()) {
       setPakasirError("Nomor WhatsApp wajib diisi");
@@ -319,6 +358,19 @@ export function CheckoutForm({
           Metode Pembayaran
         </label>
         <div className="grid grid-flow-col auto-cols-fr gap-1 rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
+          {toksEnabled && (
+            <button
+              type="button"
+              onClick={() => setMethod("TOKS")}
+              className={`rounded-lg py-2.5 text-sm font-medium transition ${
+                method === "TOKS"
+                  ? "bg-foreground text-background shadow"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+              }`}
+            >
+              TOKS
+            </button>
+          )}
           {showPakasirTab && (
             <button
               type="button"
@@ -361,9 +413,59 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {!showPakasirTab && !cryptoEnabled && !bscEnabled && (
+      {!toksEnabled && !showPakasirTab && !cryptoEnabled && !bscEnabled && (
         <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
           Pembayaran belum dikonfigurasi. Hubungi admin.
+        </div>
+      )}
+
+      {method === "TOKS" && toksEnabled && toksPrice != null && (
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {renewApiKeyId
+              ? "Bayar instan memakai saldo TOKS. Kuota diisi ulang penuh & masa aktif diperpanjang pada API key Anda yang sekarang."
+              : "Bayar instan memakai saldo TOKS — API key langsung aktif tanpa menunggu konfirmasi pembayaran."}
+          </p>
+          <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-sm space-y-1.5">
+            <p>
+              <span className="text-muted-foreground">Harga:</span>{" "}
+              <span className="font-bold text-accent">{toksPrice.toLocaleString("id-ID")} TOKS</span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Saldo Anda:</span>{" "}
+              <span className={`font-semibold ${toksBalance >= toksPrice ? "text-foreground" : "text-red-400"}`}>
+                {toksBalance.toLocaleString("id-ID", { maximumFractionDigits: 2 })} TOKS
+              </span>
+            </p>
+          </div>
+          {toksBalance < toksPrice && (
+            <div className="rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-2.5 text-xs leading-relaxed text-amber-300">
+              Saldo TOKS Anda kurang{" "}
+              <span className="font-semibold">
+                {(toksPrice - toksBalance).toLocaleString("id-ID", { maximumFractionDigits: 2 })} TOKS
+              </span>
+              .{" "}
+              <Link href="/dashboard/wallet" className="font-semibold underline underline-offset-2 hover:text-amber-200">
+                Top up dulu
+              </Link>{" "}
+              atau pilih metode pembayaran lain.
+            </div>
+          )}
+          {toksError && (
+            <p className="text-sm text-red-400">{toksError}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleToksPurchase}
+            disabled={submitting || toksBalance < toksPrice}
+            className="btn-accent block w-full rounded-xl py-3 text-sm font-medium disabled:opacity-50"
+          >
+            {submitting
+              ? "Memproses..."
+              : renewApiKeyId
+                ? `Perpanjang dengan ${toksPrice.toLocaleString("id-ID")} TOKS`
+                : `Bayar ${toksPrice.toLocaleString("id-ID")} TOKS`}
+          </button>
         </div>
       )}
 

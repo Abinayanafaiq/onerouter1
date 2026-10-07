@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       description?: string | null;
       tokenQuota?: string | number;
       price?: number;
+      toksPrice?: number | null;
       durationDays?: number;
       sort?: number;
       stock?: number;
@@ -77,6 +78,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Harga tidak valid" }, { status: 400 });
     }
 
+    // Harga TOKS opsional: null/absen = pembelian via saldo TOKS nonaktif.
+    let toksPrice: number | null = null;
+    if (body.toksPrice !== undefined && body.toksPrice !== null) {
+      const parsed = Math.floor(Number(body.toksPrice));
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return NextResponse.json(
+          { success: false, error: "Harga TOKS harus lebih dari 0 (atau kosong untuk menonaktifkan)" },
+          { status: 400 },
+        );
+      }
+      toksPrice = parsed;
+    }
+
     const durationDays = Math.floor(Number(body.durationDays) || 14);
     if (!(durationDays > 0)) {
       return NextResponse.json({ success: false, error: "Durasi hari tidak valid" }, { status: 400 });
@@ -113,6 +127,7 @@ export async function POST(request: Request) {
         description: body.description?.trim() || null,
         tokenQuota,
         price,
+        toksPrice,
         durationDays,
         sort,
         stock,

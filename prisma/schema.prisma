@@ -91,6 +91,9 @@ model Package {
   description  String?
   tokenQuota   BigInt
   price        Int
+  // Harga dalam TOKS (1 TOKS = Rp1.000). NULL = paket tidak bisa dibeli
+  // memakai saldo TOKS — hanya via pembayaran eksternal (QRIS dsb).
+  toksPrice    Int?
   durationDays Int      @default(14)
   isActive     Boolean  @default(true)
   sort         Int      @default(0)
