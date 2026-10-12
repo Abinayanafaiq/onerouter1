@@ -1,7 +1,8 @@
 import { prisma } from "@/app/lib/prisma";
-import { BACKUP_API_KEY, BACKUP_UPSTREAM_MODEL_MAP } from "@/app/lib/constants";
+import { BACKUP_API_KEY, BACKUP_API_URL, BACKUP_UPSTREAM_MODEL_MAP } from "@/app/lib/constants";
 
 const SETTING_KEY = "backup_upstream_model_map";
+const URL_SETTING_KEY = "backup_upstream_url";
 
 export type BackupRoutingMap = Record<string, string>;
 
@@ -63,12 +64,82 @@ export async function resetBackupRoutingMap(): Promise<void> {
 }
 
 /**
- * Resolver async yang dipakai route chat. Membaca map efektif (DB override
- * atau default). Return null kalau model tidak di-route ke backup ATAU
- * BACKUP_API_KEY tidak diset (caller pakai upstream master seperti biasa).
+ * Base URL backup upstream — juga bisa diubah dari halaman admin.
+ *
+ * Disimpan sebagai string polos di tabel Setting (key: backup_upstream_url).
+ * Kalau belum ada baris di database, dipakai BACKUP_API_URL dari constants.ts
+ * (env BACKUP_API_URL atau fallback hardcoded) sebagai default.
+ */
+
+/**
+ * Validasi URL dari input admin. Hanya menerima http/https; trailing slash
+ * dibuang supaya caller bisa menempelkan path langsung. Return null kalau
+ * tidak valid.
+ */
+export function validateBackupUpstreamUrl(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim().replace(/\/+$/, "");
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  } catch {
+    return null;
+  }
+  return trimmed;
+}
+
+export async function getBackupUpstreamUrl(): Promise<{
+  url: string;
+  source: "database" | "default";
+}> {
+  const row = await prisma.setting.findUnique({ where: { key: URL_SETTING_KEY } });
+  if (row?.value) {
+    // Validasi ulang saat baca — nilai rusak/disuntik manual jatuh ke default.
+    const valid = validateBackupUpstreamUrl(row.value);
+    if (valid) return { url: valid, source: "database" };
+  }
+  return { url: BACKUP_API_URL.replace(/\/+$/, ""), source: "default" };
+}
+
+export async function saveBackupUpstreamUrl(url: string): Promise<void> {
+  await prisma.setting.upsert({
+    where: { key: URL_SETTING_KEY },
+    update: { value: url },
+    create: { key: URL_SETTING_KEY, value: url },
+  });
+}
+
+/** Hapus override URL di database — kembali ke default dari kode/env. */
+export async function resetBackupUpstreamUrl(): Promise<void> {
+  await prisma.setting.deleteMany({ where: { key: URL_SETTING_KEY } });
+}
+
+export type ResolvedBackupUpstream = {
+  /** Model ID yang dipahami backup upstream. */
+  upstreamModelId: string;
+  /** Base URL backup upstream efektif (DB override atau default, tanpa trailing slash). */
+  url: string;
+};
+
+/**
+ * Resolver async yang dipakai route chat. Membaca map + URL efektif (DB
+ * override atau default). Return null kalau model tidak di-route ke backup
+ * ATAU BACKUP_API_KEY tidak diset (caller pakai upstream master seperti biasa).
+ */
+export async function resolveBackupUpstream(modelId: string): Promise<ResolvedBackupUpstream | null> {
+  if (!BACKUP_API_KEY) return null;
+  const [{ map }, { url }] = await Promise.all([getBackupRoutingMap(), getBackupUpstreamUrl()]);
+  const upstreamModelId = map[modelId];
+  if (!upstreamModelId) return null;
+  return { upstreamModelId, url };
+}
+
+/**
+ * @deprecated Gunakan `resolveBackupUpstream` yang sekaligus mengembalikan
+ * URL efektif. Versi ini hanya mengembalikan upstream model ID.
  */
 export async function resolveBackupUpstreamModelId(modelId: string): Promise<string | null> {
-  if (!BACKUP_API_KEY) return null;
-  const { map } = await getBackupRoutingMap();
-  return map[modelId] ?? null;
+  const resolved = await resolveBackupUpstream(modelId);
+  return resolved?.upstreamModelId ?? null;
 }

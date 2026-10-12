@@ -10,10 +10,9 @@ import {
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
 import {
-  BACKUP_API_URL,
   BACKUP_API_KEY,
 } from "@/app/lib/constants";
-import { resolveBackupUpstreamModelId } from "@/app/lib/backup-routing";
+import { resolveBackupUpstream } from "@/app/lib/backup-routing";
 import {
   releasePackageTokens,
   reservePackageTokens,
@@ -152,10 +151,10 @@ export async function POST(request: Request) {
   // Backup upstream routing: model paket tertentu dilayani upstream sekunder
   // dengan endpoint, key, dan model ID sendiri. Kalau BACKUP_API_KEY tidak
   // diset, model jatuh kembali ke upstream paket seperti biasa.
-  const backupUpstreamModelId = await resolveBackupUpstreamModelId(model.modelId);
-  const useBackupUpstream = backupUpstreamModelId !== null;
+  const backupUpstream = await resolveBackupUpstream(model.modelId);
+  const useBackupUpstream = backupUpstream !== null;
 
-  body.model = useBackupUpstream ? backupUpstreamModelId : model.upstreamId;
+  body.model = useBackupUpstream ? backupUpstream.upstreamModelId : model.upstreamId;
   const isStream = body.stream === true;
   if (isStream) {
     const existing = body.stream_options;
@@ -166,7 +165,7 @@ export async function POST(request: Request) {
   }
 
   const upstreamUrl = useBackupUpstream
-    ? `${BACKUP_API_URL.replace(/\/$/, "")}/chat/completions`
+    ? `${backupUpstream.url}/chat/completions`
     : `${PACKAGE_UPSTREAM_URL}/chat/completions`;
   const upstreamApiKey = useBackupUpstream ? BACKUP_API_KEY : PACKAGE_UPSTREAM_API_KEY;
   console.log(

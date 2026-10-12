@@ -24,10 +24,9 @@ import {
 import {
   MASTER_API_URL,
   MASTER_API_KEY,
-  BACKUP_API_URL,
   BACKUP_API_KEY,
 } from "@/app/lib/constants";
-import { resolveBackupUpstreamModelId } from "@/app/lib/backup-routing";
+import { resolveBackupUpstream } from "@/app/lib/backup-routing";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -241,14 +240,14 @@ export async function POST(request: Request) {
   // Backup upstream routing: some public model IDs are served by a secondary
   // upstream with its own endpoint, key, and upstream model IDs. When
   // BACKUP_API_KEY is unset the model falls back to the master upstream.
-  const backupUpstreamModelId = await resolveBackupUpstreamModelId(resolvedModel.modelId);
-  const useBackupUpstream = backupUpstreamModelId !== null;
+  const backupUpstream = await resolveBackupUpstream(resolvedModel.modelId);
+  const useBackupUpstream = backupUpstream !== null;
   if (useBackupUpstream) {
-    console.log(`[api/dashboard/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstreamModelId}`);
+    console.log(`[api/dashboard/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstream.upstreamModelId}`);
   }
-  body.model = useBackupUpstream ? backupUpstreamModelId : resolvedModel.masterId;
+  body.model = useBackupUpstream ? backupUpstream.upstreamModelId : resolvedModel.masterId;
   const upstreamUrl = useBackupUpstream
-    ? `${BACKUP_API_URL}/chat/completions`
+    ? `${backupUpstream.url}/chat/completions`
     : `${MASTER_API_URL}/chat/completions`;
 
   // Kimi K3 is a reasoning model that rejects `temperature` with HTTP 400.

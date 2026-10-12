@@ -13,14 +13,20 @@ function mapToRows(map: RoutingMap): Row[] {
 export function BackupRoutingForm({
   initialMap,
   initialSource,
+  initialUrl,
+  initialUrlSource,
   knownModels,
 }: {
   initialMap: RoutingMap;
   initialSource: "database" | "default";
+  initialUrl: string;
+  initialUrlSource: "database" | "default";
   knownModels: string[];
 }) {
   const [rows, setRows] = useState<Row[]>(mapToRows(initialMap));
   const [source, setSource] = useState(initialSource);
+  const [url, setUrl] = useState(initialUrl);
+  const [urlSource, setUrlSource] = useState(initialUrlSource);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +54,11 @@ export function BackupRoutingForm({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedUrl = url.trim();
+    if (!/^https?:\/\/.+/.test(trimmedUrl)) {
+      flash("URL backup harus diawali http:// atau https://", true);
+      return;
+    }
     const map: RoutingMap = {};
     for (const row of rows) {
       const key = row.publicId.trim();
@@ -71,11 +82,18 @@ export function BackupRoutingForm({
       const res = await fetch("/api/admin/settings/backup-routing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ map }),
+        body: JSON.stringify({ map, url: trimmedUrl }),
       });
-      const data = (await res.json()) as { success: boolean; error?: string };
+      const data = (await res.json()) as {
+        success: boolean;
+        url?: string;
+        urlSource?: "database" | "default";
+        error?: string;
+      };
       if (data.success) {
         setSource("database");
+        if (data.url) setUrl(data.url);
+        if (data.urlSource) setUrlSource(data.urlSource);
         flash("Routing backup disimpan");
       } else {
         flash(data.error || "Gagal menyimpan", true);
@@ -87,16 +105,24 @@ export function BackupRoutingForm({
   }
 
   async function handleReset() {
-    if (!confirm("Reset routing backup ke default dari kode? Override di database akan dihapus.")) return;
+    if (!confirm("Reset routing backup (URL & daftar model) ke default dari kode? Override di database akan dihapus.")) return;
     setSaving(true);
     setMsg(null);
     setError(null);
     try {
       const res = await fetch("/api/admin/settings/backup-routing", { method: "DELETE" });
-      const data = (await res.json()) as { success: boolean; map?: RoutingMap; error?: string };
+      const data = (await res.json()) as {
+        success: boolean;
+        map?: RoutingMap;
+        url?: string;
+        urlSource?: "database" | "default";
+        error?: string;
+      };
       if (data.success && data.map) {
         setRows(mapToRows(data.map));
         setSource("default");
+        if (data.url) setUrl(data.url);
+        if (data.urlSource) setUrlSource(data.urlSource);
         flash("Routing dikembalikan ke default");
       } else {
         flash(data.error || "Gagal reset", true);
@@ -123,10 +149,36 @@ export function BackupRoutingForm({
           </span>
         </div>
         <p className="text-xs text-neutral-500 mt-0.5">
-          Model publik di kolom kiri akan dialihkan ke backup upstream (BACKUP_API_URL) memakai
+          Model publik di kolom kiri akan dialihkan ke URL backup di bawah memakai
           model ID di kolom kanan. Model yang tidak tercantum tetap lewat upstream master.
           Butuh BACKUP_API_KEY di environment agar aktif.
         </p>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 px-0.5 mb-1">
+          <label htmlFor="backup-upstream-url" className="text-[10px] font-medium text-neutral-500">
+            URL backup upstream
+          </label>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded ${
+              urlSource === "database"
+                ? "bg-accent/15 text-accent"
+                : "bg-neutral-800 text-neutral-500"
+            }`}
+          >
+            {urlSource === "database" ? "Override database" : "Default (env/kode)"}
+          </span>
+        </div>
+        <input
+          id="backup-upstream-url"
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://backup.limitrouter.com/v1"
+          disabled={saving}
+          className="w-full px-2.5 py-1.5 bg-neutral-950 border border-neutral-700 rounded-md text-xs text-neutral-200 font-mono disabled:opacity-50"
+        />
       </div>
 
       <div className="space-y-2">
