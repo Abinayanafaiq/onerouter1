@@ -4,12 +4,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/app/lib/auth";
 import { getEnabledModels } from "@/app/lib/models";
 import { toModelCardData, type ModelCardData } from "@/app/lib/model-card-data";
-import { getSiteUrl } from "@/app/lib/site";
 import { serializeJsonLd } from "@/app/lib/json-ld";
 import { LandingHeader } from "@/app/components/landing/landing-header";
-import { HeroTerminal } from "@/app/components/landing/hero-terminal";
-import { AnimatedStats } from "@/app/components/landing/animated-stats";
 import { CodeTabs } from "@/app/components/landing/code-tabs";
+import { PackagePricing, type LandingPackage } from "@/app/components/landing/package-pricing";
+import { MobilePackageCta } from "@/app/components/landing/mobile-package-cta";
+import { getAllPackages } from "@/app/lib/packages";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +66,22 @@ const PROVIDER_DOT: Record<string, string> = {
   MiniMax: "bg-pink-400",
 };
 
+/** Sama dengan pengelompokan di halaman Beli Paket (dashboard). */
+const MODEL_GROUPS = [
+  { key: "glm", label: "GLM" },
+  { key: "kimi", label: "Kimi" },
+  { key: "deepseek", label: "DeepSeek" },
+  { key: "gemini", label: "Gemini" },
+  { key: "qwen", label: "Qwen" },
+] as const;
+
+function packageGroup(allowedModels: string[]): string {
+  if (allowedModels.length === 0) return "general";
+  return (
+    MODEL_GROUPS.find(({ key }) => allowedModels.every((m) => m.toLowerCase().includes(key)))?.key ?? "other"
+  );
+}
+
 function capabilityLabel(
   name: string,
   modelId: string,
@@ -90,10 +106,16 @@ export default async function Home({
   const tf = await getTranslations("Footer");
   const tc = await getTranslations("Common");
 
-  const [session, enabledModels] = await Promise.all([auth(), getEnabledModels()]);
+  // Hanya READ (SELECT) — tidak ada penulisan ke database di halaman ini.
+  const [session, enabledModels, allPackages] = await Promise.all([
+    auth(),
+    getEnabledModels(),
+    getAllPackages(),
+  ]);
   const isAuthed = !!session?.user;
   const models: ModelCardData[] = enabledModels.map(toModelCardData);
   const modelCount = models.length;
+  const isEn = locale === "en";
 
   const capLabels = {
     coding: t("capCoding"),
@@ -103,6 +125,47 @@ export default async function Home({
     general: t("capGeneral"),
   };
 
+  /* ---------- Paket token (fokus utama landing page) ---------- */
+  // Urutan: yang masih ada stok dulu, lalu dari harga termurah.
+  const landingPackages: LandingPackage[] = [...allPackages]
+    .sort((a, b) => Number(a.stock <= 0) - Number(b.stock <= 0) || a.price - b.price)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      toksPrice: p.toksPrice ?? null,
+      tokenQuota: Number(p.tokenQuota),
+      durationDays: p.durationDays,
+      stock: p.stock,
+      isPromo: p.isPromo,
+      highlight: !!p.highlight,
+      isSpecial: (p.allowedModels?.length ?? 0) > 0,
+      group: packageGroup(p.allowedModels ?? []),
+      features: p.features,
+    }));
+  const groupKeys = ["general", ...MODEL_GROUPS.map((g) => g.key), "other"].filter((k) =>
+    landingPackages.some((p) => p.group === k),
+  );
+  const packageGroups = groupKeys.map((key) => ({
+    key,
+    title:
+      MODEL_GROUPS.find((g) => g.key === key)?.label ??
+      (key === "general" ? (isEn ? "All models" : "Semua model") : isEn ? "Others" : "Lainnya"),
+  }));
+  const cheapest = landingPackages.find((p) => p.stock > 0) ?? landingPackages[0];
+
+  const STEPS = isEn
+    ? [
+        { title: "Sign up free", desc: "Create an account in under a minute." },
+        { title: "Pick a package & pay", desc: "Pay via QRIS or TOKS balance. Processed automatically." },
+        { title: "Use your API key", desc: "Get a key instantly — works with any OpenAI-compatible app." },
+      ]
+    : [
+        { title: "Daftar gratis", desc: "Buat akun kurang dari 1 menit." },
+        { title: "Pilih paket & bayar", desc: "Bayar via QRIS atau saldo TOKS. Diproses otomatis." },
+        { title: "Pakai API key", desc: "API key langsung jadi — bisa dipakai di aplikasi yang kompatibel OpenAI." },
+      ];
+
   const INFRA_FEATURES = [
     { title: t("featureUnifiedTitle"), desc: t("featureUnifiedDesc"), icon: INFRA_ICONS[0] },
     { title: t("featureFastTitle"), desc: t("featureFastDesc"), icon: INFRA_ICONS[1] },
@@ -110,33 +173,24 @@ export default async function Home({
     { title: t("featureSecureTitle"), desc: t("featureSecureDesc"), icon: INFRA_ICONS[3] },
   ];
 
-  const TRUST_AUDIENCES = [
-    { name: t("audienceStartup"), desc: t("audienceStartupDesc") },
-    { name: t("audienceDev"), desc: t("audienceDevDesc") },
-    { name: t("audienceResearcher"), desc: t("audienceResearcherDesc") },
-    { name: t("audienceEngineer"), desc: t("audienceEngineerDesc") },
-  ];
-
-  const isEn = locale === "en";
   const FAQS = isEn
     ? [
-        { q: "What is 9inference?", a: "9inference is an affordable AI model API gateway from Indonesia. One OpenAI-compatible endpoint gives you access to DeepSeek, GLM, Qwen, Kimi, MiniMax and more — pay per token (TOKS), transparent pricing in rupiah, no subscription." },
-        { q: "How much does 9inference cost?", a: "Pricing is pay-per-token in rupiah. 1 TOKS = Rp1,000. You only pay for the tokens you actually use, with no monthly commitment or hidden fees." },
+        { q: "What is a token package?", a: "A token package is a one-time purchase that gives you a fixed number of tokens (input + output) for a set active period. You get a dedicated API key right after payment — no subscription, no auto-renewal." },
+        { q: "Token package or pay-as-you-go balance — which should I pick?", a: "Pick a token package if you want a fixed, cheaper price for a known amount of usage. Pick pay-as-you-go (top up TOKS balance) if your usage is irregular — you only pay for the tokens you actually use, and balance does not expire." },
+        { q: "What is 9inference?", a: "9inference is an affordable AI model API gateway from Indonesia. One OpenAI-compatible endpoint gives you access to DeepSeek, GLM, Qwen, Kimi, MiniMax and more — transparent pricing in rupiah, no subscription." },
         { q: "Is 9inference compatible with the OpenAI SDK?", a: "Yes. Point your existing OpenAI client to the 9inference base URL, use your 9inference API key, and keep your code unchanged. It works with the official openai SDK, LangChain, and any OpenAI-compatible tool." },
-        { q: "Which AI models are available?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax and more. New models are added regularly and can be used with a single API key." },
-        { q: "How do I start using 9inference?", a: "Register for free, top up your balance, get an instant API key, then call the chat completions endpoint. You can start building in minutes." },
-        { q: "Do I need a credit card or subscription?", a: "No. 9inference is prepaid. Top up your credit via QRIS or crypto and pay only per token — there is no recurring subscription." },
+        { q: "How do I pay?", a: "Via QRIS (all Indonesian e-wallets and mobile banking) or with your TOKS balance. 1 TOKS = Rp1,000. No credit card needed." },
+        { q: "Which AI models are available?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax and more. Each package card shows which models it covers." },
       ]
     : [
-        { q: "Apa itu 9inference?", a: "9inference adalah gateway API model AI murah dari Indonesia. Satu endpoint kompatibel OpenAI untuk mengakses DeepSeek, GLM, Qwen, Kimi, MiniMax & lainnya — bayar per token (TOKS), harga transparan dalam rupiah, tanpa langganan." },
-        { q: "Berapa harga API di 9inference?", a: "Harga dihitung bayar per token dalam rupiah. 1 TOKS = Rp1.000. Anda hanya membayar token yang benar-benar dipakai, tanpa komitmen bulanan atau biaya tersembunyi." },
+        { q: "Apa itu paket token?", a: "Paket token adalah pembelian sekali bayar yang memberi Anda sejumlah token (input + output) dengan masa aktif tertentu. API key khusus langsung diberikan setelah pembayaran — tanpa langganan, tanpa perpanjangan otomatis." },
+        { q: "Pilih paket token atau isi saldo (bayar per pemakaian)?", a: "Pilih paket token jika ingin harga lebih hemat untuk pemakaian yang sudah jelas jumlahnya. Pilih isi saldo TOKS jika pemakaian tidak menentu — Anda hanya membayar token yang benar-benar dipakai dan saldo tidak kedaluwarsa." },
+        { q: "Apa itu 9inference?", a: "9inference adalah gateway API model AI murah dari Indonesia. Satu endpoint kompatibel OpenAI untuk mengakses DeepSeek, GLM, Qwen, Kimi, MiniMax & lainnya — harga transparan dalam rupiah, tanpa langganan." },
         { q: "Apakah 9inference kompatibel dengan OpenAI SDK?", a: "Ya. Cukup arahkan client OpenAI Anda ke base URL 9inference, pakai API key 9inference, dan kode tidak perlu diubah. Mendukung SDK openai resmi, LangChain, dan tool lain yang kompatibel OpenAI." },
-        { q: "Model AI apa saja yang tersedia?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax, dan lainnya. Model baru ditambahkan berkala dan bisa dipakai dengan satu API key." },
-        { q: "Bagaimana cara mulai pakai 9inference?", a: "Daftar gratis, isi saldo, dapatkan API key instan, lalu panggil endpoint chat completions. Anda bisa langsung membangun dalam hitungan menit." },
-        { q: "Apakah perlu kartu kredit atau langganan?", a: "Tidak. 9inference bersifat prabayar. Isi saldo lewat QRIS atau crypto lalu bayar hanya per token — tidak ada langganan berulang." },
+        { q: "Bagaimana cara bayarnya?", a: "Lewat QRIS (semua e-wallet & mobile banking) atau memakai saldo TOKS. 1 TOKS = Rp1.000. Tidak perlu kartu kredit." },
+        { q: "Model AI apa saja yang tersedia?", a: "DeepSeek, GLM, Alibaba Qwen, Moonshot AI Kimi, MiniMax, dan lainnya. Setiap kartu paket menampilkan model apa saja yang bisa dipakai." },
       ];
 
-  const baseUrl = getSiteUrl();
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -147,8 +201,14 @@ export default async function Home({
     })),
   };
 
+  const checkIcon = (
+    <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden>
+      <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+
   return (
-    <div className="landing-shell relative min-h-screen overflow-hidden bg-background">
+    <div className="landing-shell relative min-h-screen overflow-x-hidden bg-background">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
@@ -156,97 +216,100 @@ export default async function Home({
       <LandingHeader isAuthed={isAuthed} />
 
       {/* ============================================================
-          HERO
+          HERO + HARGA PAKET TOKEN (tampilan utama)
           ============================================================ */}
-      <section className="landing-section relative min-h-[880px] px-4 pb-24 pt-32 sm:px-6 sm:pb-32 sm:pt-44 lg:flex lg:min-h-screen lg:items-center">
-        {/* Background effects */}
-        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-60" aria-hidden />
+      <section id="paket" className="landing-section relative scroll-mt-16 px-4 pb-14 pt-24 sm:px-6 sm:pb-20 sm:pt-32">
+        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-40" aria-hidden />
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(55% 55% at 8% 10%, rgba(184,255,69,0.12) 0%, transparent 65%), radial-gradient(45% 50% at 100% 5%, rgba(255,112,72,0.10) 0%, transparent 60%)",
+              "radial-gradient(60% 40% at 50% 0%, rgba(184,255,69,0.10) 0%, transparent 70%)",
           }}
           aria-hidden
         />
-        <div className="hero-orbit pointer-events-none absolute -right-72 top-16 -z-10 h-[760px] w-[760px] opacity-70" aria-hidden />
-        <div className="hero-orbit pointer-events-none absolute -right-48 top-40 -z-10 h-[520px] w-[520px] opacity-50" aria-hidden />
 
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-16 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
-          {/* Left: copy */}
-          <div className="animate-fade-up">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 border-l border-accent bg-accent/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground backdrop-blur">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-3 py-1.5 text-[11px] font-semibold text-accent">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              {t("badge", { count: modelCount })}
+              {isEn ? `${modelCount} AI models · OpenAI-compatible` : `${modelCount} model AI · Kompatibel OpenAI`}
             </div>
 
-            {/* Headline */}
-            <h1 className="landing-display mt-8 text-[clamp(3.25rem,7vw,6.8rem)] font-semibold leading-[0.88]">
-              {t("headline1")}
-              <br />
-              <span className="gradient-text-accent">{t("headline2")}</span>
-              <br />
-              {t("headline3")}
+            <h1 className="landing-display mt-5 text-[2.1rem] font-semibold leading-[1.05] sm:text-5xl lg:text-6xl">
+              {isEn ? (
+                <>AI Token Packages, <span className="gradient-text-accent">cheap &amp; clear</span></>
+              ) : (
+                <>Paket Token AI <span className="gradient-text-accent">murah &amp; jelas</span></>
+              )}
             </h1>
-
-            {/* Subheadline */}
-            <p className="mt-8 max-w-xl border-l border-white/15 pl-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {t("subheadline")}
+            <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-lg">
+              {isEn
+                ? "Pick a package, pay once, and get an API key instantly. One key for DeepSeek, GLM, Qwen, Kimi and more."
+                : "Pilih paket, bayar sekali, API key langsung jadi. Satu key untuk DeepSeek, GLM, Qwen, Kimi, dan lainnya."}
             </p>
+            {cheapest && (
+              <p className="mt-3 text-[13px] text-foreground/90">
+                {isEn ? "Starting from " : "Mulai dari "}
+                <strong className="text-accent">Rp{cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}</strong>
+              </p>
+            )}
 
-            {/* CTAs */}
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="btn-accent group inline-flex items-center justify-center gap-2 rounded-sm px-7 py-4 text-sm"
-              >
-                {t("ctaPrimary")}
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
-                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-sm border border-white/15 bg-white/[0.02] px-7 py-4 text-sm font-medium text-foreground transition hover:border-accent/40 hover:bg-accent/[0.04]"
-              >
-                {t("ctaSecondary")}
-              </Link>
-            </div>
-            <p className="mt-3 text-[12px] text-muted-foreground">
-              {t("setupNote")}
-            </p>
-
-            {/* Mini trust row */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/[0.07] pt-5 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {t("noCreditCard")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {t("toksRate")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {t("dropInOpenAI")}
-              </span>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "Pay via QRIS" : "Bayar via QRIS"}</span>
+              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "No subscription" : "Tanpa langganan"}</span>
+              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "Instant API key" : "API key instan"}</span>
             </div>
           </div>
 
-          {/* Right: terminal */}
-          <div className="relative animate-fade-up-delay-2 lg:translate-y-8">
-            <div className="absolute -left-8 -top-8 hidden font-mono text-[10px] uppercase tracking-[0.25em] text-accent/60 lg:block">01 / API request</div>
-            <HeroTerminal />
+          <div id="paket-list" className="mt-8 sm:mt-10">
+            <PackagePricing packages={landingPackages} groups={packageGroups} isEn={isEn} />
+          </div>
+
+          <p className="mt-6 text-center text-[12px] leading-relaxed text-muted-foreground">
+            {isEn ? "Token quota counts input + output. " : "Kuota token dihitung input + output. "}
+            {isEn ? "Prefer to pay only for what you use? " : "Mau bayar sesuai pemakaian saja? "}
+            <a href="#payg" className="font-medium text-accent underline underline-offset-2">
+              {isEn ? "See pay-as-you-go rates" : "Lihat tarif per model"}
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* ============================================================
+          CARA BELI — 3 langkah
+          ============================================================ */}
+      <section className="landing-section px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="landing-display text-center text-2xl font-semibold sm:text-4xl">
+            {isEn ? "How it works" : "Cara beli, 3 langkah"}
+          </h2>
+          <ol className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-4">
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="glass flex gap-4 rounded-2xl p-4 sm:flex-col sm:p-6">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-black">
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-foreground">{s.title}</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href={isAuthed ? "/dashboard/beli-paket" : "/register"}
+              className="btn-accent inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-7 text-sm"
+            >
+              {isAuthed ? (isEn ? "Buy a package" : "Beli paket sekarang") : isEn ? "Sign up free" : "Daftar gratis"}
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>
@@ -254,15 +317,15 @@ export default async function Home({
       {/* ============================================================
           LOGO STRIP / PROVIDERS
           ============================================================ */}
-      <section className="landing-section border-y border-white/[0.05] bg-[#b8ff45] py-6 text-[#101208]">
+      <section className="landing-section border-y border-white/[0.05] bg-[#b8ff45] py-5 text-[#101208]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-black/55">
               {t("providersLabel")}
             </span>
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
               {["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"].map((p) => (
-                <span key={p} className="text-sm font-bold tracking-tight text-black/70 transition hover:text-black">
+                <span key={p} className="text-sm font-bold tracking-tight text-black/70">
                   {p}
                 </span>
               ))}
@@ -272,37 +335,75 @@ export default async function Home({
       </section>
 
       {/* ============================================================
-          DEVELOPER INFRASTRUCTURE
+          TARIF PER MODEL (bayar per pemakaian)
           ============================================================ */}
-      <section id="platform" className="landing-section scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
-        <div className="mx-auto max-w-7xl">
-          <div className="max-w-2xl">
-            <span className="eyebrow-line text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {t("infraEyebrow")}
+      <section id="payg" className="landing-section scroll-mt-20 px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              {isEn ? "Alternative: pay as you go" : "Alternatif: bayar per pemakaian"}
             </span>
-            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
-              {t("infraTitle")}
+            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
+              {isEn ? "Per-model rates" : "Tarif per model"}
             </h2>
-            <p className="mt-4 text-base text-muted-foreground">
-              {t("infraDesc")}
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+              {isEn
+                ? "Top up TOKS balance and pay only for tokens used. Balance never expires."
+                : "Isi saldo TOKS, bayar hanya token yang dipakai. Saldo tidak kedaluwarsa."}
             </p>
+            <div className="mx-auto mt-4 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[12px]">
+              <span className="font-semibold text-accent">1 TOKS</span>
+              <span className="text-muted-foreground">=</span>
+              <span className="font-semibold text-foreground">Rp1.000</span>
+            </div>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {INFRA_FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                className={`glass card-hover rounded-sm p-6 ${i === 0 ? "sm:col-span-2 lg:col-span-1" : ""} ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
+          <div className="mt-8">
+            <PremiumPricingTable models={models} t={t} tc={tc} isEn={isEn} />
+          </div>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href={isAuthed ? "/dashboard/wallet" : "/register"}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-6 text-sm font-medium text-foreground transition hover:border-accent/40 hover:bg-accent/[0.05]"
+            >
+              {isEn ? "Top up balance" : "Isi saldo TOKS"}
+            </Link>
+            <Link
+              href="/models"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-transparent px-6 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+            >
+              {t("viewAllModelsArrow")}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          KEUNGGULAN PLATFORM
+          ============================================================ */}
+      <section id="platform" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+              {t("infraEyebrow")}
+            </span>
+            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
+              {t("infraTitle")}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground sm:text-base">{t("infraDesc")}</p>
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            {INFRA_FEATURES.map((f) => (
+              <div key={f.title} className="glass flex gap-4 rounded-2xl p-4 sm:flex-col sm:p-6">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
                   {f.icon}
                 </span>
-                <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
-                  {f.title}
-                </h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                  {f.desc}
-                </p>
+                <div>
+                  <h3 className="text-[15px] font-semibold tracking-tight text-foreground">{f.title}</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{f.desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -312,36 +413,36 @@ export default async function Home({
       {/* ============================================================
           MODEL SHOWCASE
           ============================================================ */}
-      <section id="models" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-24 sm:px-6 sm:py-32">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+      <section id="models" className="landing-section scroll-mt-20 px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <span className="eyebrow-line text-[11px] font-semibold uppercase tracking-wider text-accent">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
                 {t("catalogEyebrow")}
               </span>
-              <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
+              <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
                 {t("catalogTitle")}
               </h2>
-              <p className="mt-4 text-base text-muted-foreground">
+              <p className="mt-3 text-sm text-muted-foreground sm:text-base">
                 {t("catalogDesc", { count: modelCount })}
               </p>
             </div>
             <Link
               href="/models"
-              className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
+              className="inline-flex min-h-10 items-center justify-center self-start rounded-lg border border-white/10 bg-white/[0.02] px-4 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05] sm:self-auto"
             >
               {t("viewAllModelsArrow")}
             </Link>
           </div>
 
           {models.length === 0 ? (
-            <div className="glass mt-12 rounded-2xl p-16 text-center text-sm text-muted-foreground">
+            <div className="glass mt-8 rounded-2xl p-10 text-center text-sm text-muted-foreground">
               {t("catalogEmpty")}
             </div>
           ) : (
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
               {models.slice(0, 6).map((m) => (
-                <ModelShowcaseCard key={m.id} model={m} capLabels={capLabels} />
+                <ModelShowcaseCard key={m.id} model={m} capLabels={capLabels} isEn={isEn} />
               ))}
             </div>
           )}
@@ -349,195 +450,51 @@ export default async function Home({
       </section>
 
       {/* ============================================================
-          PERFORMANCE METRICS
-          ============================================================ */}
-      <section className="landing-section relative px-4 py-24 sm:px-6 sm:py-28">
-        <div
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: "radial-gradient(60% 80% at 50% 50%, rgba(99,102,241,0.05), transparent 70%)" }}
-          aria-hidden
-        />
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              Performa
-            </span>
-            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
-              Dibangun untuk skala dan kecepatan
-            </h2>
-          </div>
-          <div className="mt-14">
-            <AnimatedStats labels={[t('statModels'), t('statContext'), t('statLatency'), t('statUptime')]} />
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
           DEVELOPER EXPERIENCE
           ============================================================ */}
-      <section className="landing-section px-4 py-24 sm:px-6 sm:py-32">
-        <div className="mx-auto max-w-7xl">
+      <section className="landing-section bg-white/[0.018] px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               {t("dxEyebrow")}
             </span>
-            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
-              {t("dxTitle")}
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground">
-              Jika Anda sudah memakai OpenAI SDK, Anda sudah mengenal 9inference. Arahkan client
-              ke base URL kami — selesai.
+            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">{t("dxTitle")}</h2>
+            <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+              {isEn
+                ? "Already using the OpenAI SDK? Just point your client to our base URL — done."
+                : "Sudah pakai OpenAI SDK? Cukup arahkan client ke base URL kami — selesai."}
             </p>
           </div>
-          <div className="mt-12">
+          <div className="mt-8 min-w-0">
             <CodeTabs />
           </div>
         </div>
       </section>
 
       {/* ============================================================
-          PRICING
+          FAQ
           ============================================================ */}
-      <section id="pricing" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-24 sm:px-6 sm:py-32">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {t("pricingEyebrow")}
-            </span>
-            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
-              {t("pricingTitle")}
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              {t("pricingDesc")}
-            </p>
-
-            {/* TOKS conversion banner */}
-            <div className="mx-auto mt-6 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-accent/20 bg-accent/5 px-4 py-2 text-[12px]">
-              <span className="font-semibold text-accent">1 TOKS</span>
-              <span className="text-muted-foreground">=</span>
-              <span className="font-semibold text-foreground">Rp1,000</span>
-              <span className="text-muted-foreground">=</span>
-              <span className="font-semibold text-foreground">US$0.0553</span>
-            </div>
-          </div>
-
-          <div className="mx-auto mt-12 max-w-5xl">
-            <PremiumPricingTable models={models} t={t} tc={tc} />
-          </div>
-
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/register"
-              className="btn-accent group inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm"
-            >
-                {t("registerFree")}
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
-                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-              <Link
-                href="/models"
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
-              >
-                {t("viewAllModelsArrow")}
-              </Link>
-            </div>
-            <p className="mt-4 text-center text-[12px] text-muted-foreground">
-              Tanpa kartu kredit · Kredit tidak kedaluwarsa · Jaminan refund 14 hari
-            </p>
-        </div>
-      </section>
-
-      {/* ============================================================
-          TRUST SECTION
-          ============================================================ */}
-      <section className="landing-section relative px-4 py-24 sm:px-6 sm:py-32">
-        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-40" aria-hidden />
-        <div
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: "radial-gradient(50% 50% at 50% 50%, rgba(0,255,136,0.04), transparent 70%)" }}
-          aria-hidden
-        />
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {t("trustEyebrow")}
-            </span>
-            <h2 className="landing-display mt-5 text-4xl font-semibold sm:text-6xl">
-              {t("trustTitle")}
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST_AUDIENCES.map((a, i) => (
-              <div
-                key={a.name}
-                className={`glass card-hover rounded-2xl p-6 text-center ${[`animate-fade-up`, `animate-fade-up-delay-1`, `animate-fade-up-delay-2`, `animate-fade-up-delay-3`][i]}`}
-              >
-                <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
-                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <h3 className="mt-4 text-sm font-semibold tracking-tight text-foreground">
-                  {a.name}
-                </h3>
-                <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
-                  {a.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-10 text-center">
-            <Link
-              href="/register"
-              className="btn-accent inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm"
-            >
-              {t("ctaFinalTitle")}
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          FAQ — keyword-rich content + FAQPage schema
-          ============================================================ */}
-      <section className="landing-section px-4 py-20 sm:px-6">
+      <section className="landing-section px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
               {isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
             </span>
-            <h2 className="landing-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {isEn ? "Affordable AI Model API, answered" : "API Model AI Murah, dijawab"}
+            <h2 className="landing-display mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
+              {isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-              {isEn
-                ? "Everything you need to know about pricing, OpenAI compatibility, and getting started."
-                : "Semua yang perlu Anda ketahui soal harga, kompatibilitas OpenAI, dan cara mulai."}
-            </p>
           </div>
 
-          <div className="mt-10 space-y-3">
+          <div className="mt-8 space-y-2.5">
             {FAQS.map((f) => (
-              <details
-                key={f.q}
-                className="group glass overflow-hidden rounded-xl transition open:border-white/[0.14]"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-foreground transition hover:text-accent [&::-webkit-details-marker]:hidden">
+              <details key={f.q} className="group glass overflow-hidden rounded-xl transition open:border-white/[0.14]">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 text-sm font-semibold text-foreground transition hover:text-accent sm:px-5 [&::-webkit-details-marker]:hidden">
                   {f.q}
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
-                  >
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden>
                     <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </summary>
-                <p className="px-5 pb-4 text-[13px] leading-relaxed text-muted-foreground">{f.a}</p>
+                <p className="px-4 pb-4 text-[13px] leading-relaxed text-muted-foreground sm:px-5">{f.a}</p>
               </details>
             ))}
           </div>
@@ -547,70 +504,37 @@ export default async function Home({
       {/* ============================================================
           FINAL CTA
           ============================================================ */}
-      <section className="landing-section px-4 py-24 sm:px-6">
-        <div className="mx-auto max-w-5xl">
-          <div className="glass relative overflow-hidden rounded-sm border-accent/20 p-10 text-center sm:p-20">
+      <section className="landing-section px-4 pb-24 pt-6 sm:px-6 sm:pb-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="glass relative overflow-hidden rounded-2xl border-accent/20 p-6 text-center sm:p-14">
             <div
               className="pointer-events-none absolute inset-0 -z-10"
-              style={{
-                background:
-                  "radial-gradient(50% 60% at 50% 0%, rgba(0,255,136,0.10), transparent 70%), radial-gradient(50% 60% at 50% 100%, rgba(99,102,241,0.10), transparent 70%)",
-              }}
+              style={{ background: "radial-gradient(60% 70% at 50% 0%, rgba(184,255,69,0.10), transparent 70%)" }}
               aria-hidden
             />
-            <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-30" aria-hidden />
-
-            <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-3.5 py-1.5 text-[12px] font-medium text-accent">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-              </span>
-              {modelCount} model · Bayar per token · 1 TOKS = Rp1.000
-            </div>
-
-            <h2 className="landing-display mt-6 text-4xl font-semibold sm:text-6xl">
-              Hemat biaya AI mulai hari ini
+            <h2 className="landing-display text-2xl font-semibold sm:text-4xl">
+              {isEn ? "Start saving on AI today" : "Hemat biaya AI mulai hari ini"}
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-              {t("registerFree")}, dapat API key instan. Satu endpoint multi-model, bayar hanya token yang dipakai —
-              tanpa langganan.
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+              {isEn
+                ? "Pick a token package, pay via QRIS, and your API key is ready in seconds."
+                : "Pilih paket token, bayar via QRIS, API key siap dalam hitungan detik."}
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="btn-accent group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm"
-              >
-                Mulai gratis — API key instan
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
-                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <a href="#paket" className="btn-accent inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-7 text-sm">
+                {isEn ? "See token packages" : "Lihat paket token"}
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                  <path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </Link>
-              <Link
-                href="/models"
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-7 py-3.5 text-sm font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05]"
-              >
-                Lihat model murah
-              </Link>
-            </div>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {t("noCreditCard")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Jaminan refund 14 hari
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Kredit tidak kedaluwarsa
-              </span>
+              </a>
+              {!isAuthed && (
+                <Link
+                  href="/register"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 text-sm font-medium text-foreground transition hover:border-white/25"
+                >
+                  {t("registerFree")}
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -619,19 +543,17 @@ export default async function Home({
       {/* ============================================================
           FOOTER
           ============================================================ */}
-      <footer className="border-t border-white/[0.06] px-4 py-12 sm:px-6">
+      <footer className="border-t border-white/[0.06] px-4 pb-24 pt-10 sm:px-6 sm:pb-12">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
+          <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+            <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
                   9i
                 </span>
                 <span className="text-[15px] font-semibold tracking-tight">9inference</span>
               </Link>
-              <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-                {tf("tagline")}
-              </p>
+              <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{tf("tagline")}</p>
             </div>
 
             <FooterCol
@@ -644,15 +566,6 @@ export default async function Home({
               ]}
             />
             <FooterCol
-              title={tf("learn")}
-              links={[
-                { label: tf("apiCheap"), href: "/blog/api-model-ai-murah-indonesia" },
-                { label: tf("deepseekCheap"), href: "/blog/deepseek-api-murah-cara-pakai" },
-                { label: tf("openaiAlt"), href: "/blog/alternatif-openai-api-murah" },
-                { label: tf("payPerToken"), href: "/blog/bayar-per-token-vs-langganan" },
-              ]}
-            />
-            <FooterCol
               title={tf("account")}
               links={[
                 { label: tc("login"), href: "/login" },
@@ -661,18 +574,40 @@ export default async function Home({
                 { label: tf("terms"), href: "/terms" },
               ]}
             />
+            <div className="col-span-2 lg:col-span-1">
+              <FooterCol
+                title={tf("learn")}
+                links={[
+                  { label: tf("apiCheap"), href: "/blog/api-model-ai-murah-indonesia" },
+                  { label: tf("deepseekCheap"), href: "/blog/deepseek-api-murah-cara-pakai" },
+                  { label: tf("openaiAlt"), href: "/blog/alternatif-openai-api-murah" },
+                  { label: tf("payPerToken"), href: "/blog/bayar-per-token-vs-langganan" },
+                ]}
+              />
+            </div>
           </div>
 
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
-            <p className="text-[12px] text-muted-foreground">
-              {tf("copyright", { year: new Date().getFullYear() })}
-            </p>
-            <p className="text-[12px] text-muted-foreground">
-              Bayar hanya yang dipakai. Tanpa langganan. Tanpa biaya tersembunyi.
+          <div className="mt-10 border-t border-white/[0.06] pt-6 text-center sm:flex sm:items-center sm:justify-between sm:text-left">
+            <p className="text-[12px] text-muted-foreground">{tf("copyright", { year: new Date().getFullYear() })}</p>
+            <p className="mt-2 text-[12px] text-muted-foreground sm:mt-0">
+              {isEn ? "No subscription. No hidden fees." : "Tanpa langganan. Tanpa biaya tersembunyi."}
             </p>
           </div>
         </div>
       </footer>
+
+      {/* Tombol lengket di HP — muncul setelah melewati daftar paket */}
+      <MobilePackageCta
+        label={
+          cheapest
+            ? isEn
+              ? `See packages · from Rp${cheapest.price.toLocaleString("en-US")}`
+              : `Lihat paket · mulai Rp${cheapest.price.toLocaleString("id-ID")}`
+            : isEn
+              ? "See token packages"
+              : "Lihat paket token"
+        }
+      />
     </div>
   );
 }
@@ -688,16 +623,11 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </div>
-      <ul className="mt-4 space-y-2.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <ul className="mt-3 space-y-2">
         {links.map((l) => (
           <li key={l.href}>
-            <Link
-              href={l.href}
-              className="text-[13px] text-muted-foreground transition hover:text-foreground"
-            >
+            <Link href={l.href} className="block py-0.5 text-[13px] text-muted-foreground transition hover:text-foreground">
               {l.label}
             </Link>
           </li>
@@ -710,65 +640,55 @@ function FooterCol({
 function ModelShowcaseCard({
   model,
   capLabels,
+  isEn,
 }: {
   model: ModelCardData;
-  capLabels: {
-    coding: string;
-    fast: string;
-    reasoning: string;
-    vision: string;
-    general: string;
-  };
+  capLabels: { coding: string; fast: string; reasoning: string; vision: string; general: string };
+  isEn: boolean;
 }) {
   const cap = capabilityLabel(model.name, model.modelId, capLabels);
   const dot = PROVIDER_DOT[model.provider] ?? "bg-white/40";
   const isLive = !model.maintenanceMode;
 
   return (
-    <div className="glass card-glow group relative flex flex-col rounded-2xl p-6">
+    <div className="glass group relative flex flex-col rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold tracking-tight text-foreground">
-            {model.name}
-          </h3>
-          <div className="mt-1.5 flex items-center gap-1.5">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold tracking-tight text-foreground">{model.name}</h3>
+          <div className="mt-1 flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
             <span className="text-[12px] text-muted-foreground">{model.provider}</span>
           </div>
         </div>
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium ${
-            isLive
-              ? "border-accent/25 bg-accent/10 text-accent"
-              : "border-amber-500/30 bg-amber-500/10 text-amber-400"
+            isLive ? "border-accent/25 bg-accent/10 text-accent" : "border-amber-500/30 bg-amber-500/10 text-amber-400"
           }`}
         >
-          {isLive ? "Aktif" : "Pemeliharaan"}
+          {isLive ? (isEn ? "Active" : "Aktif") : isEn ? "Maintenance" : "Pemeliharaan"}
         </span>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-[12px]">
+      <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[12px]">
         <div>
-          <div className="text-[10px] text-muted-foreground">Konteks</div>
-          <div className="mt-0.5 font-semibold text-foreground">
-            {model.contextWindow ?? "—"}
-          </div>
+          <div className="text-[10px] text-muted-foreground">{isEn ? "Context" : "Konteks"}</div>
+          <div className="mt-0.5 font-semibold text-foreground">{model.contextWindow ?? "—"}</div>
         </div>
         <div>
-          <div className="text-[10px] text-muted-foreground">Kemampuan</div>
+          <div className="text-[10px] text-muted-foreground">{isEn ? "Strength" : "Kemampuan"}</div>
           <div className="mt-0.5 font-semibold text-foreground">{cap}</div>
         </div>
       </div>
 
-      <div className="mt-5 flex items-center gap-2 border-t border-white/[0.06] pt-4">
-        <code className="flex-1 truncate rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 font-mono text-[11px] text-foreground/80">
+      <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
+        <code className="min-w-0 flex-1 truncate rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 font-mono text-[11px] text-foreground/80">
           {model.modelId}
         </code>
         <Link
           href={`/models/${encodeURIComponent(model.modelId)}`}
-          className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
+          className="shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
         >
-          Pakai model
+          {isEn ? "Details" : "Detail"}
         </Link>
       </div>
     </div>
@@ -779,34 +699,69 @@ function PremiumPricingTable({
   models,
   t,
   tc,
+  isEn,
 }: {
   models: ModelCardData[];
   t: (key: string) => string;
   tc: (key: string) => string;
+  isEn: boolean;
 }) {
   if (models.length === 0) {
     return (
-      <div className="glass rounded-2xl p-12 text-center text-sm text-muted-foreground">
-        Harga sedang diperbarui.
+      <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">
+        {isEn ? "Prices are being updated." : "Harga sedang diperbarui."}
       </div>
     );
   }
+  const nf = (n: number) => n.toLocaleString(isEn ? "en-US" : "id-ID");
+  const perM = isEn ? "/ 1M tokens" : "/ 1 juta token";
+
   return (
     <div className="glass overflow-hidden rounded-2xl">
-      <div className="overflow-x-auto">
+      {/* HP: daftar kartu ringkas, tanpa scroll horizontal */}
+      <ul className="divide-y divide-white/[0.06] md:hidden">
+        {models.map((m) => (
+          <li key={m.id} className="px-4 py-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-foreground">{m.name}</div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className={`h-1.5 w-1.5 rounded-full ${PROVIDER_DOT[m.provider] ?? "bg-white/40"}`} />
+                  {m.provider}
+                  {m.contextWindow ? <span>· {m.contextWindow}</span> : null}
+                </div>
+              </div>
+              {m.maintenanceMode && (
+                <span className="shrink-0 text-[11px] font-medium text-amber-400">{tc("maintenance")}</span>
+              )}
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Input</div>
+                <div className="font-mono text-[13px] font-semibold text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
+                <div className="text-[10px] text-muted-foreground">{perM}</div>
+              </div>
+              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Output</div>
+                <div className="font-mono text-[13px] font-semibold text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
+                <div className="text-[10px] text-muted-foreground">{perM}</div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop/tablet: tabel */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.08] text-left">
-              {["Model", "Provider", "Konteks", "Input / 1Jt", "Output / 1Jt", "Status"].map((h) => (
-                <th
-                  key={h}
-                  className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${
-                    h === "Input / 1Jt" || h === "Output / 1Jt" ? "text-right" : ""
-                  } ${h === "Status" ? "text-center" : ""}`}
-                >
-                  {h}
-                </th>
-              ))}
+              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Model</th>
+              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Provider</th>
+              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{isEn ? "Context" : "Konteks"}</th>
+              <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Input {perM}</th>
+              <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Output {perM}</th>
+              <th className="px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.04]">
@@ -828,19 +783,15 @@ function PremiumPricingTable({
                   </span>
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <div className="font-mono font-semibold text-foreground">
-                    Rp{m.inputPricePerMillion.toLocaleString("id-ID")}
-                  </div>
+                  <div className="font-mono font-semibold text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    {(m.inputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS · US${((m.inputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                    {(m.inputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS
                   </div>
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <div className="font-mono font-semibold text-foreground">
-                    Rp{m.outputPricePerMillion.toLocaleString("id-ID")}
-                  </div>
+                  <div className="font-mono font-semibold text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    {(m.outputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS · US${((m.outputPricePerMillion / 1000) * 0.0553).toFixed(2)}
+                    {(m.outputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS
                   </div>
                 </td>
                 <td className="px-5 py-4 text-center">
@@ -851,7 +802,7 @@ function PremiumPricingTable({
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                       {tc("active")}
                     </span>
                   )}
@@ -861,7 +812,7 @@ function PremiumPricingTable({
           </tbody>
         </table>
       </div>
-      <div className="border-t border-white/[0.08] px-5 py-3.5 text-[11px] text-muted-foreground">
+      <div className="border-t border-white/[0.08] px-4 py-3 text-[11px] text-muted-foreground sm:px-5">
         {t("pricingTableNote")}
       </div>
     </div>

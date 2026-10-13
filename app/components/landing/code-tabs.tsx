@@ -113,7 +113,7 @@ export function CodeTabs() {
   return (
     <div className="grid gap-6 lg:grid-cols-5">
       {/* Left: integrations */}
-      <div className="lg:col-span-2">
+      <div className="min-w-0 lg:col-span-2">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Works with your stack
         </div>
@@ -138,7 +138,7 @@ export function CodeTabs() {
       </div>
 
       {/* Right: code */}
-      <div className="lg:col-span-3">
+      <div className="min-w-0 lg:col-span-3">
         <div className="glass overflow-hidden rounded-2xl">
           {/* Tabs */}
           <div className="flex items-center border-b border-white/[0.06] px-2">

@@ -47,7 +47,8 @@
     "models": "Models",
     "pricing": "Pricing",
     "blog": "Blog",
-    "platform": "Platform"
+    "platform": "Platform",
+    "packages": "Token Packages"
   },
   "Header": {
     "tagline": "AI Inference Platform",

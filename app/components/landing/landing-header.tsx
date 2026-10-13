@@ -13,6 +13,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
 
   const navLinks = [
+    { label: t("Nav.packages"), href: "/#paket" as const },
     { label: t("Nav.models"), href: "/models" as const },
     { label: t("Nav.pricing"), href: "/pricing" as const },
     { label: t("Nav.blog"), href: "/blog" as const },

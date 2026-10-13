@@ -47,7 +47,8 @@
     "models": "Model",
     "pricing": "Harga",
     "blog": "Blog",
-    "platform": "Platform"
+    "platform": "Platform",
+    "packages": "Paket Token"
   },
   "Header": {
     "tagline": "Platform Inferensi AI",
