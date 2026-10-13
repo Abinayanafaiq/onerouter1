@@ -31,6 +31,42 @@ function opencodeConfig(providerId: string, name: string, baseURL: string, model
   );
 }
 
+function harnessConfig(providerId: string, baseURL: string, modelIds: string[]) {
+  return `- id: llm-pi-ai
+  config:
+    providers:
+      ${providerId}:
+        apiKeyEnv: NINEINFERENCE_API_KEY
+        api: openai-completions
+        baseURL: ${baseURL}
+        compat:
+          supportsDeveloperRole: false
+          maxTokensField: max_tokens
+        models:
+${modelIds.map((id) => `          - id: ${id}`).join("\n")}`;
+}
+
+function ToolHeader({ logo, name, href, children }: { logo: string; name: string; href: string; children: ReactNode }) {
+  return (
+    <div className="glass flex items-start gap-4 rounded-2xl p-6">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logo}
+        alt={`Logo ${name}`}
+        width={44}
+        height={44}
+        className="h-11 w-11 shrink-0 rounded-xl border border-white/[0.08] bg-black/60 object-contain p-1.5"
+      />
+      <div className="min-w-0">
+        <a href={href} target="_blank" rel="noreferrer" className="text-sm font-semibold tracking-tight hover:underline">
+          {name}
+        </a>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
+      </div>
+    </div>
+  );
+}
+
 export default async function DocsPage() {
   const t = await getTranslations("Docs");
   const [availableModels, packageModels] = await Promise.all([
@@ -53,6 +89,24 @@ export default async function DocsPage() {
     PACKAGE_BASE_URL,
     packageModelIds.length > 0 ? packageModelIds : [sampleModel],
   );
+
+  const harnessPaygCode = harnessConfig(
+    "nineinference",
+    API_BASE_URL,
+    paygModelIds.length > 0 ? paygModelIds : [sampleModel],
+  );
+  const harnessPackageCode = harnessConfig(
+    "nineinference-paket",
+    PACKAGE_BASE_URL,
+    packageModelIds.length > 0 ? packageModelIds : [sampleModel],
+  );
+  const harnessRunCode = `npx @deepseek-ai/dsh web`;
+  const harnessFields = [
+    { label: "Provider ID", payg: "nineinference", pkg: "nineinference-paket" },
+    { label: "Base URL", payg: API_BASE_URL, pkg: PACKAGE_BASE_URL },
+    { label: "API protocol", payg: "OpenAI Chat Completions", pkg: "OpenAI Chat Completions" },
+    { label: "API key", payg: t("harnessFieldKeyPayg"), pkg: t("harnessFieldKeyPackage") },
+  ];
 
   const opencodeInstallCode = `npm install -g opencode-ai`;
 
@@ -222,9 +276,9 @@ console.log(res.choices[0].message.content);`;
           {t("opencodeTitle")}
         </h2>
 
-        <div className="glass rounded-2xl p-6">
-          <p className="text-xs leading-relaxed text-muted-foreground">{t("opencodeIntro")}</p>
-        </div>
+        <ToolHeader logo="/logos/opencode.svg" name="OpenCode" href="https://opencode.ai">
+          {t("opencodeIntro")}
+        </ToolHeader>
 
         <div className="glass rounded-2xl p-6">
           <h3 className="text-sm font-semibold tracking-tight">{t("opencodeStep1Title")}</h3>
@@ -293,6 +347,90 @@ console.log(res.choices[0].message.content);`;
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* DeepSeek Harness */}
+      <section className="animate-fade-up-delay-2 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          {t("harnessTitle")}
+        </h2>
+
+        <ToolHeader
+          logo="/logos/deepseek-harness.svg"
+          name="DeepSeek Harness"
+          href="https://github.com/deepseek-ai/deepseek-harness"
+        >
+          {t("harnessIntro")}
+        </ToolHeader>
+
+        <div className="glass rounded-2xl p-6">
+          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep1Title")}</h3>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {t.rich("harnessStep1Desc", { code: inlineCode })}
+          </p>
+          <div className="mt-2">
+            <CopyableCode code={harnessRunCode} />
+          </div>
+        </div>
+
+        <div className="glass rounded-2xl p-6">
+          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep2Title")}</h3>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {t.rich("harnessStep2Desc", {
+              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+            })}
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-xl border border-white/[0.08]">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 font-medium">{t("harnessFieldCol")}</th>
+                  <th className="px-3 py-2 font-medium">PAYG</th>
+                  <th className="px-3 py-2 font-medium text-accent">{t("packageTitle")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {harnessFields.map((f) => (
+                  <tr key={f.label} className="border-b border-white/[0.04] last:border-0">
+                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{f.label}</td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.payg}</td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.pkg}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="glass rounded-2xl p-6">
+          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep3Title")}</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {t.rich("harnessStep3Desc", {
+              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+            })}
+          </p>
+        </div>
+
+        <div className="glass rounded-2xl p-6">
+          <h3 className="text-sm font-semibold tracking-tight">{t("harnessAdvancedTitle")}</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {t.rich("harnessAdvancedDesc", { code: inlineCode })}
+          </p>
+
+          <p className="mt-4 text-xs font-medium text-foreground">{t("opencodeConfigPayg")}</p>
+          <div className="mt-2">
+            <CopyableCode code={harnessPaygCode} language="cordis.patch.yml" />
+          </div>
+
+          <p className="mt-4 text-xs font-medium text-accent">{t("opencodeConfigPackage")}</p>
+          <div className="mt-2">
+            <CopyableCode code={harnessPackageCode} language="cordis.patch.yml" />
+          </div>
+
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            {t.rich("harnessAdvancedNote", { code: inlineCode })}
+          </p>
         </div>
       </section>
 
