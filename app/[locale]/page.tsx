@@ -562,6 +562,7 @@ export default async function Home({
                 { label: tf("aiModels"), href: "/models" },
                 { label: tf("tokenPricing"), href: "/pricing" },
                 { label: tc("blog"), href: "/blog" },
+                { label: tf("status"), href: "/status" },
                 { label: tc("dashboard"), href: "/dashboard" },
               ]}
             />

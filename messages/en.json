@@ -12,7 +12,9 @@
     "blogTitle": "Blog — Affordable AI APIs & Guides",
     "blogDescription": "Articles on affordable AI model APIs, DeepSeek, OpenAI alternatives, and pay-per-token billing.",
     "termsTitle": "Terms of Service — 9inference",
-    "termsDescription": "9inference terms of service: refund policy, model pricing changes, and usage terms for the AI model API service."
+    "termsDescription": "9inference terms of service: refund policy, model pricing changes, and usage terms for the AI model API service.",
+    "statusTitle": "Service Status — AI Model API Uptime",
+    "statusDescription": "Check 9inference service status: 30-day uptime and response duration for each AI model on the PAYG and token package APIs."
   },
   "Common": {
     "home": "Home",
@@ -66,7 +68,8 @@
     "payPerToken": "Pay Per Token",
     "account": "Account",
     "terms": "Terms of Service",
-    "copyright": "© {year} 9inference. Affordable AI API for developers worldwide."
+    "copyright": "© {year} 9inference. Affordable AI API for developers worldwide.",
+    "status": "Service Status"
   },
   "Landing": {
     "badge": "OpenAI-compatible inference · {count} active models",
@@ -972,5 +975,33 @@
     "createOrder": "Create Order",
     "paymentInfoRate": "1 {unit} = US${usd}",
     "rateNote": "1 {unit} = US${usd}"
+  },
+  "Status": {
+    "eyebrow": "Status",
+    "title": "Service Status",
+    "subtitle": "Uptime and response duration for each model, measured from real requests to the 9inference API.",
+    "overallOperational": "All systems operational",
+    "overallDegraded": "Some models are degraded",
+    "overallOutage": "Some models are experiencing an outage",
+    "updatedAt": "Updated {time} WIB",
+    "paygTitle": "PAYG API",
+    "paygDesc": "Pay-per-token models via /v1.",
+    "paketTitle": "Package API",
+    "paketDesc": "Token package models via /v1/package.",
+    "stOperational": "Operational",
+    "stDegraded": "Degraded",
+    "stOutage": "Outage",
+    "stMaintenance": "Maintenance",
+    "stNoData": "Not enough data",
+    "historyLabel": "Uptime history for the last {days} days",
+    "daysAgo": "{days} days ago",
+    "today": "Today",
+    "noDataDay": "No data",
+    "uptime30": "{days}-day uptime",
+    "medianDuration": "Median response duration (24h)",
+    "seconds": "{value} s",
+    "empty": "No active models yet.",
+    "methodTitle": "How we measure",
+    "methodBody": "Uptime is the share of successful requests versus requests that failed because of the service or its upstream. Requests rejected for an empty balance or quota, a model that is not allowed, or a malformed request do not count as downtime. Response duration is the total time until the response finishes, including streaming, so it depends on answer length. Status uses the last hour of data, or the last 24 hours when traffic is low."
   }
 }

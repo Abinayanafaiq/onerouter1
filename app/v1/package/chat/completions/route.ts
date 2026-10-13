@@ -9,6 +9,7 @@ import {
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
+import { createApiRequestLog } from "@/app/lib/api-request-log";
 import {
   BACKUP_API_KEY,
 } from "@/app/lib/constants";
@@ -148,6 +149,25 @@ export async function POST(request: Request) {
     return apiError("Kuota paket tidak mencukupi. Silakan beli paket baru.", 402, "insufficient_quota", "package_quota_exhausted");
   }
 
+  // Request gagal karena upstream ikut dicatat supaya uptime paket di halaman
+  // status tidak hanya berisi request sukses. Best-effort, tidak pernah throw.
+  const logUpstreamFailure = (statusCode: number) =>
+    createApiRequestLog({
+      apiKeyId: apiKey.id,
+      userId: apiKey.userId,
+      provider: model.provider,
+      model: model.modelId,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      inputCost: 0,
+      outputCost: 0,
+      totalCost: 0,
+      remainingBalance: 0,
+      success: false,
+      ...meta(statusCode),
+    });
+
   // Backup upstream routing: model paket tertentu dilayani upstream sekunder
   // dengan endpoint, key, dan model ID sendiri. Kalau BACKUP_API_KEY tidak
   // diset, model jatuh kembali ke upstream paket seperti biasa.
@@ -188,6 +208,8 @@ export async function POST(request: Request) {
     const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     console.error(`[${ts()}] [v1/package/chat] gagal menghubungi upstream: ${reason}${request.signal.aborted ? " (client abort)" : ""}`);
     await releasePackageTokens(reservation.id);
+    // Client yang membatalkan request bukan gangguan layanan.
+    if (!request.signal.aborted) await logUpstreamFailure(502);
     return apiError("Gagal menghubungi upstream paket.", 502, "api_error", "upstream_unavailable");
   }
   console.log(`[${ts()}] [v1/package/chat] upstream status:`, upstream.status);
@@ -197,6 +219,7 @@ export async function POST(request: Request) {
     console.error(`[${ts()}] [v1/package/chat] upstream error:`, upstream.status, upstreamMessage.slice(0, 500));
     await releasePackageTokens(reservation.id);
     console.log(`[${ts()}] [v1/package/chat] reservation released (upstream error)`);
+    await logUpstreamFailure(upstream.status);
     // Sanitize: never forward the upstream body — it may name the real
     // provider or leak upstream billing/quota state.
     const safe = sanitizeUpstreamError(upstream.status);
@@ -288,6 +311,7 @@ export async function POST(request: Request) {
     console.error(`[${ts()}] [v1/package/chat] upstream balas bukan JSON valid (status ${upstream.status}):`, raw.slice(0, 500));
     await releasePackageTokens(reservation.id);
     console.log(`[${ts()}] [v1/package/chat] reservation released (invalid upstream response)`);
+    await logUpstreamFailure(502);
     return apiError("Upstream mengembalikan respons yang tidak valid.", 502, "api_error", "invalid_upstream_response");
   }
   let { input, output } = normalizedUsage(data.usage);

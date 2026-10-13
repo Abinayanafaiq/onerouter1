@@ -12,7 +12,9 @@
     "blogTitle": "Blog — API Model AI Murah & Tutorial",
     "blogDescription": "Artikel tentang API model AI murah, DeepSeek, alternatif OpenAI, dan bayar per token di Indonesia.",
     "termsTitle": "Syarat & Ketentuan Layanan — 9inference",
-    "termsDescription": "Syarat dan ketentuan layanan 9inference: kebijakan refund, perubahan harga model, dan ketentuan penggunaan layanan API model AI."
+    "termsDescription": "Syarat dan ketentuan layanan 9inference: kebijakan refund, perubahan harga model, dan ketentuan penggunaan layanan API model AI.",
+    "statusTitle": "Status Layanan — Uptime API Model AI",
+    "statusDescription": "Pantau status layanan 9inference: uptime 30 hari dan durasi respons tiap model AI untuk API PAYG dan paket token."
   },
   "Common": {
     "home": "Beranda",
@@ -66,7 +68,8 @@
     "payPerToken": "Bayar Per Token",
     "account": "Akun",
     "terms": "Syarat & Ketentuan",
-    "copyright": "© {year} 9inference. API model murah untuk developer Indonesia."
+    "copyright": "© {year} 9inference. API model murah untuk developer Indonesia.",
+    "status": "Status Layanan"
   },
   "Landing": {
     "badge": "Inferensi kompatibel OpenAI · {count} model aktif",
@@ -972,5 +975,33 @@
     "createOrder": "Buat Order",
     "paymentInfoRate": "1 {unit} = Rp{idr}",
     "rateNote": "1 {unit} = Rp{idr}"
+  },
+  "Status": {
+    "eyebrow": "Status",
+    "title": "Status Layanan",
+    "subtitle": "Uptime dan durasi respons tiap model, dihitung dari request nyata ke API 9inference.",
+    "overallOperational": "Semua sistem normal",
+    "overallDegraded": "Sebagian model terganggu",
+    "overallOutage": "Sebagian model mengalami gangguan",
+    "updatedAt": "Diperbarui {time} WIB",
+    "paygTitle": "API PAYG",
+    "paygDesc": "Model bayar per token lewat /v1.",
+    "paketTitle": "API Paket",
+    "paketDesc": "Model paket token lewat /v1/package.",
+    "stOperational": "Normal",
+    "stDegraded": "Terganggu",
+    "stOutage": "Gangguan",
+    "stMaintenance": "Pemeliharaan",
+    "stNoData": "Belum cukup data",
+    "historyLabel": "Riwayat uptime {days} hari terakhir",
+    "daysAgo": "{days} hari lalu",
+    "today": "Hari ini",
+    "noDataDay": "Tidak ada data",
+    "uptime30": "Uptime {days} hari",
+    "medianDuration": "Durasi respons median (24 jam)",
+    "seconds": "{value} dtk",
+    "empty": "Belum ada model aktif.",
+    "methodTitle": "Cara kami menghitung",
+    "methodBody": "Uptime adalah persentase request yang berhasil dibanding request yang gagal karena layanan atau upstream. Request yang ditolak karena saldo atau kuota habis, model tidak diizinkan, atau format request salah tidak dihitung sebagai gangguan. Durasi respons adalah waktu total sampai respons selesai, termasuk streaming, jadi dipengaruhi panjang jawaban. Status memakai data 1 jam terakhir, atau 24 jam bila trafik sedikit."
   }
 }
