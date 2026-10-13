@@ -115,7 +115,7 @@ export default async function CheckoutPage({
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-12 max-w-lg">
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 py-12">
         {/* Back link */}
         <Link
           href={renewalKey ? "/dashboard/packages" : "/pricing"}
