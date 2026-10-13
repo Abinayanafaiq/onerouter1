@@ -55,17 +55,61 @@ export type AggregatedCompletion = {
   model: string;
   choices: {
     index: number;
-    message: { role: "assistant"; content: string };
+    // Besides `content`, carries whatever else the upstream streamed
+    // (tool_calls, reasoning/reasoning_content, future fields).
+    message: { role: "assistant"; content: string } & Record<string, unknown>;
     finish_reason: string;
   }[];
   usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
 };
 
+// String fields that identify a delta rather than extend it. Some upstreams
+// repeat them on every chunk, so they are replaced instead of concatenated
+// (otherwise `type` ends up as "functionfunction").
+const DELTA_IDENTITY_KEYS = new Set(["role", "type", "id", "name"]);
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Fold one streamed delta into the accumulated value without knowing the
+ * field names: strings are concatenated, objects merged recursively, arrays
+ * merged by each element's `index` (how tool_calls are streamed), anything
+ * else is replaced. Null/undefined deltas never overwrite accumulated data.
+ */
+function mergeDelta(target: unknown, delta: unknown, key?: string): unknown {
+  if (delta === null || delta === undefined) return target;
+  if (typeof delta === "string") {
+    if (key && DELTA_IDENTITY_KEYS.has(key)) return delta || target;
+    return typeof target === "string" ? target + delta : delta;
+  }
+  if (Array.isArray(delta)) {
+    const merged: unknown[] = Array.isArray(target) ? [...target] : [];
+    for (const item of delta) {
+      const index = isPlainObject(item) && typeof item.index === "number" ? item.index : -1;
+      const at = index >= 0
+        ? merged.findIndex((existing) => isPlainObject(existing) && existing.index === index)
+        : -1;
+      if (at >= 0) merged[at] = mergeDelta(merged[at], item);
+      else merged.push(mergeDelta(undefined, item));
+    }
+    return merged;
+  }
+  if (isPlainObject(delta)) {
+    const merged: Record<string, unknown> = isPlainObject(target) ? { ...target } : {};
+    for (const [k, v] of Object.entries(delta)) merged[k] = mergeDelta(merged[k], v, k);
+    return merged;
+  }
+  return delta;
+}
+
 /**
  * Read an upstream SSE stream (requested with stream=true) and fold it back
- * into a standard non-streaming chat.completion object. Only assistant
- * `content` deltas are aggregated — reasoning deltas are ignored. Returns
- * null on transport failure.
+ * into a standard non-streaming chat.completion object. Every delta field is
+ * aggregated generically (see mergeDelta), so tool_calls, reasoning fields
+ * and fields the upstream adds later all reach the client. Returns null on
+ * transport failure.
  *
  * Workaround helper: the upstream origin crashes (Cloudflare 520) on
  * non-streaming chat completions, so routes always request a stream upstream
@@ -79,8 +123,7 @@ export async function aggregateUpstreamStream(
   const decoder = new TextDecoder();
   const reader = upstream.body.getReader();
   let buffer = "";
-  let content = "";
-  let finishReason = "stop";
+  const choices = new Map<number, { message: Record<string, unknown>; finishReason: string }>();
   let id = "";
   let created = 0;
   let model = "";
@@ -97,7 +140,8 @@ export async function aggregateUpstreamStream(
         created?: number;
         model?: string;
         choices?: {
-          delta?: { content?: string };
+          index?: number;
+          delta?: Record<string, unknown>;
           finish_reason?: string | null;
         }[];
         usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
@@ -105,9 +149,15 @@ export async function aggregateUpstreamStream(
       if (chunk.id) id = chunk.id;
       if (chunk.created) created = chunk.created;
       if (chunk.model) model = chunk.model;
-      const choice = chunk.choices?.[0];
-      if (choice?.delta?.content) content += choice.delta.content;
-      if (choice?.finish_reason) finishReason = choice.finish_reason;
+      for (const choice of chunk.choices ?? []) {
+        const index = typeof choice.index === "number" ? choice.index : 0;
+        const entry = choices.get(index) ?? { message: {}, finishReason: "stop" };
+        if (choice.delta) {
+          entry.message = mergeDelta(entry.message, choice.delta) as Record<string, unknown>;
+        }
+        if (choice.finish_reason) entry.finishReason = choice.finish_reason;
+        choices.set(index, entry);
+      }
       if (chunk.usage) {
         promptTokens = chunk.usage.prompt_tokens || 0;
         completionTokens = chunk.usage.completion_tokens || 0;
@@ -131,14 +181,24 @@ export async function aggregateUpstreamStream(
     return null;
   }
 
+  if (choices.size === 0) choices.set(0, { message: {}, finishReason: "stop" });
+
   return {
     id: id || `chatcmpl-${Date.now()}`,
     object: "chat.completion",
     created: created || Math.floor(Date.now() / 1000),
     model,
-    choices: [
-      { index: 0, message: { role: "assistant", content }, finish_reason: finishReason },
-    ],
+    choices: [...choices.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([index, { message, finishReason }]) => ({
+        index,
+        message: {
+          ...message,
+          role: "assistant" as const,
+          content: typeof message.content === "string" ? message.content : "",
+        },
+        finish_reason: finishReason,
+      })),
     ...(promptTokens > 0 || completionTokens > 0
       ? {
           usage: {
