@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getAvailableModels } from "@/app/lib/models";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { CopyableCode } from "@/app/components/copyable-code";
+import { DocsTabs } from "@/app/components/docs-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -46,24 +47,45 @@ function harnessConfig(providerId: string, baseURL: string, modelIds: string[]) 
 ${modelIds.map((id) => `          - id: ${id}`).join("\n")}`;
 }
 
-function ToolHeader({ logo, name, href, children }: { logo: string; name: string; href: string; children: ReactNode }) {
+function PanelHeader({ logo, name, href, children }: { logo: string; name: string; href: string; children: ReactNode }) {
   return (
-    <div className="glass flex items-start gap-4 rounded-2xl p-6">
+    <div className="flex items-start gap-4 border-b border-white/[0.06] pb-5">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={logo}
         alt={`Logo ${name}`}
-        width={44}
-        height={44}
-        className="h-11 w-11 shrink-0 rounded-xl border border-white/[0.08] bg-black/60 object-contain p-1.5"
+        width={48}
+        height={48}
+        className="h-12 w-12 shrink-0 rounded-xl border border-white/[0.08] bg-black/60 object-contain p-2"
       />
       <div className="min-w-0">
-        <a href={href} target="_blank" rel="noreferrer" className="text-sm font-semibold tracking-tight hover:underline">
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-base font-semibold tracking-tight hover:text-accent"
+        >
           {name}
+          <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-muted-foreground" aria-hidden>
+            <path d="M7 17 17 7M9 7h8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
       </div>
     </div>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <li className="group relative pb-7 pl-11 last:pb-0">
+      <span className="absolute left-0 top-0 grid h-7 w-7 place-items-center rounded-full border border-accent/30 bg-accent/10 text-xs font-semibold text-accent">
+        {n}
+      </span>
+      <span className="absolute bottom-1 left-3.5 top-9 w-px bg-white/[0.08] group-last:hidden" aria-hidden />
+      <h3 className="pt-1 text-sm font-semibold tracking-tight">{title}</h3>
+      <div className="mt-1.5 space-y-3 text-xs leading-relaxed text-muted-foreground">{children}</div>
+    </li>
   );
 }
 
@@ -270,168 +292,185 @@ console.log(res.choices[0].message.content);`;
         </div>
       </section>
 
-      {/* OpenCode */}
+      {/* IDE tutorials */}
       <section className="animate-fade-up-delay-2 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("opencodeTitle")}
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("ideTitle")}
+          </h2>
+          <p className="mt-1.5 text-xs text-muted-foreground">{t("ideDesc")}</p>
+        </div>
 
-        <ToolHeader logo="/logos/opencode.svg" name="OpenCode" href="https://opencode.ai">
-          {t("opencodeIntro")}
-        </ToolHeader>
+        <DocsTabs
+          ariaLabel={t("ideTitle")}
+          tabs={[
+            {
+              id: "opencode",
+              label: "OpenCode",
+              logo: "/logos/opencode.svg",
+              hint: t("opencodeHint"),
+              content: (
+                <div className="glass rounded-2xl p-6">
+                  <PanelHeader logo="/logos/opencode.svg" name="OpenCode" href="https://opencode.ai">
+                    {t("opencodeIntro")}
+                  </PanelHeader>
 
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("opencodeStep1Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("opencodeStep1Desc", {
-              link: (chunks) => (
-                <a href="https://opencode.ai" target="_blank" rel="noreferrer" className="font-medium text-foreground underline">
-                  {chunks}
-                </a>
+                  <ol className="mt-6">
+                    <Step n={1} title={t("opencodeStep1Title")}>
+                      <p>
+                        {t.rich("opencodeStep1Desc", {
+                          link: (chunks) => (
+                            <a href="https://opencode.ai" target="_blank" rel="noreferrer" className="font-medium text-foreground underline">
+                              {chunks}
+                            </a>
+                          ),
+                        })}
+                      </p>
+                      <CopyableCode code={opencodeInstallCode} />
+                    </Step>
+
+                    <Step n={2} title={t("opencodeStep2Title")}>
+                      <p>{t.rich("opencodeStep2Desc", { code: inlineCode })}</p>
+                      <CopyableCode code={opencodeEnvCode} />
+                    </Step>
+
+                    <Step n={3} title={t("opencodeStep3Title")}>
+                      <p>{t.rich("opencodeStep3Desc", { code: inlineCode })}</p>
+                      <DocsTabs
+                        variant="pills"
+                        ariaLabel={t("configKeyType")}
+                        tabs={[
+                          {
+                            id: "payg",
+                            label: t("opencodeConfigPayg"),
+                            content: <CopyableCode code={opencodePaygCode} language="opencode.json" />,
+                          },
+                          {
+                            id: "package",
+                            label: t("opencodeConfigPackage"),
+                            content: <CopyableCode code={opencodePackageCode} language="opencode.json" />,
+                          },
+                        ]}
+                      />
+                      <p>{t.rich("opencodeConfigNote", { code: inlineCode })}</p>
+                    </Step>
+
+                    <Step n={4} title={t("opencodeStep4Title")}>
+                      <p>{t.rich("opencodeStep4Desc", { code: inlineCode })}</p>
+                      <CopyableCode code={opencodeRunCode} />
+                    </Step>
+                  </ol>
+                </div>
               ),
-            })}
-          </p>
-          <div className="mt-2">
-            <CopyableCode code={opencodeInstallCode} />
-          </div>
-        </div>
+            },
+            {
+              id: "deepseek-harness",
+              label: "DeepSeek Harness",
+              logo: "/logos/deepseek-harness.svg",
+              hint: t("harnessHint"),
+              content: (
+                <div className="glass rounded-2xl p-6">
+                  <PanelHeader
+                    logo="/logos/deepseek-harness.svg"
+                    name="DeepSeek Harness"
+                    href="https://github.com/deepseek-ai/deepseek-harness"
+                  >
+                    {t("harnessIntro")}
+                  </PanelHeader>
 
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("opencodeStep2Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("opencodeStep2Desc", { code: inlineCode })}
-          </p>
-          <div className="mt-2">
-            <CopyableCode code={opencodeEnvCode} />
-          </div>
-        </div>
+                  <ol className="mt-6">
+                    <Step n={1} title={t("harnessStep1Title")}>
+                      <p>{t.rich("harnessStep1Desc", { code: inlineCode })}</p>
+                      <CopyableCode code={harnessRunCode} />
+                    </Step>
 
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("opencodeStep3Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("opencodeStep3Desc", { code: inlineCode })}
-          </p>
+                    <Step n={2} title={t("harnessStep2Title")}>
+                      <p>
+                        {t.rich("harnessStep2Desc", {
+                          b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+                        })}
+                      </p>
+                      <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/30">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-muted-foreground">
+                              <th className="px-3 py-2 font-medium">{t("harnessFieldCol")}</th>
+                              <th className="px-3 py-2 font-medium">PAYG</th>
+                              <th className="px-3 py-2 font-medium text-accent">{t("packageTitle")}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {harnessFields.map((f) => (
+                              <tr key={f.label} className="border-b border-white/[0.04] last:border-0">
+                                <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{f.label}</td>
+                                <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.payg}</td>
+                                <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.pkg}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Step>
 
-          <p className="mt-4 text-xs font-medium text-foreground">{t("opencodeConfigPayg")}</p>
-          <div className="mt-2">
-            <CopyableCode code={opencodePaygCode} language="opencode.json" />
-          </div>
+                    <Step n={3} title={t("harnessStep3Title")}>
+                      <p>
+                        {t.rich("harnessStep3Desc", {
+                          b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+                        })}
+                      </p>
+                    </Step>
+                  </ol>
 
-          <p className="mt-4 text-xs font-medium text-accent">{t("opencodeConfigPackage")}</p>
-          <div className="mt-2">
-            <CopyableCode code={opencodePackageCode} language="opencode.json" />
-          </div>
+                  <details className="group/adv mt-6 rounded-xl border border-white/[0.08] bg-white/[0.02]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+                      {t("harnessAdvancedTitle")}
+                      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition group-open/adv:rotate-180" aria-hidden>
+                        <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </summary>
+                    <div className="space-y-3 border-t border-white/[0.06] px-4 py-4 text-xs leading-relaxed text-muted-foreground">
+                      <p>{t.rich("harnessAdvancedDesc", { code: inlineCode })}</p>
+                      <DocsTabs
+                        variant="pills"
+                        ariaLabel={t("configKeyType")}
+                        tabs={[
+                          {
+                            id: "payg",
+                            label: t("opencodeConfigPayg"),
+                            content: <CopyableCode code={harnessPaygCode} language="cordis.patch.yml" />,
+                          },
+                          {
+                            id: "package",
+                            label: t("opencodeConfigPackage"),
+                            content: <CopyableCode code={harnessPackageCode} language="cordis.patch.yml" />,
+                          },
+                        ]}
+                      />
+                      <p>{t.rich("harnessAdvancedNote", { code: inlineCode })}</p>
+                    </div>
+                  </details>
+                </div>
+              ),
+            },
+          ]}
+        />
 
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            {t.rich("opencodeConfigNote", { code: inlineCode })}
-          </p>
-        </div>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("opencodeStep4Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("opencodeStep4Desc", { code: inlineCode })}
-          </p>
-          <div className="mt-2">
-            <CopyableCode code={opencodeRunCode} />
-          </div>
-        </div>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("opencodeTroubleTitle")}</h3>
-          <ul className="mt-3 space-y-2.5">
+        <details className="glass group/err rounded-2xl">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-6 text-sm font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+            {t("opencodeTroubleTitle")}
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition group-open/err:rotate-180" aria-hidden>
+              <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </summary>
+          <ul className="space-y-3 border-t border-white/[0.06] px-6 py-5">
             {opencodeErrors.map((e) => (
               <li key={e.code} className="text-xs leading-relaxed text-muted-foreground">
-                <code className="rounded bg-white/5 px-1 py-0.5 font-mono text-[11px] text-red-400">{e.code}</code>
-                <span className="ml-2">{e.desc}</span>
+                <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-red-400">{e.code}</code>
+                <p className="mt-1">{e.desc}</p>
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* DeepSeek Harness */}
-      <section className="animate-fade-up-delay-2 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("harnessTitle")}
-        </h2>
-
-        <ToolHeader
-          logo="/logos/deepseek-harness.svg"
-          name="DeepSeek Harness"
-          href="https://github.com/deepseek-ai/deepseek-harness"
-        >
-          {t("harnessIntro")}
-        </ToolHeader>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep1Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("harnessStep1Desc", { code: inlineCode })}
-          </p>
-          <div className="mt-2">
-            <CopyableCode code={harnessRunCode} />
-          </div>
-        </div>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep2Title")}</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t.rich("harnessStep2Desc", {
-              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
-            })}
-          </p>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-white/[0.08]">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">{t("harnessFieldCol")}</th>
-                  <th className="px-3 py-2 font-medium">PAYG</th>
-                  <th className="px-3 py-2 font-medium text-accent">{t("packageTitle")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {harnessFields.map((f) => (
-                  <tr key={f.label} className="border-b border-white/[0.04] last:border-0">
-                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{f.label}</td>
-                    <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.payg}</td>
-                    <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.pkg}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("harnessStep3Title")}</h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {t.rich("harnessStep3Desc", {
-              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
-            })}
-          </p>
-        </div>
-
-        <div className="glass rounded-2xl p-6">
-          <h3 className="text-sm font-semibold tracking-tight">{t("harnessAdvancedTitle")}</h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {t.rich("harnessAdvancedDesc", { code: inlineCode })}
-          </p>
-
-          <p className="mt-4 text-xs font-medium text-foreground">{t("opencodeConfigPayg")}</p>
-          <div className="mt-2">
-            <CopyableCode code={harnessPaygCode} language="cordis.patch.yml" />
-          </div>
-
-          <p className="mt-4 text-xs font-medium text-accent">{t("opencodeConfigPackage")}</p>
-          <div className="mt-2">
-            <CopyableCode code={harnessPackageCode} language="cordis.patch.yml" />
-          </div>
-
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            {t.rich("harnessAdvancedNote", { code: inlineCode })}
-          </p>
-        </div>
+        </details>
       </section>
 
       {/* Reference */}
