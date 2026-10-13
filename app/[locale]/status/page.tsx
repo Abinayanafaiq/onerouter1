@@ -173,8 +173,8 @@ export default async function StatusPage({
             <span className="text-[12px] text-muted-foreground">{t("updatedAt", { time: updatedAt })}</span>
           </div>
 
-          {renderGroup(t("paygTitle"), t("paygDesc"), status.payg)}
           {renderGroup(t("paketTitle"), t("paketDesc"), status.paket)}
+          {renderGroup(t("paygTitle"), t("paygDesc"), status.payg)}
 
           <div className="mt-12 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
             <h2 className="text-sm font-semibold tracking-tight">{t("methodTitle")}</h2>
