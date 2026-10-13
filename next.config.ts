@@ -5,6 +5,15 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Favicon disajikan dari DB lewat /api/site/favicon, tapi /api/ diblokir di
+  // robots.txt sehingga Google tidak bisa mengambilnya. Alias di root ini bisa
+  // di-crawl, dan /favicon.ico adalah lokasi bawaan yang dicari crawler.
+  async rewrites() {
+    return [
+      { source: "/favicon.png", destination: "/api/site/favicon" },
+      { source: "/favicon.ico", destination: "/api/site/favicon" },
+    ];
+  },
   async headers() {
     return [
       {

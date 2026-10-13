@@ -88,8 +88,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: "/api/site/favicon", type: "image/png" }],
-    apple: [{ url: "/api/site/favicon", type: "image/png" }],
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/favicon.png", type: "image/png" }],
   },
   manifest: "/manifest.webmanifest",
   verification: {
