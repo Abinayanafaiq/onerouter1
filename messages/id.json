@@ -766,6 +766,7 @@
     "outOfStock": "Stok habis",
     "stockLeftLow": "Sisa stok: {stock} — hampir habis",
     "stockLeft": "Sisa stok: {stock}",
+    "perMillionTokens": "/ 1 juta token",
     "tokenInOut": "token input + output",
     "outOfStockButton": "Stok Habis",
     "buyPackage": "Beli {name}",

@@ -102,6 +102,8 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
           {grouped.get(key)!.map((pkg) => {
             const soldOut = pkg.stock <= 0;
             const lowStock = !soldOut && pkg.stock <= 5;
+            const quota = Number(pkg.tokenQuota);
+            const perMillion = quota > 0 ? Math.round(pkg.price / (quota / 1_000_000)) : null;
             const tint = pkg.isPromo ? PROMO_TINT : groupTints[key] ?? groupTints.other;
             return (
             <article
@@ -155,6 +157,12 @@ export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolea
                   {formatTokenQuota(pkg.tokenQuota)}
                 </div>
                 <div className="mt-1.5 text-[11px] text-muted-foreground">{t("tokenInOut")}</div>
+                {perMillion != null && (
+                  <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-lg border border-accent/25 bg-accent/[0.08] px-2.5 py-1.5">
+                    <span className="text-sm font-bold tracking-tight text-accent">≈ Rp{perMillion.toLocaleString(locale)}</span>
+                    <span className="text-[11px] text-foreground/70">{t("perMillionTokens")}</span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-1.5 text-[11px] font-medium">

@@ -766,6 +766,7 @@
     "outOfStock": "Out of stock",
     "stockLeftLow": "Stock left: {stock} — almost gone",
     "stockLeft": "Stock left: {stock}",
+    "perMillionTokens": "/ 1M tokens",
     "tokenInOut": "input + output tokens",
     "outOfStockButton": "Out of Stock",
     "buyPackage": "Buy {name}",
