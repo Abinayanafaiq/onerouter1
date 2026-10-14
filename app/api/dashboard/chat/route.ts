@@ -14,6 +14,7 @@ import {
   getClientIp,
   errorResponse,
   sanitizeUpstreamError,
+  normalizeReasoningEffort,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -258,6 +259,13 @@ export async function POST(request: Request) {
     console.log("[api/dashboard/chat] stripped temperature for kimi-k3 (reasoning model)");
   }
 
+  // Same idea for reasoning_effort values the model rejects (e.g. "medium"
+  // on DeepSeek V4.1): map to the nearest accepted value instead of a 400.
+  const effortMapped = normalizeReasoningEffort(body, [resolvedModel.modelId, resolvedModel.masterId]);
+  if (effortMapped) {
+    console.log(`[api/dashboard/chat] mapped reasoning_effort ${effortMapped.from} -> ${effortMapped.to} for ${resolvedModel.modelId}`);
+  }
+
   // WORKAROUND: the upstream origin currently crashes (Cloudflare 520) on
   // NON-streaming chat completions — verified across all models — while
   // streaming works fine. Always request a stream upstream and aggregate
@@ -357,7 +365,7 @@ export async function POST(request: Request) {
         // Sanitize: never forward the upstream body to the client — it may
         // name the real provider or leak upstream billing/quota state.
         const safe = sanitizeUpstreamError(upstream.status, text);
-        return errorResponse(safe.message, safe.status, safe.type, safe.code);
+        return errorResponse(safe.message, safe.status, safe.type, safe.code, safe.param);
       }
 
       if (!usingEnvFallback && !useBackupUpstream) {

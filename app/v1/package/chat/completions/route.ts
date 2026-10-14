@@ -6,6 +6,7 @@ import {
   estimatePromptTokens,
   getClientIp,
   sanitizeUpstreamError,
+  normalizeReasoningEffort,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -38,8 +39,8 @@ function corsHeaders() {
   };
 }
 
-function apiError(message: string, status: number, type: string, code: string) {
-  return Response.json({ error: { message, type, param: null, code } }, { status, headers: corsHeaders() });
+function apiError(message: string, status: number, type: string, code: string, param: string | null = null) {
+  return Response.json({ error: { message, type, param, code } }, { status, headers: corsHeaders() });
 }
 
 function normalizedUsage(usage: unknown) {
@@ -175,6 +176,12 @@ export async function POST(request: Request) {
   const useBackupUpstream = backupUpstream !== null;
 
   body.model = useBackupUpstream ? backupUpstream.upstreamModelId : model.upstreamId;
+  // Nilai reasoning_effort yang ditolak model (mis. "medium" di DeepSeek V4.1)
+  // dipetakan ke nilai terdekat yang diterima supaya tidak berujung 400.
+  const effortMapped = normalizeReasoningEffort(body, [model.modelId, model.upstreamId]);
+  if (effortMapped) {
+    console.log(`[${ts()}] [v1/package/chat] reasoning_effort ${effortMapped.from} -> ${effortMapped.to} model=${model.modelId}`);
+  }
   const isStream = body.stream === true;
   if (isStream) {
     const existing = body.stream_options;
@@ -223,7 +230,7 @@ export async function POST(request: Request) {
     // Sanitize: never forward the upstream body — it may name the real
     // provider or leak upstream billing/quota state.
     const safe = sanitizeUpstreamError(upstream.status, upstreamMessage);
-    return apiError(safe.message, safe.status, safe.type, safe.code ?? "upstream_error");
+    return apiError(safe.message, safe.status, safe.type, safe.code ?? "upstream_error", safe.param);
   }
 
   if (isStream && upstream.body) {

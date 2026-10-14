@@ -13,6 +13,7 @@ import {
   getClientIp,
   errorResponse,
   sanitizeUpstreamError,
+  normalizeReasoningEffort,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -322,6 +323,13 @@ export async function POST(request: Request) {
     console.log("[v1/chat] stripped temperature for kimi-k3 (reasoning model)");
   }
 
+  // Same idea for reasoning_effort values the model rejects (e.g. "medium"
+  // on DeepSeek V4.1): map to the nearest accepted value instead of a 400.
+  const effortMapped = normalizeReasoningEffort(body, [resolvedModel.modelId, resolvedModel.masterId]);
+  if (effortMapped) {
+    console.log(`[v1/chat] mapped reasoning_effort ${effortMapped.from} -> ${effortMapped.to} for ${resolvedModel.modelId}`);
+  }
+
   // The backup upstream uses a single dedicated key (no DB rotation), so
   // like the env fallback there is only one attempt.
   const MAX_ATTEMPTS = usingEnvFallback || useBackupUpstream ? 1 : 3;
@@ -469,7 +477,7 @@ export async function POST(request: Request) {
         // Sanitize: never forward the upstream body to the client — it may
         // name the real provider or leak upstream billing/quota state.
         const safe = sanitizeUpstreamError(upstream.status, text);
-        return errorResponse(safe.message, safe.status, safe.type, safe.code);
+        return errorResponse(safe.message, safe.status, safe.type, safe.code, safe.param);
       }
 
       if (!usingEnvFallback && !useBackupUpstream) {

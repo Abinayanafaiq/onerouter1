@@ -521,18 +521,46 @@ export function errorResponse(
   status: number,
   type = "invalid_request_error",
   code: string | null = null,
+  param: string | null = null,
 ) {
   return Response.json(
     {
       error: {
         message,
         type,
-        param: null,
+        param,
         code,
       },
     },
     { status },
   );
+}
+
+// DeepSeek V4.1 only accepts reasoning_effort low | high | xhigh | max | none
+// (or an integer 1-100) and answers HTTP 400 to the OpenAI-standard "medium"
+// and "minimal" that many clients send by default.
+const DEEPSEEK_V41_EFFORT_MAP = new Map([
+  ["minimal", "low"],
+  ["medium", "high"],
+]);
+
+/**
+ * Map an unsupported `reasoning_effort` onto the nearest value the target
+ * model accepts, in place, before the body is forwarded upstream. `modelIds`
+ * are the public/upstream IDs of the resolved model. Returns the applied
+ * mapping (for logging) or null when the body was left untouched.
+ */
+export function normalizeReasoningEffort(
+  body: Record<string, unknown>,
+  modelIds: string[],
+): { from: string; to: string } | null {
+  if (!modelIds.some((id) => /deepseek-v4\.1/i.test(id))) return null;
+  const effort = body.reasoning_effort;
+  if (typeof effort !== "string") return null;
+  const mapped = DEEPSEEK_V41_EFFORT_MAP.get(effort.toLowerCase());
+  if (!mapped) return null;
+  body.reasoning_effort = mapped;
+  return { from: effort, to: mapped };
 }
 
 // Phrases upstream providers use when the prompt (+ max_tokens) no longer fits
@@ -593,21 +621,36 @@ function contextOverflowMessage(upstreamBody: string): string {
  *
  * `upstreamBody` is only inspected to recognise a context-window overflow, so
  * the client gets the OpenAI-compatible `context_length_exceeded` code (which
- * coding agents rely on to compact their history) instead of a generic 400.
+ * coding agents rely on to compact their history) instead of a generic 400,
+ * and to name the parameter when `reasoning_effort` was rejected.
  */
 export function sanitizeUpstreamError(
   status: number,
   upstreamBody = "",
-): { message: string; status: number; type: string; code: string | null } {
+): { message: string; status: number; type: string; code: string | null; param: string | null } {
   if (isContextOverflow(status, upstreamBody)) {
     return {
       message: contextOverflowMessage(upstreamBody),
       status: 400,
       type: "invalid_request_error",
       code: "context_length_exceeded",
+      param: null,
     };
   }
-  return { ...sanitizeUpstreamStatus(status), type: "api_error", code: null };
+  // Upstream rejected the reasoning_effort value. Name the parameter so the
+  // client knows what to change; the accepted values differ per model, so the
+  // upstream wording (which may name the real model) is not forwarded.
+  if ((status === 400 || status === 422) && upstreamBody.includes("reasoning_effort")) {
+    return {
+      message:
+        "Nilai reasoning_effort tidak didukung oleh model ini. Gunakan nilai lain (mis. low atau high) atau hapus parameter tersebut.",
+      status: 400,
+      type: "invalid_request_error",
+      code: "unsupported_value",
+      param: "reasoning_effort",
+    };
+  }
+  return { ...sanitizeUpstreamStatus(status), type: "api_error", code: null, param: null };
 }
 
 function sanitizeUpstreamStatus(status: number): { message: string; status: number } {
