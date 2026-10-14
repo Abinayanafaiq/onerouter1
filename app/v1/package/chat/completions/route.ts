@@ -222,8 +222,8 @@ export async function POST(request: Request) {
     await logUpstreamFailure(upstream.status);
     // Sanitize: never forward the upstream body — it may name the real
     // provider or leak upstream billing/quota state.
-    const safe = sanitizeUpstreamError(upstream.status);
-    return apiError(safe.message, safe.status, "api_error", "upstream_error");
+    const safe = sanitizeUpstreamError(upstream.status, upstreamMessage);
+    return apiError(safe.message, safe.status, safe.type, safe.code ?? "upstream_error");
   }
 
   if (isStream && upstream.body) {

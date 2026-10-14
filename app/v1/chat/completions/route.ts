@@ -468,8 +468,8 @@ export async function POST(request: Request) {
         });
         // Sanitize: never forward the upstream body to the client — it may
         // name the real provider or leak upstream billing/quota state.
-        const safe = sanitizeUpstreamError(upstream.status);
-        return errorResponse(safe.message, safe.status, "api_error");
+        const safe = sanitizeUpstreamError(upstream.status, text);
+        return errorResponse(safe.message, safe.status, safe.type, safe.code);
       }
 
       if (!usingEnvFallback && !useBackupUpstream) {

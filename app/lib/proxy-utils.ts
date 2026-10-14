@@ -535,17 +535,87 @@ export function errorResponse(
   );
 }
 
+// Phrases upstream providers use when the prompt (+ max_tokens) no longer fits
+// the model's context window. Matched against the lowercased upstream body.
+const CONTEXT_OVERFLOW_PATTERNS = [
+  "context_length_exceeded",
+  "context length",
+  "context window",
+  "context limit",
+  "combined input and output tokens",
+  "reduce the input length",
+  "reduce the length of",
+  "prompt is too long",
+  "input is too long",
+  "exceeds the maximum number of tokens",
+];
+
+function isContextOverflow(status: number, upstreamBody: string): boolean {
+  if (status !== 400 && status !== 413 && status !== 422) return false;
+  const lower = upstreamBody.toLowerCase();
+  return CONTEXT_OVERFLOW_PATTERNS.some((p) => lower.includes(p));
+}
+
+// Build the client-facing overflow message. Only the token counts are lifted
+// from the upstream body (they don't identify the provider); the rest of the
+// upstream text is never forwarded.
+function contextOverflowMessage(upstreamBody: string): string {
+  const pick = (...patterns: RegExp[]): number | null => {
+    for (const re of patterns) {
+      const m = upstreamBody.match(re);
+      if (m) return Number(m[1]);
+    }
+    return null;
+  };
+  const limit = pick(/at most (\d+)/i, /maximum context length is (\d+)/i, /> (\d+) maximum/i);
+  const input = pick(/has (\d+) input tokens/i, /(\d+) in the messages/i, /too long: (\d+) tokens/i);
+  const output = pick(/asks for (\d+) output tokens/i, /(\d+) in the completion/i);
+  const fmt = (n: number) => n.toLocaleString("id-ID");
+  const details = [
+    limit !== null ? `maks ${fmt(limit)} token` : null,
+    input !== null ? `input Anda ${fmt(input)} token` : null,
+    output !== null ? `max_tokens ${fmt(output)}` : null,
+  ].filter(Boolean);
+  return (
+    "Permintaan melebihi batas konteks model" +
+    (details.length > 0 ? ` (${details.join(", ")})` : "") +
+    ". Kurangi panjang input atau max_tokens."
+  );
+}
+
 /**
  * Map an upstream provider error into a generic, provider-agnostic client
  * response. The raw upstream body (which may name the real provider or leak
  * its internal billing/quota state) must NEVER be forwarded to the client —
  * callers should keep the original text in server logs only. Returns the
- * sanitized message plus a safe HTTP status to emit to the client.
+ * sanitized message plus a safe HTTP status, error type and code to emit to
+ * the client.
+ *
+ * `upstreamBody` is only inspected to recognise a context-window overflow, so
+ * the client gets the OpenAI-compatible `context_length_exceeded` code (which
+ * coding agents rely on to compact their history) instead of a generic 400.
  */
-export function sanitizeUpstreamError(status: number): { message: string; status: number } {
+export function sanitizeUpstreamError(
+  status: number,
+  upstreamBody = "",
+): { message: string; status: number; type: string; code: string | null } {
+  if (isContextOverflow(status, upstreamBody)) {
+    return {
+      message: contextOverflowMessage(upstreamBody),
+      status: 400,
+      type: "invalid_request_error",
+      code: "context_length_exceeded",
+    };
+  }
+  return { ...sanitizeUpstreamStatus(status), type: "api_error", code: null };
+}
+
+function sanitizeUpstreamStatus(status: number): { message: string; status: number } {
   switch (status) {
     case 400:
       return { message: "Permintaan tidak valid. Periksa parameter request Anda.", status: 400 };
+    case 413:
+      return { message: "Ukuran permintaan terlalu besar. Kurangi panjang input Anda.", status: 413 };
     case 401:
     case 403:
     case 402:
