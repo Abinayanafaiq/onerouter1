@@ -137,7 +137,7 @@ export function BackupRoutingForm({
     <form onSubmit={handleSave} className="border border-neutral-800 rounded-lg p-4 bg-neutral-900 space-y-4">
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-medium text-neutral-300">Backup Upstream Routing</h2>
+          <h2 className="text-sm font-medium text-neutral-300">Backup Upstream #1</h2>
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded ${
               source === "database"
@@ -151,7 +151,8 @@ export function BackupRoutingForm({
         <p className="text-xs text-neutral-500 mt-0.5">
           Model publik di kolom kiri akan dialihkan ke URL backup di bawah memakai
           model ID di kolom kanan. Model yang tidak tercantum tetap lewat upstream master.
-          Butuh BACKUP_API_KEY di environment agar aktif.
+          Butuh BACKUP_API_KEY di environment agar aktif. Upstream lain bisa ditambahkan
+          di bagian Upstream Backup Tambahan di bawah.
         </p>
       </div>
 

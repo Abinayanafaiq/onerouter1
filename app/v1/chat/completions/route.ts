@@ -26,7 +26,6 @@ import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
 import {
   MASTER_API_URL,
   MASTER_API_KEY,
-  BACKUP_API_KEY,
 } from "@/app/lib/constants";
 import { resolveBackupUpstream } from "@/app/lib/backup-routing";
 import {
@@ -177,15 +176,16 @@ export async function POST(request: Request) {
 
   // 5c. Backup upstream routing: some public model IDs are served by a
   // secondary upstream with its own endpoint, key, and upstream model IDs.
-  // When BACKUP_API_KEY is unset the model falls back to the master upstream.
+  // Upstream #1 needs BACKUP_API_KEY; additional upstreams configured in
+  // /admin/settings carry their own key. Unrouted models use the master upstream.
   const backupUpstream = await resolveBackupUpstream(resolvedModel.modelId);
   const useBackupUpstream = backupUpstream !== null;
   if (useBackupUpstream) {
-    console.log(`[v1/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstream.upstreamModelId}`);
+    console.log(`[v1/chat] routing ${resolvedModel.modelId} -> ${backupUpstream.label} as ${backupUpstream.upstreamModelId}`);
   }
 
   // 5b. Resolve master key from DB (with env fallback when zero DB keys).
-  // Backup-routed models authenticate with BACKUP_API_KEY instead, so they
+  // Backup-routed models authenticate with their upstream's own key, so they
   // don't need a master key at all.
   const enabledKeyCount = await countEnabledMasterKeys();
   const usingEnvFallback = enabledKeyCount === 0 && !!MASTER_API_KEY;
@@ -344,7 +344,7 @@ export async function POST(request: Request) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
       if (useBackupUpstream) {
-        currentKey = { id: "backup-upstream", plaintext: BACKUP_API_KEY };
+        currentKey = { id: "backup-upstream", plaintext: backupUpstream.apiKey };
       } else if (usingEnvFallback) {
         currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
       } else {
@@ -357,7 +357,7 @@ export async function POST(request: Request) {
       }
 
       const maskedLog = useBackupUpstream
-        ? "backup-upstream"
+        ? backupUpstream.label
         : usingEnvFallback
           ? "env-fallback"
           : maskForKeyLog(currentKey.plaintext);

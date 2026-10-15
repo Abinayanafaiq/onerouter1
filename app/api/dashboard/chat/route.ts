@@ -25,7 +25,6 @@ import {
 import {
   MASTER_API_URL,
   MASTER_API_KEY,
-  BACKUP_API_KEY,
 } from "@/app/lib/constants";
 import { resolveBackupUpstream } from "@/app/lib/backup-routing";
 import {
@@ -240,11 +239,12 @@ export async function POST(request: Request) {
   // 8. Forward to upstream provider
   // Backup upstream routing: some public model IDs are served by a secondary
   // upstream with its own endpoint, key, and upstream model IDs. When
-  // BACKUP_API_KEY is unset the model falls back to the master upstream.
+  // no backup upstream (with a usable key) lists the model, it falls back to
+  // the master upstream.
   const backupUpstream = await resolveBackupUpstream(resolvedModel.modelId);
   const useBackupUpstream = backupUpstream !== null;
   if (useBackupUpstream) {
-    console.log(`[api/dashboard/chat] routing ${resolvedModel.modelId} -> backup upstream as ${backupUpstream.upstreamModelId}`);
+    console.log(`[api/dashboard/chat] routing ${resolvedModel.modelId} -> ${backupUpstream.label} as ${backupUpstream.upstreamModelId}`);
   }
   body.model = useBackupUpstream ? backupUpstream.upstreamModelId : resolvedModel.masterId;
   const upstreamUrl = useBackupUpstream
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
       if (useBackupUpstream) {
-        currentKey = { id: "backup-upstream", plaintext: BACKUP_API_KEY };
+        currentKey = { id: "backup-upstream", plaintext: backupUpstream.apiKey };
       } else if (usingEnvFallback) {
         currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
       } else {
