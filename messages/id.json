@@ -351,6 +351,7 @@
   },
   "Dashboard": {
     "overview": "Overview",
+    "announcements": "Pengumuman",
     "playground": "Playground",
     "apiKeys": "API Keys",
     "models": "Models",
@@ -376,6 +377,19 @@
     "platformTagline": "Platform Inferensi AI",
     "openMenu": "Buka menu",
     "notifications": "Notifikasi"
+  },
+  "Announcements": {
+    "title": "Pengumuman",
+    "subtitle": "Kabar terbaru, info pemeliharaan, dan pembaruan layanan dari tim 9inference.",
+    "emptyTitle": "Belum ada pengumuman",
+    "emptyDesc": "Kalau ada info penting dari admin, akan muncul di sini.",
+    "pinned": "Disematkan",
+    "level": {
+      "info": "Info",
+      "success": "Kabar baik",
+      "warning": "Peringatan",
+      "critical": "Penting"
+    }
   },
   "Blog": {
     "title": "Blog",

@@ -351,6 +351,7 @@
   },
   "Dashboard": {
     "overview": "Overview",
+    "announcements": "Announcements",
     "playground": "Playground",
     "apiKeys": "API Keys",
     "models": "Models",
@@ -376,6 +377,19 @@
     "platformTagline": "AI Inference Platform",
     "openMenu": "Open menu",
     "notifications": "Notifications"
+  },
+  "Announcements": {
+    "title": "Announcements",
+    "subtitle": "Latest news, maintenance notices, and service updates from the 9inference team.",
+    "emptyTitle": "No announcements yet",
+    "emptyDesc": "Important updates from the admin team will show up here.",
+    "pinned": "Pinned",
+    "level": {
+      "info": "Info",
+      "success": "Good news",
+      "warning": "Warning",
+      "critical": "Important"
+    }
   },
   "Blog": {
     "title": "Blog",

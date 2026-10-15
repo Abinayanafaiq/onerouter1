@@ -6,6 +6,7 @@ import { getWalletBalance } from "@/app/lib/wallet";
 import { idrToToks } from "@/app/lib/constants";
 import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { getAllPackages } from "@/app/lib/packages";
+import { getLatestAnnouncementAt } from "@/app/lib/announcements";
 import { DashboardShell } from "@/app/components/dashboard-shell";
 import { PakasirPendingVerifier } from "@/app/components/pending-verifier";
 import { CompatNoticePopup } from "@/app/components/compat-notice-popup";
@@ -34,12 +35,14 @@ export default async function DashboardLayout({
   // when CreditBadge fires /api/wallet/summary at the same time. Wallet rows
   // are created lazily by getOrCreateWallet only on the first write (top-up /
   // usage), so reading 0 here is fine and avoids the pool timeout.
-  const [balance, telegramGroupUrl, tokenPackages] = await Promise.all([
+  const [balance, telegramGroupUrl, tokenPackages, latestAnnouncementAt] = await Promise.all([
     userId ? getWalletBalance(userId) : Promise.resolve(0),
     getTelegramGroupUrl(),
     // Single short-lived findMany (read-only) for the promo popup — safe for
     // the tiny connection pool, unlike an upsert transaction.
     getAllPackages(),
+    // Satu findFirst ringan untuk titik "belum dibaca" di lonceng pengumuman.
+    getLatestAnnouncementAt(),
   ]);
   const balanceToks = idrToToks(balance);
 
@@ -69,6 +72,7 @@ export default async function DashboardLayout({
       userName={userName}
       initialToks={balanceToks}
       telegramGroupUrl={telegramGroupUrl || null}
+      latestAnnouncementAt={latestAnnouncementAt}
       signOutAction={async () => {
         "use server";
         await signOut({ redirectTo: "/" });

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { CreditBadge } from "@/app/components/credit-badge";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
+import { AnnouncementBell } from "@/app/components/announcement-bell";
 
 type NavItem = {
   label: string;
@@ -20,6 +21,15 @@ const NAV_MAIN_DEFS = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
         <path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    key: "announcements" as const,
+    href: "/dashboard/pengumuman",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+        <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Zm13-3a5 5 0 0 1 0 8m2.5-10.5a8.5 8.5 0 0 1 0 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -187,6 +197,7 @@ export function DashboardShell({
   userName,
   initialToks,
   telegramGroupUrl,
+  latestAnnouncementAt,
   signOutAction,
 }: {
   children: React.ReactNode;
@@ -194,6 +205,7 @@ export function DashboardShell({
   userName: string;
   initialToks: number;
   telegramGroupUrl: string | null;
+  latestAnnouncementAt: string | null;
   signOutAction: () => Promise<void>;
 }) {
   const t = useTranslations("Dashboard");
@@ -303,16 +315,7 @@ export function DashboardShell({
             <CreditBadge initialToks={initialToks} />
 
             {/* Notifications */}
-            <button
-              type="button"
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition hover:text-foreground focus-ring"
-              aria-label={t("notifications")}
-            >
-              <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
-                <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
-            </button>
+            <AnnouncementBell latestAt={latestAnnouncementAt} label={t("notifications")} />
 
             {/* Profile */}
             <div className="relative">

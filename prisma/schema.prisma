@@ -292,3 +292,17 @@ model AuditLog {
   @@index([createdAt])
   @@index([action, createdAt])
 }
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  level       String   @default("info")
+  pinned      Boolean  @default(false)
+  published   Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, createdAt])
+}

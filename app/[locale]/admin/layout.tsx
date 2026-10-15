@@ -34,6 +34,7 @@ export default async function AdminLayout({
     { href: "/admin/master-keys", label: "Master Key" },
     { href: "/admin/analytics", label: "Analitik" },
     { href: "/admin/packages", label: "Paket" },
+    { href: "/admin/announcements", label: "Pengumuman" },
     { href: "/admin/settings", label: "Pengaturan" },
   ];
 
