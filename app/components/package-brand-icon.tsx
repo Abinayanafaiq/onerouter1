@@ -18,8 +18,21 @@ function GlmLogo({ className }: { className: string }) {
   );
 }
 
+/**
+ * Logo resmi Anthropic (pembuat model Claude). Inline dengan currentColor
+ * karena versi CDN berwarna hitam polos — diwarnai oranye khas Anthropic.
+ */
+function AnthropicLogo({ className }: { className: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden="true" className={className}>
+      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+    </svg>
+  );
+}
+
 export function PackageBrandIcon({ group, className = "h-5 w-5" }: { group: string; className?: string }) {
   if (group === "glm") return <GlmLogo className={`${className} text-white`} />;
+  if (group === "claude") return <AnthropicLogo className={`${className} text-[#D97757]`} />;
 
   const icon = brandIcons[group];
   if (!icon) return <span aria-hidden="true" className={className}>✦</span>;

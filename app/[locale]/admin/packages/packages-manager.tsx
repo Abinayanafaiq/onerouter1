@@ -9,6 +9,7 @@ const categories = [
   { key: "glm", label: "GLM" },
   { key: "kimi", label: "Kimi" },
   { key: "deepseek", label: "DeepSeek" },
+  { key: "claude", label: "Claude" },
   { key: "other", label: "Model lainnya" },
   { key: "legacy", label: "Legacy" },
 ] as const;
@@ -16,7 +17,7 @@ const categories = [
 function categoryOf(pkg: PackageData) {
   if (pkg.productType !== "TOKEN_PACKAGE") return "legacy";
   if (pkg.allowedModels.length === 0) return "general";
-  return categories.slice(1, 4).find(({ key }) =>
+  return categories.slice(1, 5).find(({ key }) =>
     pkg.allowedModels.every((model) => model.toLowerCase().includes(key)),
   )?.key ?? "other";
 }

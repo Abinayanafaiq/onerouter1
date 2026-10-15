@@ -73,6 +73,7 @@ const MODEL_GROUPS = [
   { key: "deepseek", label: "DeepSeek" },
   { key: "gemini", label: "Gemini" },
   { key: "qwen", label: "Qwen" },
+  { key: "claude", label: "Claude" },
 ] as const;
 
 function packageGroup(allowedModels: string[]): string {

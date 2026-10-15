@@ -6,6 +6,7 @@ const themes: Record<string, { base: string; glow: string; line: string; label: 
   deepseek: { base: "#0c2948", glow: "#4d6bfe", line: "#87c6ff", label: "DeepSeek" },
   gemini: { base: "#14264a", glow: "#5b8cff", line: "#b6c9ff", label: "Gemini" },
   qwen: { base: "#261341", glow: "#a855f7", line: "#dcbdfc", label: "Qwen" },
+  claude: { base: "#2e1a12", glow: "#d97757", line: "#f0a585", label: "Claude" },
   general: { base: "#183227", glow: "#6cca8a", line: "#bcff45", label: "AI" },
   other: { base: "#263047", glow: "#7e9dbf", line: "#bbd8ed", label: "AI" },
 };
