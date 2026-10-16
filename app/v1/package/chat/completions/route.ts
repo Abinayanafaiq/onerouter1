@@ -7,6 +7,7 @@ import {
   getClientIp,
   sanitizeUpstreamError,
   normalizeReasoningEffort,
+  dedupeReasoningFields,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -178,6 +179,12 @@ export async function POST(request: Request) {
   const effortMapped = normalizeReasoningEffort(body, [model.modelId, model.upstreamId]);
   if (effortMapped) {
     console.log(`[${ts()}] [v1/package/chat] reasoning_effort ${effortMapped.from} -> ${effortMapped.to} model=${model.modelId}`);
+  }
+  // Pesan history yang membawa `reasoning` + `reasoning_content` sekaligus
+  // ditolak upstream (duplicate field), jadi disatukan ke reasoning_content.
+  const reasoningDeduped = dedupeReasoningFields(body);
+  if (reasoningDeduped > 0) {
+    console.log(`[${ts()}] [v1/package/chat] dedupe reasoning/reasoning_content di ${reasoningDeduped} pesan key=${apiKey.id}`);
   }
   const isStream = body.stream === true;
   if (isStream) {

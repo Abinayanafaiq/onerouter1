@@ -14,6 +14,7 @@ import {
   errorResponse,
   sanitizeUpstreamError,
   normalizeReasoningEffort,
+  dedupeReasoningFields,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -328,6 +329,13 @@ export async function POST(request: Request) {
   const effortMapped = normalizeReasoningEffort(body, [resolvedModel.modelId, resolvedModel.masterId]);
   if (effortMapped) {
     console.log(`[v1/chat] mapped reasoning_effort ${effortMapped.from} -> ${effortMapped.to} for ${resolvedModel.modelId}`);
+  }
+
+  // History messages carrying both `reasoning` and `reasoning_content` are
+  // rejected upstream as a duplicate field; keep only reasoning_content.
+  const reasoningDeduped = dedupeReasoningFields(body);
+  if (reasoningDeduped > 0) {
+    console.log(`[v1/chat] deduped reasoning/reasoning_content on ${reasoningDeduped} message(s)`);
   }
 
   // The backup upstream uses a single dedicated key (no DB rotation), so

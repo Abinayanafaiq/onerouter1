@@ -563,6 +563,28 @@ export function normalizeReasoningEffort(
   return { from: effort, to: mapped };
 }
 
+/**
+ * Collapse `reasoning` into `reasoning_content` on each message, in place.
+ * Clients (and our own aggregated non-stream response) can echo an assistant
+ * turn carrying both fields; the upstream deserializer treats `reasoning` as
+ * an alias of `reasoning_content` and answers HTTP 400 "duplicate field
+ * `reasoning_content`". Returns how many messages were changed (for logging).
+ */
+export function dedupeReasoningFields(body: Record<string, unknown>): number {
+  if (!Array.isArray(body.messages)) return 0;
+  let changed = 0;
+  for (const m of body.messages) {
+    if (!isPlainObject(m) || !("reasoning" in m) || !("reasoning_content" in m)) continue;
+    const content = m.reasoning_content;
+    if ((typeof content !== "string" || content === "") && typeof m.reasoning === "string") {
+      m.reasoning_content = m.reasoning;
+    }
+    delete m.reasoning;
+    changed++;
+  }
+  return changed;
+}
+
 // Phrases upstream providers use when the prompt (+ max_tokens) no longer fits
 // the model's context window. Matched against the lowercased upstream body.
 const CONTEXT_OVERFLOW_PATTERNS = [
