@@ -12,9 +12,13 @@ import { TurnstileWidget } from "@/app/components/turnstile-widget";
 import {
   AuthShell,
   StepIndicator,
+  AuthInput,
+  PasswordInput,
+  AuthError,
+  AuthSubmit,
+  AuthNotice,
   authInputClass,
   authLabelClass,
-  authButtonClass,
 } from "@/app/components/auth-shell";
 
 /**
@@ -89,33 +93,29 @@ export default function ForgotPasswordPage() {
       />
 
       {step === 1 && (
-        <form action={codeAction} className="space-y-4">
+        <form action={codeAction} className="space-y-5">
           <div>
             <label htmlFor="email" className={authLabelClass}>
               {tc("email")}
             </label>
-            <input
+            <AuthInput
+              icon="mail"
               id="email"
               name="email"
               type="email"
               required
               autoComplete="email"
               placeholder={t("emailPlaceholder")}
-              className={authInputClass}
             />
           </div>
           <TurnstileWidget className="flex justify-center" />
-          {codeState?.error && (
-            <p className="text-sm text-red-400">{codeState.error}</p>
-          )}
-          <button type="submit" disabled={codePending} className={authButtonClass}>
-            {codePending ? tc("loading") : t("sendCodeButton")}
-          </button>
+          <AuthError message={codeState?.error} />
+          <AuthSubmit pending={codePending} pendingLabel={tc("loading")} label={t("sendCodeButton")} />
         </form>
       )}
 
       {step === 2 && (
-        <form action={verifyAction} className="space-y-4">
+        <form action={verifyAction} className="space-y-5">
           <input type="hidden" name="email" value={email} />
           <input type="hidden" name="proof" value={proof} />
           <div>
@@ -131,40 +131,22 @@ export default function ForgotPasswordPage() {
               autoComplete="one-time-code"
               maxLength={6}
               placeholder={t("codePlaceholder")}
-              className={`${authInputClass} text-center text-2xl tracking-[0.5em] font-mono py-3.5`}
+              className={`${authInputClass} h-14 text-center text-2xl tracking-[0.5em] font-mono`}
             />
           </div>
 
-          <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 flex items-start gap-2.5">
-            <svg
-              className="h-4 w-4 mt-0.5 shrink-0 text-amber-400/80"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-            <p className="text-xs leading-relaxed text-amber-200/80">
-              {t.rich("spamNotice", {
-                b: (chunks) => <strong className="text-amber-200">{chunks}</strong>,
-              })}
-            </p>
-          </div>
+          <AuthNotice>
+            {t.rich("spamNotice", {
+              b: (chunks) => <strong className="text-amber-200">{chunks}</strong>,
+            })}
+          </AuthNotice>
 
-          {verifyState?.error && (
-            <p className="text-sm text-red-400">{verifyState.error}</p>
-          )}
-          <button type="submit" disabled={verifyPending} className={authButtonClass}>
-            {verifyPending ? tc("loading") : t("verifyCodeButton")}
-          </button>
+          <AuthError message={verifyState?.error} />
+          <AuthSubmit pending={verifyPending} pendingLabel={tc("loading")} label={t("verifyCodeButton")} />
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="w-full py-1 text-sm text-muted-foreground hover:text-foreground transition"
+            className="w-full py-1.5 text-sm text-muted-foreground hover:text-foreground transition"
           >
             {t("changeEmail")}
           </button>
@@ -172,43 +154,35 @@ export default function ForgotPasswordPage() {
       )}
 
       {step === 3 && (
-        <form action={resetFormAction} className="space-y-4">
+        <form action={resetFormAction} className="space-y-5">
           <input type="hidden" name="email" value={email} />
           <input type="hidden" name="resetToken" value={resetToken} />
           <div>
             <label htmlFor="password" className={authLabelClass}>
               {t("newPasswordLabel")}
             </label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               minLength={6}
               autoComplete="new-password"
-              className={authInputClass}
             />
           </div>
           <div>
             <label htmlFor="confirm" className={authLabelClass}>
               {t("confirmNewPasswordLabel")}
             </label>
-            <input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               required
               minLength={6}
               autoComplete="new-password"
-              className={authInputClass}
             />
           </div>
-          {resetState?.error && (
-            <p className="text-sm text-red-400">{resetState.error}</p>
-          )}
-          <button type="submit" disabled={resetPending} className={authButtonClass}>
-            {resetPending ? tc("loading") : t("resetButton")}
-          </button>
+          <AuthError message={resetState?.error} />
+          <AuthSubmit pending={resetPending} pendingLabel={tc("loading")} label={t("resetButton")} />
         </form>
       )}
     </AuthShell>

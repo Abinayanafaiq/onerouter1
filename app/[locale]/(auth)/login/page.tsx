@@ -7,9 +7,12 @@ import { Link } from "@/i18n/navigation";
 import { TurnstileWidget } from "@/app/components/turnstile-widget";
 import {
   AuthShell,
+  AuthInput,
+  PasswordInput,
+  AuthError,
+  AuthSubmit,
   authInputClass,
   authLabelClass,
-  authButtonClass,
 } from "@/app/components/auth-shell";
 
 export default function LoginPage() {
@@ -83,7 +86,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-5">
         {/* Step 1 fields — visible at step 1, replaced by hidden inputs at
             step 2 so the server action still receives them on retry. */}
         {!needs2FA && (
@@ -92,36 +95,35 @@ export default function LoginPage() {
               <label htmlFor="email" className={authLabelClass}>
                 {tc("email")}
               </label>
-              <input
+              <AuthInput
+                icon="mail"
                 id="email"
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
                 placeholder={t("emailPlaceholder")}
-                className={authInputClass}
                 onChange={(e) => setEmailValue(e.target.value)}
               />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="text-[13px] font-medium text-neutral-400">
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="text-[13px] font-medium text-neutral-300">
                   {tc("password")}
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-[13px] text-muted-foreground hover:text-[#b8ff45] transition"
+                  className="text-[13px] font-medium text-[#b8ff45]/80 hover:text-[#b8ff45] transition"
                 >
                   {t("forgotPassword")}
                 </Link>
               </div>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 required
                 autoComplete="current-password"
-                className={authInputClass}
+                placeholder="••••••••"
                 onChange={(e) => setPasswordValue(e.target.value)}
               />
             </div>
@@ -133,7 +135,7 @@ export default function LoginPage() {
             populated from the captured step-1 state. */}
         {needs2FA && (
           <>
-            <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 space-y-1">
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 space-y-1">
               <p className="text-xs font-semibold text-amber-300">
                 {t("admin2FAHeader")}
               </p>
@@ -177,12 +179,12 @@ export default function LoginPage() {
           />
         )}
 
-        {state && "error" in state && state.error && (
-          <p className="text-sm text-red-400">{state.error}</p>
-        )}
-        <button type="submit" disabled={pending} className={authButtonClass}>
-          {pending ? tc("loading") : needs2FA ? t("admin2FAVerifyButton") : t("loginButton")}
-        </button>
+        <AuthError message={state && "error" in state ? state.error : null} />
+        <AuthSubmit
+          pending={pending}
+          pendingLabel={tc("loading")}
+          label={needs2FA ? t("admin2FAVerifyButton") : t("loginButton")}
+        />
       </form>
     </AuthShell>
   );
