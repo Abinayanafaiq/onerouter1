@@ -21,7 +21,7 @@ export default async function ChatPage() {
   const balance = Number(wallet.balance);
 
   // Count all keys and active keys for diagnostics.
-  const totalKeys = await prisma.apiKey.count({ where: { userId } });
+  const totalKeys = await prisma.apiKey.count({ where: { userId, deletedAt: null } });
   const activeKeys = await prisma.apiKey.count({
     where: {
       userId,

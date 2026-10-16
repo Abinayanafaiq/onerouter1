@@ -21,9 +21,14 @@ export async function validateRenewalKey(params: {
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const key = await prisma.apiKey.findUnique({
     where: { id: params.apiKeyId },
-    select: { id: true, userId: true, billingMode: true },
+    select: { id: true, userId: true, billingMode: true, deletedAt: true },
   });
-  if (!key || key.userId !== params.userId || key.billingMode !== "TOKEN_PACKAGE") {
+  if (
+    !key ||
+    key.userId !== params.userId ||
+    key.billingMode !== "TOKEN_PACKAGE" ||
+    key.deletedAt
+  ) {
     return { ok: false, error: "API key paket tidak valid untuk diperpanjang" };
   }
 

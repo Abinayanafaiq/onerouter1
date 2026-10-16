@@ -142,7 +142,7 @@ export default async function DashboardPage() {
     getTransactions(walletId, 7),
     getAvailableModels(),
     prisma.apiKey.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 4,
     }),

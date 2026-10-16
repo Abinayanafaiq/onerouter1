@@ -71,7 +71,7 @@ export function toApiKeyView(k: ApiKeyRow): ApiKeyView {
 
 export async function listApiKeys(userId: string): Promise<ApiKeyView[]> {
   const keys = await prisma.apiKey.findMany({
-    where: { userId },
+    where: { userId, deletedAt: null },
     orderBy: { createdAt: "desc" },
   });
   return keys.map(toApiKeyView);
@@ -116,9 +116,9 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<CreateApiK
   return { view: toApiKeyView(created), plaintext: generated.key };
 }
 
-/** Verify a key belongs to the user before mutating it. */
+/** Verify a key belongs to the user (and is not deleted) before mutating it. */
 async function ownedKey(userId: string, keyId: string): Promise<ApiKeyRow | null> {
-  const key = await prisma.apiKey.findFirst({ where: { id: keyId, userId } });
+  const key = await prisma.apiKey.findFirst({ where: { id: keyId, userId, deletedAt: null } });
   return key;
 }
 
@@ -191,7 +191,7 @@ export async function getOwnedKeyGuard(
   keyId: string,
 ): Promise<{ billingMode: string; expiresAt: Date | null } | null> {
   const key = await prisma.apiKey.findFirst({
-    where: { id: keyId, userId },
+    where: { id: keyId, userId, deletedAt: null },
     select: { billingMode: true, expiresAt: true },
   });
   return key ?? null;
@@ -205,11 +205,52 @@ export async function setApiKeyEnabled(
   return updateApiKey(userId, keyId, { enabled });
 }
 
+/**
+ * PAYG keys are hard-deleted. Paid package keys (TOKEN_PACKAGE & LEGACY) are
+ * soft-deleted instead: the key is switched off and hidden from the user, but
+ * the row stays so order history, usage logs and admin records remain intact.
+ */
 export async function deleteApiKey(userId: string, keyId: string): Promise<boolean> {
   const existing = await ownedKey(userId, keyId);
   if (!existing) return false;
-  await prisma.apiKey.delete({ where: { id: keyId } });
+  if (existing.billingMode === "PAYG") {
+    await prisma.apiKey.delete({ where: { id: keyId } });
+  } else {
+    await prisma.apiKey.update({ where: { id: keyId }, data: softDeleteData() });
+  }
   return true;
+}
+
+function softDeleteData() {
+  return { deletedAt: new Date(), enabled: false, isActive: false };
+}
+
+/**
+ * Soft-delete every package key of the user that can no longer be used:
+ * expired, quota exhausted, or disabled. Active packages are never touched.
+ * Returns the number of keys removed.
+ */
+export async function deleteInactivePackageKeys(userId: string): Promise<number> {
+  const now = new Date();
+  const keys = await prisma.apiKey.findMany({
+    where: { userId, billingMode: "TOKEN_PACKAGE", deletedAt: null },
+    select: { id: true, enabled: true, isActive: true, expiresAt: true, tokenUsed: true, tokenQuota: true },
+  });
+  const ids = keys
+    .filter(
+      (k) =>
+        !k.enabled ||
+        !k.isActive ||
+        (k.expiresAt !== null && k.expiresAt <= now) ||
+        k.tokenUsed >= k.tokenQuota,
+    )
+    .map((k) => k.id);
+  if (ids.length === 0) return 0;
+  const result = await prisma.apiKey.updateMany({
+    where: { id: { in: ids }, userId, deletedAt: null },
+    data: softDeleteData(),
+  });
+  return result.count;
 }
 
 /** Per-key usage statistics for the dashboard. */

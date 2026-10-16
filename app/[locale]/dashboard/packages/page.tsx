@@ -5,6 +5,7 @@ import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { CopyChip } from "@/app/components/copy-chip";
 import { RevealKey } from "../reveal-key";
 import { RegeneratePackageKey } from "./regenerate-package-key";
+import { CleanupPackagesButton, DeletePackageButton } from "./delete-package";
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -67,7 +68,7 @@ export default async function PackagesPage() {
 
   const [keys, orders, packageModels] = await Promise.all([
     prisma.apiKey.findMany({
-      where: { userId, billingMode: "TOKEN_PACKAGE" },
+      where: { userId, billingMode: "TOKEN_PACKAGE", deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         // Order pertama yang menerbitkan key ini = paket asal (untuk renew).
@@ -110,6 +111,7 @@ export default async function PackagesPage() {
   const activeKeys = keys.filter((key) =>
     key.enabled && key.isActive && (!key.expiresAt || key.expiresAt > now) && key.tokenUsed < key.tokenQuota,
   );
+  const inactiveCount = keys.length - activeKeys.length;
   const totalRemaining = activeKeys.reduce((sum, key) => sum + (key.tokenQuota - key.tokenUsed), 0n);
   // Flat list sorted by provider (stable sort keeps the admin-defined `sort`
   // order within each provider) so the grid renders uniform, tidy cells.
@@ -163,7 +165,10 @@ export default async function PackagesPage() {
 
       {/* Paket yang dibeli */}
       <section className="space-y-4">
-        <SectionHeading title={t("keysTitle")} subtitle={t("keysSubtitle")} />
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <SectionHeading title={t("keysTitle")} subtitle={t("keysSubtitle")} />
+          {inactiveCount > 0 && <CleanupPackagesButton count={inactiveCount} />}
+        </div>
 
         {keys.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.015] px-5 py-14 text-center">
@@ -218,15 +223,22 @@ export default async function PackagesPage() {
                         <code className="mt-0.5 block truncate text-[11px] text-muted-foreground">{key.prefix || "sk_live_"}••••••{key.last4 || "••••"}</code>
                       </div>
                     </div>
-                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>
-                      {status.live && (
-                        <span className="relative flex h-1.5 w-1.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
-                        </span>
-                      )}
-                      {status.label}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>
+                        {status.live && (
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+                          </span>
+                        )}
+                        {status.label}
+                      </span>
+                      <DeletePackageButton
+                        keyId={key.id}
+                        name={key.name || key.label || t("defaultKeyName")}
+                        live={status.live}
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-1 flex-col p-5 sm:p-6">

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     }
 
     const { prisma } = await import("@/app/lib/prisma");
-    const count = await prisma.apiKey.count({ where: { userId } });
+    const count = await prisma.apiKey.count({ where: { userId, deletedAt: null } });
     if (count >= MAX_KEYS_PER_USER) {
       return NextResponse.json(
         { success: false, error: `Maximum of ${MAX_KEYS_PER_USER} API keys reached` },

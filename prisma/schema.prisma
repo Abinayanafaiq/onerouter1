@@ -171,6 +171,9 @@ model ApiKey {
   lastResetDay   DateTime   @default(now())
   expiresAt      DateTime?
   isActive       Boolean    @default(true)
+  // Soft delete: key paket yang dihapus user dari dashboard. Key dimatikan
+  // dan disembunyikan, tapi riwayat order & pemakaian tetap tersimpan.
+  deletedAt      DateTime?
   usageLogs      UsageLog[]
   apiRequestLogs ApiRequestLog[]
   orders         Order[]

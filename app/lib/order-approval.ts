@@ -116,6 +116,11 @@ export async function approvePaidOrder(
               tokenQuota: quota,
               tokenUsed: 0,
               expiresAt: renewedExpiresAt,
+              // Key sempat dihapus user saat order renew masih PENDING:
+              // order sudah dibayar, jadi pulihkan key-nya.
+              ...(existing.deletedAt
+                ? { deletedAt: null, enabled: true, isActive: true }
+                : {}),
             },
           });
           await tx.order.update({
