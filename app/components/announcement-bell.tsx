@@ -81,7 +81,12 @@ export function AnnouncementBell({
       <svg viewBox="0 0 24 24" fill="none" className={`h-[18px] w-[18px] ${hasUnread ? "animate-bell-ring" : ""}`}>
         <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <UnreadBadge count={unread} className="absolute -right-1.5 -top-1.5" />
+      {/* Bungkus terpisah: UnreadBadge sendiri `relative`, jadi posisi absolut harus di luar. */}
+      {hasUnread && (
+        <span className="pointer-events-none absolute -right-2 -top-2 flex">
+          <UnreadBadge count={unread} />
+        </span>
+      )}
     </Link>
   );
 }
