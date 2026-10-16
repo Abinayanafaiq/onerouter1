@@ -5,13 +5,19 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { CreditBadge } from "@/app/components/credit-badge";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
-import { AnnouncementBell } from "@/app/components/announcement-bell";
+import {
+  AnnouncementBell,
+  UnreadBadge,
+  useUnreadAnnouncements,
+} from "@/app/components/announcement-bell";
 
 type NavItem = {
   label: string;
   href: string;
   icon: React.ReactNode;
   badge?: string;
+  /** Jumlah item belum dibaca — tampil sebagai badge merah. */
+  unread?: number;
 };
 
 const NAV_MAIN_DEFS = [
@@ -179,6 +185,7 @@ function NavList({
               {item.icon}
             </span>
             <span className="truncate">{item.label}</span>
+            {!!item.unread && <UnreadBadge count={item.unread} className="ml-auto" />}
             {item.badge && (
               <span className="ml-auto rounded-full bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 {item.badge}
@@ -197,7 +204,7 @@ export function DashboardShell({
   userName,
   initialToks,
   telegramGroupUrl,
-  latestAnnouncementAt,
+  recentAnnouncementTimes,
   signOutAction,
 }: {
   children: React.ReactNode;
@@ -205,18 +212,20 @@ export function DashboardShell({
   userName: string;
   initialToks: number;
   telegramGroupUrl: string | null;
-  latestAnnouncementAt: string | null;
+  recentAnnouncementTimes: string[];
   signOutAction: () => Promise<void>;
 }) {
   const t = useTranslations("Dashboard");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const unreadAnnouncements = useUnreadAnnouncements(recentAnnouncementTimes);
 
   const navMain: NavItem[] = NAV_MAIN_DEFS.map((d) => ({
     label: t(d.key),
     href: d.href,
     icon: d.icon,
+    unread: d.key === "announcements" ? unreadAnnouncements : undefined,
   }));
   const navSecondary: NavItem[] = NAV_SECONDARY_DEFS.map((d) => ({
     label: t(d.key),
@@ -315,7 +324,11 @@ export function DashboardShell({
             <CreditBadge initialToks={initialToks} />
 
             {/* Notifications */}
-            <AnnouncementBell latestAt={latestAnnouncementAt} label={t("notifications")} />
+            <AnnouncementBell
+              unread={unreadAnnouncements}
+              label={t("notifications")}
+              unreadLabel={t("unreadAnnouncements", { count: unreadAnnouncements })}
+            />
 
             {/* Profile */}
             <div className="relative">

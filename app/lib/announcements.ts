@@ -62,21 +62,23 @@ export async function listAllAnnouncements(take = 200): Promise<AnnouncementView
 }
 
 /**
- * Waktu pengumuman terbaru yang dipublikasikan — dipakai layout dashboard
- * untuk titik "belum dibaca" di ikon lonceng. Satu query ringan; gagal
- * dianggap tidak ada pengumuman agar dashboard tetap jalan.
+ * Waktu terbit pengumuman terbaru (terbaru dulu) — dipakai layout dashboard
+ * untuk badge jumlah "belum dibaca" di lonceng & sidebar. Satu query ringan
+ * yang hanya mengambil createdAt; gagal dianggap tidak ada pengumuman agar
+ * dashboard tetap jalan.
  */
-export async function getLatestAnnouncementAt(): Promise<string | null> {
+export async function getRecentAnnouncementTimes(take = 10): Promise<string[]> {
   try {
-    const row = await prisma.announcement.findFirst({
+    const rows = await prisma.announcement.findMany({
       where: { published: true },
       orderBy: { createdAt: "desc" },
       select: { createdAt: true },
+      take,
     });
-    return row ? row.createdAt.toISOString() : null;
+    return rows.map((r) => r.createdAt.toISOString());
   } catch (e) {
-    console.error("[announcements] latest lookup failed:", e);
-    return null;
+    console.error("[announcements] recent lookup failed:", e);
+    return [];
   }
 }
 

@@ -376,7 +376,8 @@
     "telegramGroup": "Gabung grup Telegram kami",
     "platformTagline": "Platform Inferensi AI",
     "openMenu": "Buka menu",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "unreadAnnouncements": "{count} pengumuman baru"
   },
   "Announcements": {
     "title": "Pengumuman",
@@ -384,6 +385,7 @@
     "emptyTitle": "Belum ada pengumuman",
     "emptyDesc": "Kalau ada info penting dari admin, akan muncul di sini.",
     "pinned": "Disematkan",
+    "new": "Baru",
     "level": {
       "info": "Info",
       "success": "Kabar baik",

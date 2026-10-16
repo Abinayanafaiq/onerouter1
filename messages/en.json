@@ -376,7 +376,8 @@
     "telegramGroup": "Join our Telegram group",
     "platformTagline": "AI Inference Platform",
     "openMenu": "Open menu",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "unreadAnnouncements": "{count} new announcement(s)"
   },
   "Announcements": {
     "title": "Announcements",
@@ -384,6 +385,7 @@
     "emptyTitle": "No announcements yet",
     "emptyDesc": "Important updates from the admin team will show up here.",
     "pinned": "Pinned",
+    "new": "New",
     "level": {
       "info": "Info",
       "success": "Good news",
