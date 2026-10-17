@@ -23,7 +23,7 @@ import {
   type BillingInfo,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
-import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
+import { checkKeyAndUserRateLimit } from "@/app/lib/rate-limit";
 import {
   MASTER_API_URL,
   MASTER_API_KEY,
@@ -86,36 +86,17 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Rate limit (per API key)
-  const keyRateLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);
-  if (!keyRateLimit.allowed) {
-    console.log("[v1/chat] rate limited (key)");
+  // 2. Rate limit (per API key + per user, checked atomically) — one generic
+  // 429 shape with only Retry-After, so it does not leak which limit was hit.
+  const rateLimit = checkKeyAndUserRateLimit(apiKey.id, apiKey.rateLimit, apiKey.userId, apiKey.user.rateLimit);
+  if (!rateLimit.allowed) {
+    console.log("[v1/chat] rate limited");
     return Response.json(
       { error: { message: "Rate limit exceeded. Too many requests.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },
       {
         status: 429,
         headers: {
-          "Retry-After": String(keyRateLimit.retryAfter),
-          "X-RateLimit-Limit": String(keyRateLimit.limit),
-          "X-RateLimit-Remaining": "0",
-          ...corsHeaders(),
-        },
-      },
-    );
-  }
-
-  // 2b. Rate limit (per user) — strictest wins; identical 429 shape, no leak of which limit
-  const userRateLimit = checkUserRateLimit(apiKey.userId, apiKey.user.rateLimit);
-  if (!userRateLimit.allowed) {
-    console.log("[v1/chat] rate limited (user)");
-    return Response.json(
-      { error: { message: "Rate limit exceeded. Too many requests.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(userRateLimit.retryAfter),
-          "X-RateLimit-Limit": String(userRateLimit.limit),
-          "X-RateLimit-Remaining": "0",
+          "Retry-After": String(rateLimit.retryAfter),
           ...corsHeaders(),
         },
       },

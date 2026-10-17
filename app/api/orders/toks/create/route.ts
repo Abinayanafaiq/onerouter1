@@ -5,9 +5,10 @@ import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
 import { validateRenewalKey } from "@/app/lib/package-renewal";
 import { approvePaidOrder } from "@/app/lib/order-approval";
-import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { checkOrderCreateLimit, orderCreateRateLimitResponse } from "@/app/lib/rate-limit";
 import { toksToIdr, formatToks } from "@/app/lib/constants";
 import { WALLET_TX_TYPES } from "@/app/lib/wallet";
+import { normalizeWhatsApp, INVALID_WHATSAPP_ERROR } from "@/app/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -29,17 +30,7 @@ export async function POST(request: Request) {
     const userId = (session.user as { id: string }).id;
     const rl = checkOrderCreateLimit(userId);
     if (!rl.allowed) {
-      return NextResponse.json(
-        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rl.retryAfter),
-            "X-RateLimit-Limit": String(rl.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        },
-      );
+      return orderCreateRateLimitResponse(rl);
     }
 
     const body = (await request.json()) as {
@@ -89,7 +80,15 @@ export async function POST(request: Request) {
     const costToks = pkg.toksPrice;
     const costIdr = toksToIdr(costToks);
     const costDecimal = new Prisma.Decimal(costIdr);
-    const whatsapp = typeof body.whatsapp === "string" ? body.whatsapp.trim() : "";
+    // WhatsApp opsional di sini, tapi bila diisi harus nomor yang valid.
+    let whatsapp = "";
+    if (typeof body.whatsapp === "string" && body.whatsapp.trim()) {
+      const normalized = normalizeWhatsApp(body.whatsapp);
+      if (!normalized) {
+        return NextResponse.json({ success: false, error: INVALID_WHATSAPP_ERROR }, { status: 400 });
+      }
+      whatsapp = normalized;
+    }
 
     const created = await prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.upsert({

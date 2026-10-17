@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { isBscConfigured, generateUniqueUsdtAmount, getBscSettings } from "@/app/lib/crypto-bsc";
-import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { checkOrderCreateLimit, orderCreateRateLimitResponse } from "@/app/lib/rate-limit";
+import { parseTopupAmount } from "@/app/lib/topup";
 
 const WALLET_TOPUP_PACKAGE_ID = "wallet-topup";
-const MIN_TOPUP = 1000;
 
 export async function POST(request: Request) {
   try {
@@ -17,27 +17,20 @@ export async function POST(request: Request) {
     const userId = (session.user as { id: string }).id;
     const rl = checkOrderCreateLimit(userId);
     if (!rl.allowed) {
-      return NextResponse.json(
-        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rl.retryAfter),
-            "X-RateLimit-Limit": String(rl.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        },
-      );
+      return orderCreateRateLimitResponse(rl);
     }
-    const body = (await request.json()) as { amount?: number };
+    let body: { amount?: unknown };
+    try {
+      body = (await request.json()) as { amount?: unknown };
+    } catch {
+      return NextResponse.json({ success: false, error: "Body JSON tidak valid" }, { status: 400 });
+    }
 
-    const amount = Number(body.amount);
-    if (!Number.isFinite(amount) || amount < MIN_TOPUP) {
-      return NextResponse.json(
-        { success: false, error: `Minimal top up Rp${MIN_TOPUP.toLocaleString("id-ID")}` },
-        { status: 400 },
-      );
+    const parsedAmount = parseTopupAmount(body.amount);
+    if (!parsedAmount.ok) {
+      return NextResponse.json({ success: false, error: parsedAmount.error }, { status: 400 });
     }
+    const amount = parsedAmount.amount;
 
     if (!(await isBscConfigured())) {
       return NextResponse.json(
@@ -57,19 +50,18 @@ export async function POST(request: Request) {
     }
 
     const { walletAddress } = await getBscSettings();
-    const roundedAmount = Math.round(amount);
 
     const order = await prisma.order.create({
       data: {
         userId,
         packageId: WALLET_TOPUP_PACKAGE_ID,
-        amount: roundedAmount,
+        amount,
         paymentMethod: "CRYPTO_BSC",
         cryptoChain: "USDT-BEP20",
         cryptoAmount: amountResult.usdtAmount,
         cryptoExpectedAmount: amountResult.usdtAmount,
         status: "PENDING",
-        adminNote: `Wallet top up Rp${roundedAmount.toLocaleString("id-ID")} via USDT BEP20`,
+        adminNote: `Wallet top up Rp${amount.toLocaleString("id-ID")} via USDT BEP20`,
       },
     });
 

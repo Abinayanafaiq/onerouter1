@@ -779,10 +779,9 @@
     "renewNote": "Same API key. Remaining quota is forfeited — quota restarts at full & active period is extended.",
     "deleteButton": "Delete package",
     "confirmDelete": "Remove package \"{name}\" from the list? Its API key will stop working. Purchase history is kept.",
-    "confirmDeleteActive": "Package \"{name}\" is still ACTIVE and has remaining quota. Deleting it disables the API key immediately and forfeits the remaining quota. Delete anyway?",
     "deleteFailed": "Failed to delete package.",
     "cleanupButton": "Delete {count} inactive packages",
-    "confirmCleanup": "Delete {count} packages that are expired, out of quota, or disabled? Active packages will not be deleted."
+    "confirmCleanup": "Delete {count} packages that are expired or out of quota? Packages with remaining quota will not be deleted."
   },
   "BuyPackage": {
     "promoEyebrow": "Promo packages",

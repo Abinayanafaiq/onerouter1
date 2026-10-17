@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { packageKeyHasValue } from "@/app/lib/api-keys";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { CopyChip } from "@/app/components/copy-chip";
 import { RevealKey } from "../reveal-key";
@@ -111,7 +112,8 @@ export default async function PackagesPage() {
   const activeKeys = keys.filter((key) =>
     key.enabled && key.isActive && (!key.expiresAt || key.expiresAt > now) && key.tokenUsed < key.tokenQuota,
   );
-  const inactiveCount = keys.length - activeKeys.length;
+  // Hanya paket yang kedaluwarsa / kuotanya habis yang boleh dihapus.
+  const deletableCount = keys.filter((key) => !packageKeyHasValue(key, now)).length;
   const totalRemaining = activeKeys.reduce((sum, key) => sum + (key.tokenQuota - key.tokenUsed), 0n);
   // Flat list sorted by provider (stable sort keeps the admin-defined `sort`
   // order within each provider) so the grid renders uniform, tidy cells.
@@ -167,7 +169,7 @@ export default async function PackagesPage() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <SectionHeading title={t("keysTitle")} subtitle={t("keysSubtitle")} />
-          {inactiveCount > 0 && <CleanupPackagesButton count={inactiveCount} />}
+          {deletableCount > 0 && <CleanupPackagesButton count={deletableCount} />}
         </div>
 
         {keys.length === 0 ? (
@@ -233,11 +235,12 @@ export default async function PackagesPage() {
                         )}
                         {status.label}
                       </span>
-                      <DeletePackageButton
-                        keyId={key.id}
-                        name={key.name || key.label || t("defaultKeyName")}
-                        live={status.live}
-                      />
+                      {!packageKeyHasValue(key, now) && (
+                        <DeletePackageButton
+                          keyId={key.id}
+                          name={key.name || key.label || t("defaultKeyName")}
+                        />
+                      )}
                     </div>
                   </div>
 

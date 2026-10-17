@@ -5,26 +5,24 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 /**
- * Hapus satu paket dari daftar "Paket Saya". Server melakukan soft delete:
- * API key langsung tidak berlaku dan kartunya hilang, tapi riwayat order &
- * pemakaian tetap tersimpan.
+ * Hapus satu paket dari daftar "Paket Saya". Hanya untuk paket yang sudah
+ * kedaluwarsa / kuotanya habis — server menolak (409) paket yang masih punya
+ * sisa kuota. Server melakukan soft delete: kartunya hilang, tapi riwayat
+ * order & pemakaian tetap tersimpan.
  */
 export function DeletePackageButton({
   keyId,
   name,
-  live,
 }: {
   keyId: string;
   name: string;
-  /** Paket masih aktif (kuota & masa aktif tersisa) — tampilkan peringatan lebih keras. */
-  live: boolean;
 }) {
   const t = useTranslations("MyPackages");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   async function remove() {
-    if (!confirm(live ? t("confirmDeleteActive", { name }) : t("confirmDelete", { name }))) return;
+    if (!confirm(t("confirmDelete", { name }))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/keys/${keyId}`, { method: "DELETE" });

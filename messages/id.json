@@ -779,10 +779,9 @@
     "renewNote": "API key tetap sama. Sisa kuota hangus — kuota dimulai ulang dari penuh & masa aktif diperpanjang.",
     "deleteButton": "Hapus paket",
     "confirmDelete": "Hapus paket \"{name}\" dari daftar? API key-nya tidak bisa dipakai lagi. Riwayat pembelian tetap tersimpan.",
-    "confirmDeleteActive": "Paket \"{name}\" masih AKTIF dan masih punya sisa kuota. Jika dihapus, API key langsung tidak berlaku dan sisa kuota hangus. Tetap hapus?",
     "deleteFailed": "Gagal menghapus paket.",
     "cleanupButton": "Hapus {count} paket tidak aktif",
-    "confirmCleanup": "Hapus {count} paket yang sudah kedaluwarsa, kuotanya habis, atau nonaktif? Paket yang masih aktif tidak akan terhapus."
+    "confirmCleanup": "Hapus {count} paket yang sudah kedaluwarsa atau kuotanya habis? Paket yang masih punya sisa kuota tidak akan terhapus."
   },
   "BuyPackage": {
     "promoEyebrow": "Paket promo",

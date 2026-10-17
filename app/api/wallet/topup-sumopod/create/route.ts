@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { createPayment, isSumopodConfigured } from "@/app/lib/sumopod";
-import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { checkOrderCreateLimit, orderCreateRateLimitResponse } from "@/app/lib/rate-limit";
 import { getSiteUrl } from "@/app/lib/site";
+import { normalizeWhatsApp, INVALID_WHATSAPP_ERROR } from "@/app/lib/whatsapp";
+import { parseTopupAmount } from "@/app/lib/topup";
 
 const WALLET_TOPUP_PACKAGE_ID = "wallet-topup";
-const MIN_TOPUP = 1000;
 
 export async function POST(request: Request) {
   try {
@@ -18,30 +19,27 @@ export async function POST(request: Request) {
     const userId = (session.user as { id: string }).id;
     const rl = checkOrderCreateLimit(userId);
     if (!rl.allowed) {
-      return NextResponse.json(
-        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rl.retryAfter),
-            "X-RateLimit-Limit": String(rl.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        },
-      );
+      return orderCreateRateLimitResponse(rl);
     }
-    const body = (await request.json()) as { amount?: number; whatsapp?: string };
-
-    const amount = Number(body.amount);
-    if (!Number.isFinite(amount) || amount < MIN_TOPUP) {
-      return NextResponse.json(
-        { success: false, error: `Minimal top up Rp${MIN_TOPUP.toLocaleString("id-ID")}` },
-        { status: 400 },
-      );
+    let body: { amount?: unknown; whatsapp?: unknown };
+    try {
+      body = (await request.json()) as { amount?: unknown; whatsapp?: unknown };
+    } catch {
+      return NextResponse.json({ success: false, error: "Body JSON tidak valid" }, { status: 400 });
     }
 
-    if (!body.whatsapp || !body.whatsapp.trim()) {
+    const parsedAmount = parseTopupAmount(body.amount);
+    if (!parsedAmount.ok) {
+      return NextResponse.json({ success: false, error: parsedAmount.error }, { status: 400 });
+    }
+    const amount = parsedAmount.amount;
+
+    if (typeof body.whatsapp !== "string" || !body.whatsapp.trim()) {
       return NextResponse.json({ success: false, error: "Nomor WhatsApp wajib diisi" }, { status: 400 });
+    }
+    const whatsapp = normalizeWhatsApp(body.whatsapp);
+    if (!whatsapp) {
+      return NextResponse.json({ success: false, error: INVALID_WHATSAPP_ERROR }, { status: 400 });
     }
 
     if (!(await isSumopodConfigured())) {
@@ -56,28 +54,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Paket top-up tidak tersedia" }, { status: 500 });
     }
 
-    const roundedAmount = Math.round(amount);
-
     const order = await prisma.order.create({
       data: {
         userId,
         packageId: WALLET_TOPUP_PACKAGE_ID,
-        amount: roundedAmount,
-        whatsapp: body.whatsapp.trim(),
+        amount,
+        whatsapp,
         paymentMethod: "SUMOPOD",
         status: "PENDING",
-        adminNote: `Wallet top up Rp${roundedAmount.toLocaleString("id-ID")}`,
+        adminNote: `Wallet top up Rp${amount.toLocaleString("id-ID")}`,
       },
     });
 
     await prisma.user.update({
       where: { id: userId },
-      data: { whatsapp: body.whatsapp.trim() },
+      data: { whatsapp },
     }).catch(() => {});
 
     const createResult = await createPayment({
       orderId: order.id,
-      amount: roundedAmount,
+      amount,
       successReturnUrl: `${getSiteUrl()}/dashboard/wallet`,
       cancelReturnUrl: `${getSiteUrl()}/dashboard/wallet`,
     });

@@ -89,9 +89,19 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
     const { id } = await params;
-    const ok = await deleteApiKey(userId, id);
-    if (!ok) {
+    const result = await deleteApiKey(userId, id);
+    if (result === "not_found") {
       return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+    }
+    if (result === "package_active") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Paket masih aktif dan masih punya sisa kuota, jadi tidak bisa dihapus. Nonaktifkan atau regenerate key jika tidak ingin dipakai.",
+        },
+        { status: 409 },
+      );
     }
     return NextResponse.json({ success: true });
   } catch (e) {

@@ -1,4 +1,4 @@
-import { checkRateLimit, checkUserRateLimit } from "@/app/lib/rate-limit";
+import { checkKeyAndUserRateLimit } from "@/app/lib/rate-limit";
 import {
   authenticateRequest,
   computeSessionHash,
@@ -82,10 +82,8 @@ export async function POST(request: Request) {
     return apiError("Upstream paket belum dikonfigurasi.", 503, "configuration_error", "package_upstream_unavailable");
   }
 
-  const keyLimit = checkRateLimit(apiKey.id, apiKey.rateLimit);
-  const userLimit = checkUserRateLimit(apiKey.userId, apiKey.user.rateLimit);
-  const limit = !keyLimit.allowed ? keyLimit : !userLimit.allowed ? userLimit : null;
-  if (limit) {
+  const limit = checkKeyAndUserRateLimit(apiKey.id, apiKey.rateLimit, apiKey.userId, apiKey.user.rateLimit);
+  if (!limit.allowed) {
     console.warn(`[${ts()}] [v1/package/chat] rate limited key=${apiKey.id} user=${apiKey.userId} retryAfter=${limit.retryAfter}s`);
     return Response.json(
       { error: { message: "Terlalu banyak request.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },

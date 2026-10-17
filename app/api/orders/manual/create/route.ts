@@ -3,7 +3,8 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
 import { validateRenewalKey } from "@/app/lib/package-renewal";
-import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { checkOrderCreateLimit, orderCreateRateLimitResponse } from "@/app/lib/rate-limit";
+import { normalizeWhatsApp, INVALID_WHATSAPP_ERROR } from "@/app/lib/whatsapp";
 
 export async function POST(request: Request) {
   try {
@@ -15,17 +16,7 @@ export async function POST(request: Request) {
     const userId = (session.user as { id: string }).id;
     const rl = checkOrderCreateLimit(userId);
     if (!rl.allowed) {
-      return NextResponse.json(
-        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rl.retryAfter),
-            "X-RateLimit-Limit": String(rl.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        },
-      );
+      return orderCreateRateLimitResponse(rl);
     }
     const body = (await request.json()) as {
       packageId: string;
@@ -37,11 +28,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Package ID diperlukan" }, { status: 400 });
     }
 
-    if (!body.whatsapp || !body.whatsapp.trim()) {
+    if (typeof body.whatsapp !== "string" || !body.whatsapp.trim()) {
       return NextResponse.json({ success: false, error: "Nomor WhatsApp wajib diisi" }, { status: 400 });
     }
-
-    const whatsapp = body.whatsapp.trim();
+    const whatsapp = normalizeWhatsApp(body.whatsapp);
+    if (!whatsapp) {
+      return NextResponse.json({ success: false, error: INVALID_WHATSAPP_ERROR }, { status: 400 });
+    }
 
     const pkg = await findPackage(body.packageId);
     if (!pkg) {

@@ -4,8 +4,9 @@ import { prisma } from "@/app/lib/prisma";
 import { findPackage } from "@/app/lib/packages";
 import { validateRenewalKey } from "@/app/lib/package-renewal";
 import { createPayment, isSumopodConfigured } from "@/app/lib/sumopod";
-import { checkOrderCreateLimit } from "@/app/lib/rate-limit";
+import { checkOrderCreateLimit, orderCreateRateLimitResponse } from "@/app/lib/rate-limit";
 import { getSiteUrl } from "@/app/lib/site";
+import { normalizeWhatsApp, INVALID_WHATSAPP_ERROR } from "@/app/lib/whatsapp";
 
 export async function POST(request: Request) {
   try {
@@ -17,17 +18,7 @@ export async function POST(request: Request) {
     const userId = (session.user as { id: string }).id;
     const rl = checkOrderCreateLimit(userId);
     if (!rl.allowed) {
-      return NextResponse.json(
-        { success: false, error: `Terlalu banyak membuat pesanan. Maksimal ${rl.limit} per 3 menit, coba lagi dalam ${rl.retryAfter} detik.` },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rl.retryAfter),
-            "X-RateLimit-Limit": String(rl.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        },
-      );
+      return orderCreateRateLimitResponse(rl);
     }
     const body = (await request.json()) as {
       packageId: string;
@@ -39,8 +30,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Package ID diperlukan" }, { status: 400 });
     }
 
-    if (!body.whatsapp || !body.whatsapp.trim()) {
+    if (typeof body.whatsapp !== "string" || !body.whatsapp.trim()) {
       return NextResponse.json({ success: false, error: "Nomor WhatsApp wajib diisi" }, { status: 400 });
+    }
+    const whatsapp = normalizeWhatsApp(body.whatsapp);
+    if (!whatsapp) {
+      return NextResponse.json({ success: false, error: INVALID_WHATSAPP_ERROR }, { status: 400 });
     }
 
     const pkg = await findPackage(body.packageId);
@@ -85,7 +80,7 @@ export async function POST(request: Request) {
         userId,
         packageId: body.packageId,
         amount: pkg.price,
-        whatsapp: body.whatsapp.trim(),
+        whatsapp,
         paymentMethod: "SUMOPOD",
         status: "PENDING",
         apiKeyId: renewApiKeyId,
@@ -97,7 +92,7 @@ export async function POST(request: Request) {
 
     await prisma.user.update({
       where: { id: userId },
-      data: { whatsapp: body.whatsapp.trim() },
+      data: { whatsapp },
     }).catch(() => {});
 
     if (!renewApiKeyId) {
