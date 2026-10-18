@@ -44,7 +44,8 @@ export async function POST(request: Request) {
     }
 
     // Renew: perpanjang key paket lama (apiKeyId terisi sejak order dibuat).
-    // Tidak menerbitkan key baru, jadi tidak memeriksa/mengurangi stok.
+    // Tidak menerbitkan key baru, tapi tetap memeriksa & mengurangi stok
+    // seperti pembelian baru.
     const renewApiKeyId =
       typeof body.renewApiKeyId === "string" && body.renewApiKeyId.trim()
         ? body.renewApiKeyId.trim()
@@ -64,7 +65,8 @@ export async function POST(request: Request) {
       if (!renewal.ok) {
         return NextResponse.json({ success: false, error: renewal.error }, { status: 400 });
       }
-    } else if (pkg.stock <= 0) {
+    }
+    if (pkg.stock <= 0) {
       return NextResponse.json({ success: false, error: "Stok habis" }, { status: 400 });
     }
 
@@ -95,12 +97,10 @@ export async function POST(request: Request) {
       data: { whatsapp },
     }).catch(() => {});
 
-    if (!renewApiKeyId) {
-      await prisma.package.update({
-        where: { id: body.packageId },
-        data: { stock: { decrement: 1 } },
-      });
-    }
+    await prisma.package.update({
+      where: { id: body.packageId },
+      data: { stock: { decrement: 1 } },
+    });
 
     const createResult = await createPayment({
       orderId: order.id,
@@ -114,13 +114,10 @@ export async function POST(request: Request) {
         where: { id: order.id },
         data: { status: "CANCELLED", adminNote: createResult.error },
       });
-      // Renew tidak pernah mengurangi stok, jadi tidak ada yang dikembalikan.
-      if (!renewApiKeyId) {
-        await prisma.package.update({
-          where: { id: body.packageId },
-          data: { stock: { increment: 1 } },
-        });
-      }
+      await prisma.package.update({
+        where: { id: body.packageId },
+        data: { stock: { increment: 1 } },
+      });
       return NextResponse.json({ success: false, error: createResult.error }, { status: 502 });
     }
 

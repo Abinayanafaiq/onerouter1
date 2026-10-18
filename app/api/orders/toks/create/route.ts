@@ -55,7 +55,8 @@ export async function POST(request: Request) {
     }
 
     // Renew: perpanjang key paket lama (apiKeyId terisi sejak order dibuat).
-    // Tidak menerbitkan key baru, jadi tidak memeriksa/mengurangi stok.
+    // Tidak menerbitkan key baru, tapi tetap memeriksa & mengurangi stok
+    // seperti pembelian baru.
     const renewApiKeyId =
       typeof body.renewApiKeyId === "string" && body.renewApiKeyId.trim()
         ? body.renewApiKeyId.trim()
@@ -118,15 +119,13 @@ export async function POST(request: Request) {
         },
       });
 
-      // Kurangi stok secara atomik (kecuali renew, yang tidak mengambil stok).
-      if (!renewApiKeyId) {
-        const stocked = await tx.package.updateMany({
-          where: { id: pkg.id, stock: { gte: 1 } },
-          data: { stock: { decrement: 1 } },
-        });
-        if (stocked.count === 0) {
-          throw new Error("Stok habis");
-        }
+      // Kurangi stok secara atomik (berlaku juga untuk renew).
+      const stocked = await tx.package.updateMany({
+        where: { id: pkg.id, stock: { gte: 1 } },
+        data: { stock: { decrement: 1 } },
+      });
+      if (stocked.count === 0) {
+        throw new Error("Stok habis");
       }
 
       return tx.order.create({
@@ -189,12 +188,10 @@ export async function POST(request: Request) {
             description: `Refund pembelian paket ${pkg.name} (aktivasi gagal)`,
           },
         });
-        if (!renewApiKeyId) {
-          await tx.package.update({
-            where: { id: pkg.id },
-            data: { stock: { increment: 1 } },
-          });
-        }
+        await tx.package.update({
+          where: { id: pkg.id },
+          data: { stock: { increment: 1 } },
+        });
       });
       return NextResponse.json(
         { success: false, error: `Aktivasi gagal, saldo TOKS Anda sudah dikembalikan: ${approval.error}` },

@@ -34,18 +34,14 @@ export async function POST(request: Request) {
     }
 
     const isWalletTopUp = order.packageId === WALLET_TOPUP_PACKAGE_ID;
-    // Order renew (apiKeyId sudah terisi saat PENDING) tidak pernah mengurangi
-    // stok saat dibuat, jadi saat ditolak pun tidak ada stok yang dikembalikan.
-    const isRenewal = order.apiKeyId != null;
-
     if (action === "reject") {
       // Idempotent reject: only flip PENDING -> REJECTED.
       const claim = await prisma.order.updateMany({
         where: { id: orderId, status: "PENDING" },
         data: { status: "REJECTED", adminNote: note || "Ditolak admin" },
       });
-      if (claim.count > 0 && !isWalletTopUp && !isRenewal) {
-        // Restock only for package orders (wallet top-ups never decremented stock).
+      if (claim.count > 0 && !isWalletTopUp) {
+        // Restock for package orders, renew included (wallet top-ups never decremented stock).
         await prisma.package.update({
           where: { id: order.packageId },
           data: { stock: { increment: 1 } },
