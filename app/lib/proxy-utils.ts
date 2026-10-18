@@ -585,6 +585,83 @@ export function dedupeReasoningFields(body: Record<string, unknown>): number {
   return changed;
 }
 
+function parsesAsObject(text: string): boolean {
+  try {
+    return isPlainObject(JSON.parse(text));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Best-effort completion of a truncated JSON object: close an open string,
+ * drop a trailing comma/colon, then close every open bracket. When the cut
+ * lands on a dangling key, retry from the last comma so the complete
+ * key/value pairs before it survive. Returns null when nothing parses.
+ */
+function repairTruncatedJsonObject(text: string): string | null {
+  const close = (src: string): string => {
+    const stack: string[] = [];
+    let inString = false;
+    let escaped = false;
+    for (const ch of src) {
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{") stack.push("}");
+      else if (ch === "[") stack.push("]");
+      else if (ch === "}" || ch === "]") stack.pop();
+    }
+    let out = src;
+    if (inString) out += (escaped ? "\\" : "") + '"';
+    out = out.replace(/[\s,:]+$/, "");
+    return out + stack.reverse().join("");
+  };
+
+  let candidate = text.trim();
+  if (!candidate.startsWith("{")) return null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const closed = close(candidate);
+    if (parsesAsObject(closed)) return closed;
+    const lastComma = candidate.lastIndexOf(",");
+    if (lastComma <= 0) break;
+    candidate = candidate.slice(0, lastComma);
+  }
+  return null;
+}
+
+/**
+ * Make every `tool_calls[].function.arguments` in the history a valid JSON
+ * object string, in place. A previous turn cut off mid tool call (max_tokens
+ * or a dropped stream) leaves truncated arguments that clients echo back, and
+ * the upstream then answers HTTP 400 "must be a valid JSON object string" on
+ * every following request. Returns how many tool calls were fixed.
+ */
+export function repairToolCallArguments(body: Record<string, unknown>): number {
+  if (!Array.isArray(body.messages)) return 0;
+  let fixed = 0;
+  for (const m of body.messages) {
+    if (!isPlainObject(m) || !Array.isArray(m.tool_calls)) continue;
+    for (const call of m.tool_calls) {
+      if (!isPlainObject(call) || !isPlainObject(call.function)) continue;
+      const fn = call.function;
+      const args = fn.arguments;
+      if (typeof args === "string" && parsesAsObject(args)) continue;
+      if (isPlainObject(args)) {
+        fn.arguments = JSON.stringify(args);
+      } else {
+        fn.arguments = (typeof args === "string" && repairTruncatedJsonObject(args)) || "{}";
+      }
+      fixed++;
+    }
+  }
+  return fixed;
+}
+
 // Phrases upstream providers use when the prompt (+ max_tokens) no longer fits
 // the model's context window. Matched against the lowercased upstream body.
 const CONTEXT_OVERFLOW_PATTERNS = [

@@ -8,6 +8,7 @@ import {
   sanitizeUpstreamError,
   normalizeReasoningEffort,
   dedupeReasoningFields,
+  repairToolCallArguments,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -183,6 +184,12 @@ export async function POST(request: Request) {
   const reasoningDeduped = dedupeReasoningFields(body);
   if (reasoningDeduped > 0) {
     console.log(`[${ts()}] [v1/package/chat] dedupe reasoning/reasoning_content di ${reasoningDeduped} pesan key=${apiKey.id}`);
+  }
+  // Argumen tool call yang terpotong di history (respons sebelumnya putus di
+  // tengah tool call) ditolak upstream dengan 400, jadi diperbaiki dulu.
+  const toolArgsRepaired = repairToolCallArguments(body);
+  if (toolArgsRepaired > 0) {
+    console.log(`[${ts()}] [v1/package/chat] perbaiki arguments tool_calls tidak valid di ${toolArgsRepaired} tool call key=${apiKey.id}`);
   }
   const isStream = body.stream === true;
   if (isStream) {

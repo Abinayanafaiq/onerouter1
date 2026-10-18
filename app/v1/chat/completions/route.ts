@@ -15,6 +15,7 @@ import {
   sanitizeUpstreamError,
   normalizeReasoningEffort,
   dedupeReasoningFields,
+  repairToolCallArguments,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -317,6 +318,10 @@ export async function POST(request: Request) {
   const reasoningDeduped = dedupeReasoningFields(body);
   if (reasoningDeduped > 0) {
     console.log(`[v1/chat] deduped reasoning/reasoning_content on ${reasoningDeduped} message(s)`);
+  }
+  const toolArgsRepaired = repairToolCallArguments(body);
+  if (toolArgsRepaired > 0) {
+    console.log(`[v1/chat] repaired invalid tool_calls arguments on ${toolArgsRepaired} tool call(s)`);
   }
 
   // The backup upstream uses a single dedicated key (no DB rotation), so
