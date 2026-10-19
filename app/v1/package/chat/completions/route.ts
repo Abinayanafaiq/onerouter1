@@ -9,6 +9,7 @@ import {
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
+  normalizeUserMessageContent,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -190,6 +191,13 @@ export async function POST(request: Request) {
   const toolArgsRepaired = repairToolCallArguments(body);
   if (toolArgsRepaired > 0) {
     console.log(`[${ts()}] [v1/package/chat] perbaiki arguments tool_calls tidak valid di ${toolArgsRepaired} tool call key=${apiKey.id}`);
+  }
+  // Content pesan user dengan format non-OpenAI (part `image` ala Anthropic,
+  // `input_text`, image_url berupa string, content null) ditolak upstream
+  // dengan 400 "untagged enum ChatCompletionRequestUserMessageContent".
+  const userContentFixed = normalizeUserMessageContent(body);
+  if (userContentFixed > 0) {
+    console.log(`[${ts()}] [v1/package/chat] normalisasi content user di ${userContentFixed} pesan key=${apiKey.id}`);
   }
   const isStream = body.stream === true;
   if (isStream) {

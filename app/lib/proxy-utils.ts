@@ -662,6 +662,80 @@ export function repairToolCallArguments(body: Record<string, unknown>): number {
   return fixed;
 }
 
+const IMAGE_DETAILS = new Set(["auto", "low", "high"]);
+
+function imageUrlPart(url: unknown, detail?: unknown): Record<string, unknown> | null {
+  if (typeof url !== "string" || url === "") return null;
+  const image_url: Record<string, unknown> = { url };
+  if (typeof detail === "string" && IMAGE_DETAILS.has(detail)) image_url.detail = detail;
+  return { type: "image_url", image_url };
+}
+
+// Convert one user content part into the strict OpenAI shape (text /
+// image_url / input_audio / file). Returns null when the part carries nothing
+// that can be forwarded.
+function normalizeUserContentPart(part: unknown): Record<string, unknown> | null {
+  if (typeof part === "string") return { type: "text", text: part };
+  if (!isPlainObject(part)) return null;
+  switch (part.type) {
+    case "text":
+    case "input_text":
+      return typeof part.text === "string" ? { type: "text", text: part.text } : null;
+    case "image_url":
+    case "input_image": {
+      const src = part.image_url;
+      if (typeof src === "string") return imageUrlPart(src, part.detail);
+      if (isPlainObject(src)) return imageUrlPart(src.url, src.detail ?? part.detail);
+      return null;
+    }
+    case "image": {
+      // Anthropic style: { type: "image", source: { type: "base64", media_type, data } | { type: "url", url } }
+      const source = part.source;
+      if (!isPlainObject(source)) return null;
+      if (source.type === "url") return imageUrlPart(source.url);
+      if (typeof source.data !== "string") return null;
+      const mediaType = typeof source.media_type === "string" ? source.media_type : "image/png";
+      return imageUrlPart(`data:${mediaType};base64,${source.data}`);
+    }
+    case "input_audio":
+      return isPlainObject(part.input_audio) ? { type: "input_audio", input_audio: part.input_audio } : null;
+    case "file":
+      return isPlainObject(part.file) ? { type: "file", file: part.file } : null;
+    default:
+      // Unknown part (tool_result, document, thinking, ...): keep any text it carries.
+      if (typeof part.text === "string") return { type: "text", text: part.text };
+      if (typeof part.content === "string") return { type: "text", text: part.content };
+      return null;
+  }
+}
+
+/**
+ * Rewrite every user message `content` into a shape the upstream deserializer
+ * accepts (a string or an array of OpenAI content parts), in place. Clients
+ * send Anthropic/Responses-style parts (`image`, `input_text`, `input_image`),
+ * `image_url` as a bare string, `null` content or a single part object; the
+ * upstream answers each with HTTP 400 "data did not match any variant of
+ * untagged enum ChatCompletionRequestUserMessageContent". Returns how many
+ * messages were changed (for logging).
+ */
+export function normalizeUserMessageContent(body: Record<string, unknown>): number {
+  if (!Array.isArray(body.messages)) return 0;
+  let changed = 0;
+  for (const m of body.messages) {
+    if (!isPlainObject(m) || m.role !== "user" || typeof m.content === "string") continue;
+    const before = JSON.stringify(m.content ?? null);
+    const rawParts = Array.isArray(m.content) ? m.content : m.content == null ? [] : [m.content];
+    const parts = rawParts
+      .map(normalizeUserContentPart)
+      .filter((p): p is Record<string, unknown> => p !== null);
+    const next = parts.length === 0 ? "" : parts;
+    if (JSON.stringify(next) === before) continue;
+    m.content = next;
+    changed++;
+  }
+  return changed;
+}
+
 // Phrases upstream providers use when the prompt (+ max_tokens) no longer fits
 // the model's context window. Matched against the lowercased upstream body.
 const CONTEXT_OVERFLOW_PATTERNS = [

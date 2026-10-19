@@ -16,6 +16,7 @@ import {
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
+  normalizeUserMessageContent,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -322,6 +323,13 @@ export async function POST(request: Request) {
   const toolArgsRepaired = repairToolCallArguments(body);
   if (toolArgsRepaired > 0) {
     console.log(`[v1/chat] repaired invalid tool_calls arguments on ${toolArgsRepaired} tool call(s)`);
+  }
+
+  // Non-OpenAI user content parts (Anthropic `image`, `input_text`, string
+  // image_url, null content) are rejected upstream as an untagged-enum 400.
+  const userContentFixed = normalizeUserMessageContent(body);
+  if (userContentFixed > 0) {
+    console.log(`[v1/chat] normalized user content on ${userContentFixed} message(s)`);
   }
 
   // The backup upstream uses a single dedicated key (no DB rotation), so
