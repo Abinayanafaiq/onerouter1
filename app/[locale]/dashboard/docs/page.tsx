@@ -10,7 +10,20 @@ export const dynamic = "force-dynamic";
 const API_BASE_URL = "https://9inference.cloud/v1";
 const PACKAGE_BASE_URL = "https://9inference.cloud/v1/package";
 
-function opencodeConfig(providerId: string, name: string, baseURL: string, modelIds: string[]) {
+// Custom-provider models are text-only in OpenCode unless `modalities.input`
+// lists "image"; otherwise attached images are replaced with an error text.
+const OPENCODE_IMAGE_FIELDS = {
+  attachment: true,
+  modalities: { input: ["text", "image"], output: ["text"] },
+};
+
+function opencodeConfig(
+  providerId: string,
+  name: string,
+  baseURL: string,
+  modelIds: string[],
+  imageModelIds: ReadonlySet<string> = new Set(),
+) {
   return JSON.stringify(
     {
       $schema: "https://opencode.ai/config.json",
@@ -22,7 +35,9 @@ function opencodeConfig(providerId: string, name: string, baseURL: string, model
             baseURL,
             apiKey: "{env:NINEINFERENCE_API_KEY}",
           },
-          models: Object.fromEntries(modelIds.map((id) => [id, { name: id }])),
+          models: Object.fromEntries(
+            modelIds.map((id) => [id, imageModelIds.has(id) ? { name: id, ...OPENCODE_IMAGE_FIELDS } : { name: id }]),
+          ),
         },
       },
       model: `${providerId}/${modelIds[0]}`,
@@ -158,12 +173,21 @@ export default async function DocsPage() {
   const sampleModel = availableModels[0]?.modelId ?? "glm-5.2";
   const paygModelIds = availableModels.slice(0, 3).map((m) => m.modelId);
   const packageModelIds = packageModels.slice(0, 3).map((m) => m.modelId);
+  const imageModels = availableModels.filter((m) => m.supportsImages);
+  const imageModelIds = new Set(imageModels.map((m) => m.modelId));
+  // Make sure the OpenCode sample config shows at least one image-capable model.
+  const opencodePaygModelIds = [
+    ...(paygModelIds.length > 0 ? paygModelIds : [sampleModel]),
+    ...(imageModels[0] && !paygModelIds.includes(imageModels[0].modelId) ? [imageModels[0].modelId] : []),
+  ];
+  const sampleImageModel = imageModels[0]?.modelId ?? sampleModel;
 
   const opencodePaygCode = opencodeConfig(
     "9inference",
     "9inference (PAYG)",
     API_BASE_URL,
-    paygModelIds.length > 0 ? paygModelIds : [sampleModel],
+    opencodePaygModelIds,
+    imageModelIds,
   );
   const opencodePackageCode = opencodeConfig(
     "9inference-paket",
@@ -248,12 +272,23 @@ opencode
 # ${t("opencodeRunComment")}
 /models`;
 
+  const opencodeImageConfigCode = JSON.stringify(
+    { [sampleImageModel]: { name: sampleImageModel, ...OPENCODE_IMAGE_FIELDS } },
+    null,
+    2,
+  );
+  const opencodeImageRunCode = `opencode run -m 9inference/${sampleImageModel} -f screenshot.png "${t("opencodeImageRunPrompt")}"
+
+# ${t("opencodeImageRunMultiComment")}
+opencode run -m 9inference/${sampleImageModel} -f desain-lama.png -f desain-baru.png "${t("opencodeImageRunMultiPrompt")}"`;
+
   const opencodeErrors = [
     { code: "403 package_endpoint_required", desc: t("opencodeErrPackageEndpoint") },
     { code: "403 package_key_required", desc: t("opencodeErrPackageKey") },
     { code: "402 package_quota_exhausted", desc: t("opencodeErrQuota") },
     { code: "401 authentication_error", desc: t("opencodeErrAuth") },
     { code: "400 Extra inputs are not permitted", desc: t("opencodeErrExtraInputs") },
+    { code: "this model does not support image input", desc: t("opencodeErrNoImage") },
   ];
 
   const inlineCode = (chunks: ReactNode) => (
@@ -464,6 +499,50 @@ console.log(res.choices[0].message.content);`;
                     <Step n={4} title={t("opencodeStep4Title")}>
                       <p>{t.rich("opencodeStep4Desc", { code: inlineCode })}</p>
                       <CopyableCode code={opencodeRunCode} />
+                    </Step>
+
+                    <Step n={5} title={t("opencodeImageTitle")}>
+                      <p>{t.rich("opencodeImageDesc", { b: bold, code: inlineCode })}</p>
+                      <CopyableCode code={opencodeImageConfigCode} language="opencode.json" />
+                      <p>{t.rich("opencodeImageConfigNote", { b: bold, code: inlineCode })}</p>
+
+                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {t("opencodeImageModelsTitle")}
+                        </div>
+                        {imageModels.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {imageModels.map((m) => (
+                              <span
+                                key={m.id}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-accent/20 bg-accent/[0.05] px-2 py-1 font-mono text-[11px] text-foreground/80"
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                                {m.modelId}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-1.5">{t("opencodeImageModelsEmpty")}</p>
+                        )}
+                        <p className="mt-2">{t("opencodeImagePackageNote")}</p>
+                      </div>
+
+                      <p className="font-medium text-foreground">{t("opencodeImageHowTitle")}</p>
+                      <ul className="space-y-2">
+                        {(["opencodeImageHowPaste", "opencodeImageHowDrop", "opencodeImageHowPath"] as const).map((key) => (
+                          <li key={key} className="flex gap-2">
+                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
+                            <span>{t.rich(key, { b: bold, code: inlineCode })}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <p>{t.rich("opencodeImageRunDesc", { code: inlineCode })}</p>
+                      <CopyableCode code={opencodeImageRunCode} />
+                      <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                        {t.rich("opencodeImageLimits", { b: bold })}
+                      </p>
                     </Step>
                   </ol>
                 </div>
