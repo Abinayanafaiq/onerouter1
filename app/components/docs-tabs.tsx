@@ -63,7 +63,11 @@ export function DocsTabs({
 
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label={ariaLabel} className="grid gap-3 sm:grid-cols-2">
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        className={`grid gap-3 sm:grid-cols-2 ${tabs.length >= 3 ? "lg:grid-cols-3" : ""}`}
+      >
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
           return (

@@ -89,6 +89,66 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   );
 }
 
+function FieldTable({
+  columns,
+  rows,
+}: {
+  columns: { label: string; accent?: boolean }[];
+  rows: { label: string; values: string[] }[];
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/30">
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-muted-foreground">
+            {columns.map((c) => (
+              <th key={c.label} className={`px-3 py-2 font-medium ${c.accent ? "text-accent" : ""}`}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label} className="border-b border-white/[0.04] last:border-0">
+              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{r.label}</td>
+              {r.values.map((v, i) => (
+                <td key={i} className="px-3 py-2 font-mono text-[11px] text-foreground/90">
+                  {v}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FlowDiagram({ nodes }: { nodes: { title: string; sub: string; accent?: boolean }[] }) {
+  return (
+    <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+      {nodes.map((node, i) => (
+        <div key={node.title} className="contents">
+          {i > 0 && (
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 self-center rotate-90 text-muted-foreground sm:rotate-0" aria-hidden>
+              <path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+          <div
+            className={`min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-center ${
+              node.accent ? "border-accent/30 bg-accent/[0.06]" : "border-white/[0.08] bg-white/[0.02]"
+            }`}
+          >
+            <div className={`text-xs font-semibold tracking-tight ${node.accent ? "text-accent" : ""}`}>{node.title}</div>
+            <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{node.sub}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default async function DocsPage() {
   const t = await getTranslations("Docs");
   const [availableModels, packageModels] = await Promise.all([
@@ -130,6 +190,50 @@ export default async function DocsPage() {
     { label: "API key", payg: t("harnessFieldKeyPayg"), pkg: t("harnessFieldKeyPackage") },
   ];
 
+  const ninerouterPaygPrefix = "9i";
+  const ninerouterPackagePrefix = "9i-paket";
+  const ninerouterBaseUrl = "http://localhost:20128/v1";
+  const samplePackageModel = packageModels[0]?.modelId ?? sampleModel;
+  const ninerouterInstallCode = `npm install -g 9router
+9router`;
+  const ninerouterProviderFields = [
+    { label: "Name", values: ["9inference PAYG", "9inference Paket"] },
+    { label: "Prefix", values: [ninerouterPaygPrefix, ninerouterPackagePrefix] },
+    { label: "API Type", values: ["Chat Completions", "Chat Completions"] },
+    { label: "Base URL", values: [API_BASE_URL, PACKAGE_BASE_URL] },
+  ];
+  const ninerouterModelsCode = [
+    ...(paygModelIds.length > 0 ? paygModelIds : [sampleModel]).map((id) => `${ninerouterPaygPrefix}/${id}`),
+    ...packageModelIds.map((id) => `${ninerouterPackagePrefix}/${id}`),
+  ].join("\n");
+  const ninerouterClientFields = [
+    { label: "Base URL", values: [ninerouterBaseUrl] },
+    { label: "API key", values: [t("ninerouterFieldKey")] },
+    { label: "Model", values: [`${ninerouterPaygPrefix}/${sampleModel}`] },
+  ];
+  const ninerouterCurlCode = `curl ${ninerouterBaseUrl}/chat/completions \\
+  -H "Authorization: Bearer API_KEY_9ROUTER" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "${ninerouterPaygPrefix}/${sampleModel}",
+    "messages": [
+      { "role": "user", "content": "Hello!" }
+    ]
+  }'`;
+  const ninerouterComboCode = `Combo Name : 9inference-hemat
+${t("ninerouterComboStrategy")}   : Fallback — try in order
+
+1. ${ninerouterPackagePrefix}/${samplePackageModel}
+2. ${ninerouterPaygPrefix}/${sampleModel}`;
+  const ninerouterErrors = [
+    { code: t("ninerouterErr401Title"), desc: t("ninerouterErr401") },
+    { code: t("ninerouterErrModelTitle"), desc: t("ninerouterErrModel") },
+    { code: t("ninerouterErrImportTitle"), desc: t("ninerouterErrImport") },
+    { code: t("ninerouterErrPackageTitle"), desc: t("ninerouterErrPackage") },
+    { code: t("ninerouterErrApiTypeTitle"), desc: t("ninerouterErrApiType") },
+    { code: t("ninerouterErrRefusedTitle"), desc: t("ninerouterErrRefused") },
+  ];
+
   const opencodeInstallCode = `npm install -g opencode-ai`;
 
   const opencodeEnvCode = `# macOS / Linux
@@ -155,6 +259,8 @@ opencode
   const inlineCode = (chunks: ReactNode) => (
     <code className="rounded bg-white/5 px-1 py-0.5 font-mono text-[11px] text-foreground/90">{chunks}</code>
   );
+
+  const bold = (chunks: ReactNode) => <span className="font-medium text-foreground">{chunks}</span>;
 
   const curlCode = `curl ${API_BASE_URL}/chat/completions \\
   -H "Authorization: Bearer sk_live_xxx" \\
@@ -390,26 +496,10 @@ console.log(res.choices[0].message.content);`;
                           b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
                         })}
                       </p>
-                      <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/30">
-                        <table className="w-full text-left text-xs">
-                          <thead>
-                            <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-muted-foreground">
-                              <th className="px-3 py-2 font-medium">{t("harnessFieldCol")}</th>
-                              <th className="px-3 py-2 font-medium">PAYG</th>
-                              <th className="px-3 py-2 font-medium text-accent">{t("packageTitle")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {harnessFields.map((f) => (
-                              <tr key={f.label} className="border-b border-white/[0.04] last:border-0">
-                                <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{f.label}</td>
-                                <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.payg}</td>
-                                <td className="px-3 py-2 font-mono text-[11px] text-foreground/90">{f.pkg}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <FieldTable
+                        columns={[{ label: t("harnessFieldCol") }, { label: "PAYG" }, { label: t("packageTitle"), accent: true }]}
+                        rows={harnessFields.map((f) => ({ label: f.label, values: [f.payg, f.pkg] }))}
+                      />
                     </Step>
 
                     <Step n={3} title={t("harnessStep3Title")}>
@@ -448,6 +538,111 @@ console.log(res.choices[0].message.content);`;
                       />
                       <p>{t.rich("harnessAdvancedNote", { code: inlineCode })}</p>
                     </div>
+                  </details>
+                </div>
+              ),
+            },
+            {
+              id: "9router",
+              label: "9router",
+              logo: "/logos/9router.svg",
+              hint: t("ninerouterHint"),
+              content: (
+                <div className="glass rounded-2xl p-6">
+                  <PanelHeader logo="/logos/9router.svg" name="9router" href="https://github.com/decolua/9router">
+                    {t("ninerouterIntro")}
+                  </PanelHeader>
+
+                  <div className="mt-5 space-y-4">
+                    <FlowDiagram
+                      nodes={[
+                        { title: t("ninerouterFlowTools"), sub: t("ninerouterFlowToolsSub") },
+                        { title: "9router", sub: t("ninerouterFlowRouterSub"), accent: true },
+                        { title: "9inference", sub: t("ninerouterFlowUpstreamSub") },
+                      ]}
+                    />
+                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3 text-xs leading-relaxed text-muted-foreground">
+                      <div className="font-semibold text-amber-300">{t("ninerouterKeysTitle")}</div>
+                      <p className="mt-1">{t.rich("ninerouterKeysDesc", { b: bold })}</p>
+                    </div>
+                  </div>
+
+                  <ol className="mt-6">
+                    <Step n={1} title={t("ninerouterStep1Title")}>
+                      <p>{t.rich("ninerouterStep1Desc", { code: inlineCode })}</p>
+                      <CopyableCode code={ninerouterInstallCode} />
+                      <p>{t.rich("ninerouterStep1Note", { code: inlineCode })}</p>
+                    </Step>
+
+                    <Step n={2} title={t("ninerouterStep2Title")}>
+                      <p>{t.rich("ninerouterStep2Desc", { b: bold })}</p>
+                      <FieldTable
+                        columns={[{ label: t("harnessFieldCol") }, { label: "PAYG" }, { label: t("packageTitle"), accent: true }]}
+                        rows={ninerouterProviderFields}
+                      />
+                      <p>{t.rich("ninerouterStep2Note", { b: bold, code: inlineCode })}</p>
+                      <p>{t.rich("ninerouterStep2Check", { b: bold })}</p>
+                      <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">{t("ninerouterStep2Both")}</p>
+                    </Step>
+
+                    <Step n={3} title={t("ninerouterStep3Title")}>
+                      <p>
+                        {t.rich("ninerouterStep3Desc", {
+                          b: bold,
+                          keys: (chunks) => (
+                            <a href="/dashboard/api-keys" className="font-medium text-foreground underline">
+                              {chunks}
+                            </a>
+                          ),
+                          packages: (chunks) => (
+                            <a href="/dashboard/packages" className="font-medium text-foreground underline">
+                              {chunks}
+                            </a>
+                          ),
+                        })}
+                      </p>
+                      <p>{t("ninerouterStep3Note")}</p>
+                    </Step>
+
+                    <Step n={4} title={t("ninerouterStep4Title")}>
+                      <p>{t.rich("ninerouterStep4Desc", { b: bold })}</p>
+                      <p>{t.rich("ninerouterStep4Note", { code: inlineCode })}</p>
+                      <CopyableCode code={ninerouterModelsCode} language="model" />
+                    </Step>
+
+                    <Step n={5} title={t("ninerouterStep5Title")}>
+                      <p>{t.rich("ninerouterStep5Desc", { b: bold })}</p>
+                      <FieldTable
+                        columns={[{ label: t("harnessFieldCol") }, { label: t("ninerouterFieldValue") }]}
+                        rows={ninerouterClientFields}
+                      />
+                      <p>{t("ninerouterStep5Test")}</p>
+                      <CopyableCode code={ninerouterCurlCode} />
+                      <p>{t.rich("ninerouterStep5Tools", { b: bold, code: inlineCode })}</p>
+                    </Step>
+
+                    <Step n={6} title={t("ninerouterStep6Title")}>
+                      <p>{t.rich("ninerouterStep6Desc", { b: bold, code: inlineCode })}</p>
+                      <CopyableCode code={ninerouterComboCode} language="combo" />
+                      <p>{t.rich("ninerouterStep6Example", { code: inlineCode })}</p>
+                    </Step>
+                  </ol>
+
+                  <details className="group/nr mt-6 rounded-xl border border-white/[0.08] bg-white/[0.02]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+                      {t("ninerouterTroubleTitle")}
+                      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition group-open/nr:rotate-180" aria-hidden>
+                        <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </summary>
+                    <ul className="space-y-3 border-t border-white/[0.06] px-4 py-4">
+                      {ninerouterErrors.map((e) => (
+                        <li key={e.code} className="text-xs leading-relaxed text-muted-foreground">
+                          <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-red-400">{e.code}</code>
+                          <p className="mt-1">{e.desc}</p>
+                        </li>
+                      ))}
+                    </ul>
                   </details>
                 </div>
               ),
