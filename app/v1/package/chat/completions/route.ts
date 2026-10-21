@@ -10,6 +10,7 @@ import {
   dedupeReasoningFields,
   repairToolCallArguments,
   normalizeUserMessageContent,
+  stripUnsupportedFields,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -198,6 +199,12 @@ export async function POST(request: Request) {
   const userContentFixed = normalizeUserMessageContent(body);
   if (userContentFixed > 0) {
     console.log(`[${ts()}] [v1/package/chat] normalisasi content user di ${userContentFixed} pesan key=${apiKey.id}`);
+  }
+  // Field tambahan dari client (promptCacheKey, setCacheKey, session_id, ...)
+  // ditolak upstream dengan 400 "Extra inputs are not permitted".
+  const strippedFields = stripUnsupportedFields(body);
+  if (strippedFields.length > 0) {
+    console.log(`[${ts()}] [v1/package/chat] buang field tidak didukung: ${strippedFields.join(", ")} key=${apiKey.id}`);
   }
   const isStream = body.stream === true;
   if (isStream) {

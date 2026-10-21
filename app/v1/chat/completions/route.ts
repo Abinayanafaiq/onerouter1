@@ -17,6 +17,7 @@ import {
   dedupeReasoningFields,
   repairToolCallArguments,
   normalizeUserMessageContent,
+  stripUnsupportedFields,
   fetchUpstream,
   aggregateUpstreamStream,
   computeSessionHash,
@@ -330,6 +331,13 @@ export async function POST(request: Request) {
   const userContentFixed = normalizeUserMessageContent(body);
   if (userContentFixed > 0) {
     console.log(`[v1/chat] normalized user content on ${userContentFixed} message(s)`);
+  }
+
+  // Client extras (promptCacheKey, setCacheKey, session_id, ...) are
+  // rejected upstream with 400 "Extra inputs are not permitted".
+  const strippedFields = stripUnsupportedFields(body);
+  if (strippedFields.length > 0) {
+    console.log(`[v1/chat] stripped unsupported fields: ${strippedFields.join(", ")}`);
   }
 
   // The backup upstream uses a single dedicated key (no DB rotation), so

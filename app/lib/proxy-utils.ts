@@ -563,6 +563,52 @@ export function normalizeReasoningEffort(
   return { from: effort, to: mapped };
 }
 
+// Top-level chat-completion fields the upstream accepts. Its validator is
+// strict (pydantic extra="forbid"), so any other key — client/gateway extras
+// such as promptCacheKey, setCacheKey, session_id, transforms, provider —
+// turns the whole request into HTTP 400 "Extra inputs are not permitted".
+const ALLOWED_CHAT_FIELDS = new Set([
+  "model",
+  "messages",
+  "frequency_penalty",
+  "presence_penalty",
+  "logit_bias",
+  "logprobs",
+  "top_logprobs",
+  "max_tokens",
+  "max_completion_tokens",
+  "n",
+  "response_format",
+  "seed",
+  "stop",
+  "stream",
+  "stream_options",
+  "temperature",
+  "top_p",
+  "tools",
+  "tool_choice",
+  "parallel_tool_calls",
+  "user",
+  "functions",
+  "function_call",
+  "reasoning_effort",
+]);
+
+/**
+ * Drop top-level fields the upstream doesn't accept, in place, before the
+ * body is forwarded. Returns the removed keys (for logging).
+ */
+export function stripUnsupportedFields(body: Record<string, unknown>): string[] {
+  const removed: string[] = [];
+  for (const key of Object.keys(body)) {
+    if (!ALLOWED_CHAT_FIELDS.has(key)) {
+      delete body[key];
+      removed.push(key);
+    }
+  }
+  return removed;
+}
+
 /**
  * Collapse `reasoning` into `reasoning_content` on each message, in place.
  * Clients (and our own aggregated non-stream response) can echo an assistant
