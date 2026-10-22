@@ -544,6 +544,15 @@ const DEEPSEEK_V41_EFFORT_MAP = new Map([
   ["medium", "high"],
 ]);
 
+// Claude 5 models reject `thinking: {type: "disabled"}`, which the upstream
+// gateway emits for reasoning_effort "none"/"minimal" or a missing value, so
+// those are raised to "low" to keep the request from ending in HTTP 400.
+const CLAUDE_5_MODEL = /claude-(opus|sonnet|haiku|fable)-5(?:[-.]|$)/i;
+const CLAUDE_5_EFFORT_MAP = new Map([
+  ["none", "low"],
+  ["minimal", "low"],
+]);
+
 /**
  * Map an unsupported `reasoning_effort` onto the nearest value the target
  * model accepts, in place, before the body is forwarded upstream. `modelIds`
@@ -554,6 +563,18 @@ export function normalizeReasoningEffort(
   body: Record<string, unknown>,
   modelIds: string[],
 ): { from: string; to: string } | null {
+  if (modelIds.some((id) => CLAUDE_5_MODEL.test(id))) {
+    const effort = body.reasoning_effort;
+    if (effort === undefined || effort === null) {
+      body.reasoning_effort = "low";
+      return { from: "(kosong)", to: "low" };
+    }
+    if (typeof effort !== "string") return null;
+    const mapped = CLAUDE_5_EFFORT_MAP.get(effort.toLowerCase());
+    if (!mapped) return null;
+    body.reasoning_effort = mapped;
+    return { from: effort, to: mapped };
+  }
   if (!modelIds.some((id) => /deepseek-v4\.1/i.test(id))) return null;
   const effort = body.reasoning_effort;
   if (typeof effort !== "string") return null;
