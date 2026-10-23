@@ -9,6 +9,7 @@ import {
   getBackupUpstreamUrl,
   getExtraUpstreams,
   toExtraUpstreamView,
+  getUpstreamPriority,
 } from "@/app/lib/backup-routing";
 import { ALL_KNOWN_MODEL_IDS } from "@/app/lib/providers";
 import { PakasirForm } from "./pakasir-form";
@@ -19,11 +20,12 @@ import { Admin2FAForm } from "./admin-2fa-form";
 import { FaviconUploader } from "./favicon-uploader";
 import { BackupRoutingForm } from "./backup-routing-form";
 import { ExtraUpstreamsForm } from "./extra-upstreams-form";
+import { UpstreamPriorityForm } from "./upstream-priority-form";
 import { prisma } from "@/app/lib/prisma";
 
 export default async function AdminSettingsPage() {
   await requireAdmin();
-  const [settings, bscSettings, telegramUrl, admin2FA, favicon, blockedDomains, backupRouting, backupUrl, extraUpstreams] = await Promise.all([
+  const [settings, bscSettings, telegramUrl, admin2FA, favicon, blockedDomains, backupRouting, backupUrl, extraUpstreams, upstreamPriority] = await Promise.all([
     getPakasirSettings(),
     getBscSettings(),
     getTelegramGroupUrl(),
@@ -33,6 +35,7 @@ export default async function AdminSettingsPage() {
     getBackupRoutingMap(),
     getBackupUpstreamUrl(),
     getExtraUpstreams(),
+    getUpstreamPriority(),
   ]);
   const maskedApiKey = settings.apiKey
     ? `${settings.apiKey.slice(0, 4)}${"*".repeat(Math.max(0, settings.apiKey.length - 8))}${settings.apiKey.slice(-4)}`
@@ -82,6 +85,11 @@ export default async function AdminSettingsPage() {
       <ExtraUpstreamsForm
         initialUpstreams={extraUpstreams.map(toExtraUpstreamView)}
         knownModels={ALL_KNOWN_MODEL_IDS}
+      />
+      {/* key: remount saat daftar/nama upstream berubah (setelah router.refresh). */}
+      <UpstreamPriorityForm
+        key={upstreamPriority.map((u) => `${u.id}:${u.name}:${u.enabled}:${u.modelCount}`).join("|")}
+        initialItems={upstreamPriority}
       />
     </div>
   );

@@ -15,7 +15,7 @@ import {
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
 import { createApiRequestLog } from "@/app/lib/api-request-log";
-import { resolveBackupUpstream } from "@/app/lib/backup-routing";
+import { resolveBackupUpstreams, isBackupFailoverStatus } from "@/app/lib/backup-routing";
 import {
   releasePackageTokens,
   reservePackageTokens,
@@ -171,10 +171,24 @@ export async function POST(request: Request) {
   // Backup upstream routing: model paket tertentu dilayani upstream sekunder
   // dengan endpoint, key, dan model ID sendiri. Kalau tidak ada upstream
   // backup (dengan key yang valid) untuk model ini, pakai upstream paket.
-  const backupUpstream = await resolveBackupUpstream(model.modelId);
-  const useBackupUpstream = backupUpstream !== null;
+  // Kalau beberapa upstream melayani model yang sama, dicoba sesuai urutan
+  // prioritas admin dan dilempar ke upstream berikutnya kalau gagal.
+  const backupUpstreams = await resolveBackupUpstreams(model.modelId);
+  const targets = backupUpstreams.length > 0
+    ? backupUpstreams.map((b) => ({
+        url: `${b.url}/chat/completions`,
+        apiKey: b.apiKey,
+        model: b.upstreamModelId,
+        label: b.label,
+      }))
+    : [{
+        url: `${PACKAGE_UPSTREAM_URL}/chat/completions`,
+        apiKey: PACKAGE_UPSTREAM_API_KEY,
+        model: model.upstreamId,
+        label: "",
+      }];
 
-  body.model = useBackupUpstream ? backupUpstream.upstreamModelId : model.upstreamId;
+  body.model = targets[0].model;
   // Nilai reasoning_effort yang ditolak model (mis. "medium" di DeepSeek V4.1)
   // dipetakan ke nilai terdekat yang diterima supaya tidak berujung 400.
   const effortMapped = normalizeReasoningEffort(body, [model.modelId, model.upstreamId]);
@@ -215,35 +229,49 @@ export async function POST(request: Request) {
     };
   }
 
-  const upstreamUrl = useBackupUpstream
-    ? `${backupUpstream.url}/chat/completions`
-    : `${PACKAGE_UPSTREAM_URL}/chat/completions`;
-  const upstreamApiKey = useBackupUpstream ? backupUpstream.apiKey : PACKAGE_UPSTREAM_API_KEY;
-  console.log(
-    `[${ts()}] [v1/package/chat] forwarding to: ${upstreamUrl} model=${requestedModel}->${body.model}${useBackupUpstream ? ` (${backupUpstream.label})` : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
-  );
+  let upstream!: Response;
+  for (const [i, target] of targets.entries()) {
+    // Hanya upstream backup yang bukan kandidat terakhir yang boleh failover.
+    const canFailover = i + 1 < targets.length;
+    body.model = target.model;
+    console.log(
+      `[${ts()}] [v1/package/chat] forwarding to: ${target.url} model=${requestedModel}->${body.model}${target.label ? ` (${target.label}, ${i + 1}/${targets.length})` : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
+    );
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${upstreamApiKey}`,
-        "x-session-hash": computeSessionHash(apiKey.userId),
-      },
-      body: JSON.stringify(body),
-      signal: request.signal,
-    });
-  } catch (err) {
-    const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    console.error(`[${ts()}] [v1/package/chat] gagal menghubungi upstream: ${reason}${request.signal.aborted ? " (client abort)" : ""}`);
-    await releasePackageTokens(reservation.id);
-    // Client yang membatalkan request bukan gangguan layanan.
-    if (!request.signal.aborted) await logUpstreamFailure(502);
-    return apiError("Gagal menghubungi upstream paket.", 502, "api_error", "upstream_unavailable");
+    try {
+      upstream = await fetch(target.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${target.apiKey}`,
+          "x-session-hash": computeSessionHash(apiKey.userId),
+        },
+        body: JSON.stringify(body),
+        signal: request.signal,
+      });
+    } catch (err) {
+      const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error(`[${ts()}] [v1/package/chat] gagal menghubungi upstream${target.label ? ` ${target.label}` : ""}: ${reason}${request.signal.aborted ? " (client abort)" : ""}`);
+      if (canFailover && !request.signal.aborted) {
+        console.warn(`[${ts()}] [v1/package/chat] failover ke upstream berikutnya key=${apiKey.id}`);
+        continue;
+      }
+      await releasePackageTokens(reservation.id);
+      // Client yang membatalkan request bukan gangguan layanan.
+      if (!request.signal.aborted) await logUpstreamFailure(502);
+      return apiError("Gagal menghubungi upstream paket.", 502, "api_error", "upstream_unavailable");
+    }
+    console.log(`[${ts()}] [v1/package/chat] upstream status:`, upstream.status);
+
+    if (!upstream.ok && canFailover && isBackupFailoverStatus(upstream.status)) {
+      const text = await upstream.text().catch(() => "");
+      console.error(
+        `[${ts()}] [v1/package/chat] ${target.label} error ${upstream.status}, failover ke upstream berikutnya: ${text.slice(0, 200)}`,
+      );
+      continue;
+    }
+    break;
   }
-  console.log(`[${ts()}] [v1/package/chat] upstream status:`, upstream.status);
 
   if (!upstream.ok) {
     const upstreamMessage = await upstream.text().catch(() => "");

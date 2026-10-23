@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type UpstreamView = {
   id: string;
@@ -58,6 +59,7 @@ export function ExtraUpstreamsForm({
   initialUpstreams: UpstreamView[];
   knownModels: string[];
 }) {
+  const router = useRouter();
   const [drafts, setDrafts] = useState<Draft[]>(initialUpstreams.map(toDraft));
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -144,6 +146,8 @@ export function ExtraUpstreamsForm({
       if (data.success && data.upstreams) {
         setDrafts(data.upstreams.map(toDraft));
         flash("Upstream tambahan disimpan");
+        // Segarkan daftar prioritas (upstream baru/terhapus/ganti nama).
+        router.refresh();
       } else {
         flash(data.error || "Gagal menyimpan", true);
       }
@@ -159,8 +163,9 @@ export function ExtraUpstreamsForm({
         <h2 className="text-sm font-medium text-neutral-300">Upstream Backup Tambahan</h2>
         <p className="text-xs text-neutral-500 mt-0.5">
           Tambah upstream lain sebanyak yang dibutuhkan. Masing-masing punya URL, API key, dan
-          daftar model sendiri. Satu model publik hanya boleh ada di satu upstream. API key
-          dienkripsi dan tidak ditampilkan lagi setelah disimpan.
+          daftar model sendiri. Model publik yang sama boleh ada di beberapa upstream — atur
+          mana yang diutamakan di bagian Prioritas Upstream Backup. API key dienkripsi dan
+          tidak ditampilkan lagi setelah disimpan.
         </p>
       </div>
 

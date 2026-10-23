@@ -5,6 +5,10 @@ import { encryptSecret, decryptSecret } from "@/app/lib/crypto-vault";
 const SETTING_KEY = "backup_upstream_model_map";
 const URL_SETTING_KEY = "backup_upstream_url";
 const EXTRA_SETTING_KEY = "backup_upstreams_extra";
+const PRIORITY_SETTING_KEY = "backup_upstream_priority";
+
+/** ID tetap untuk upstream #1 di daftar prioritas. */
+export const PRIMARY_UPSTREAM_ID = "primary";
 
 export type BackupRoutingMap = Record<string, string>;
 
@@ -207,16 +211,15 @@ export type ExtraUpstreamInput = {
 /**
  * Validasi daftar upstream tambahan dari admin lalu gabungkan dengan API key
  * lama (terenkripsi). Return pesan error (string) kalau tidak valid.
- * `primaryMap` dipakai untuk menolak model ID yang sudah ada di upstream #1.
+ * Model ID publik yang sama boleh ada di beberapa upstream — urutan pemakaian
+ * dan failover-nya diatur lewat daftar prioritas (lihat getUpstreamPriority).
  */
 export function buildExtraUpstreams(
   input: unknown,
   existing: ExtraUpstream[],
-  primaryMap: BackupRoutingMap,
 ): ExtraUpstream[] | string {
   if (!Array.isArray(input)) return "Format daftar upstream tidak valid";
   const byId = new Map(existing.map((u) => [u.id, u]));
-  const seenModels = new Map<string, string>(); // model ID publik -> nama upstream
   const out: ExtraUpstream[] = [];
 
   for (const [i, raw] of (input as ExtraUpstreamInput[]).entries()) {
@@ -228,15 +231,6 @@ export function buildExtraUpstreams(
     if (!url) return `${name}: URL harus diawali http:// atau https://`;
     const map = sanitizeMap(raw.map);
     if (!map) return `${name}: semua model ID publik dan model ID upstream harus terisi`;
-
-    for (const modelId of Object.keys(map)) {
-      if (modelId in primaryMap) {
-        return `${name}: model "${modelId}" sudah dipakai di Upstream #1`;
-      }
-      const other = seenModels.get(modelId);
-      if (other) return `${name}: model "${modelId}" sudah dipakai di ${other}`;
-      seenModels.set(modelId, name);
-    }
 
     const prev = typeof raw.id === "string" ? byId.get(raw.id) : undefined;
     const newKey = typeof raw.apiKey === "string" ? raw.apiKey.trim() : "";
@@ -265,15 +259,121 @@ export async function saveExtraUpstreams(list: ExtraUpstream[]): Promise<void> {
   });
 }
 
-/** Model ID publik yang dipakai upstream tambahan → nama upstream (cek bentrok). */
-export function extraUpstreamModelOwners(list: ExtraUpstream[]): Map<string, string> {
-  const owners = new Map<string, string>();
-  list.forEach((u, i) => {
-    for (const modelId of Object.keys(u.map)) {
-      if (!owners.has(modelId)) owners.set(modelId, u.label || `Upstream #${i + 2}`);
-    }
+/**
+ * Urutan prioritas upstream backup — bisa diatur dari halaman admin.
+ *
+ * Disimpan sebagai JSON array berisi ID upstream (PRIMARY_UPSTREAM_ID untuk
+ * upstream #1, `id` untuk upstream tambahan) di tabel Setting
+ * (key: backup_upstream_priority). Index 0 = upstream utama. Kalau satu model
+ * publik ada di beberapa upstream, request dikirim ke upstream dengan
+ * prioritas tertinggi dulu; kalau gagal (error key/kuota/server/koneksi),
+ * dilempar ke upstream berikutnya sesuai urutan.
+ *
+ * Upstream yang belum ada di daftar (mis. baru ditambahkan) ditaruh di akhir
+ * dengan urutan bawaan: #1 dulu, lalu upstream tambahan sesuai urutan simpan.
+ */
+function parsePrioritySetting(value: string | undefined): string[] {
+  if (!value) return [];
+  try {
+    const arr = JSON.parse(value);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((v): v is string => typeof v === "string" && v.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Gabungkan daftar prioritas tersimpan dengan upstream yang benar-benar ada. */
+function orderUpstreamIds(priority: string[], extras: ExtraUpstream[]): string[] {
+  const all = [PRIMARY_UPSTREAM_ID, ...extras.map((u) => u.id)];
+  const known = new Set(all);
+  const ordered: string[] = [];
+  for (const id of priority) {
+    if (known.has(id) && !ordered.includes(id)) ordered.push(id);
+  }
+  for (const id of all) {
+    if (!ordered.includes(id)) ordered.push(id);
+  }
+  return ordered;
+}
+
+export type UpstreamPriorityItem = {
+  id: string;
+  /** Nama tampilan — "Upstream #1" atau nomor + label upstream tambahan. */
+  name: string;
+  enabled: boolean;
+  modelCount: number;
+};
+
+/** Daftar upstream (sudah terurut sesuai prioritas) untuk halaman admin. */
+export async function getUpstreamPriority(): Promise<UpstreamPriorityItem[]> {
+  const rows = await prisma.setting.findMany({
+    where: { key: { in: [SETTING_KEY, EXTRA_SETTING_KEY, PRIORITY_SETTING_KEY] } },
   });
-  return owners;
+  const get = (key: string) => rows.find((r) => r.key === key)?.value;
+  const extras = parseExtraSetting(get(EXTRA_SETTING_KEY));
+  const primaryMap = parseMapSetting(get(SETTING_KEY)).map;
+
+  const items = new Map<string, UpstreamPriorityItem>();
+  items.set(PRIMARY_UPSTREAM_ID, {
+    id: PRIMARY_UPSTREAM_ID,
+    name: "Upstream #1",
+    enabled: !!BACKUP_API_KEY,
+    modelCount: Object.keys(primaryMap).length,
+  });
+  extras.forEach((u, i) => {
+    items.set(u.id, {
+      id: u.id,
+      name: u.label ? `Upstream #${i + 2} · ${u.label}` : `Upstream #${i + 2}`,
+      enabled: u.enabled && !!u.apiKeyCipher,
+      modelCount: Object.keys(u.map).length,
+    });
+  });
+  return orderUpstreamIds(parsePrioritySetting(get(PRIORITY_SETTING_KEY)), extras).map(
+    (id) => items.get(id)!,
+  );
+}
+
+/**
+ * Validasi urutan prioritas dari admin: harus array berisi ID upstream yang
+ * ada, tanpa duplikat. Return null kalau tidak valid.
+ */
+export async function validateUpstreamPriority(input: unknown): Promise<string[] | null> {
+  if (!Array.isArray(input)) return null;
+  const extras = await getExtraUpstreams();
+  const known = new Set([PRIMARY_UPSTREAM_ID, ...extras.map((u) => u.id)]);
+  const seen = new Set<string>();
+  for (const id of input) {
+    if (typeof id !== "string" || !known.has(id) || seen.has(id)) return null;
+    seen.add(id);
+  }
+  return orderUpstreamIds(input as string[], extras);
+}
+
+export async function saveUpstreamPriority(order: string[]): Promise<void> {
+  const value = JSON.stringify(order);
+  await prisma.setting.upsert({
+    where: { key: PRIORITY_SETTING_KEY },
+    update: { value },
+    create: { key: PRIORITY_SETTING_KEY, value },
+  });
+}
+
+/**
+ * Status upstream backup yang layak dilempar ke upstream berikutnya:
+ * masalah key/kuota (401/403/429), model tidak dikenal di upstream ini (404),
+ * timeout (408), dan error server (5xx). Error bentuk request lain (400, 422)
+ * akan sama saja di upstream lain, jadi langsung dikembalikan ke client.
+ */
+export function isBackupFailoverStatus(status: number): boolean {
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === 404 ||
+    status === 408 ||
+    status === 429 ||
+    status >= 500
+  );
 }
 
 export type ResolvedBackupUpstream = {
@@ -289,28 +389,38 @@ export type ResolvedBackupUpstream = {
 
 /**
  * Resolver async yang dipakai route chat. Membaca semua setting routing dalam
- * SATU query (pool koneksi kecil), lalu mencari model di upstream #1 dulu,
- * kemudian upstream tambahan sesuai urutan. Return null kalau model tidak
- * di-route ke backup mana pun (caller pakai upstream master seperti biasa).
- * Upstream #1 hanya aktif kalau BACKUP_API_KEY diset.
+ * SATU query (pool koneksi kecil), lalu mengumpulkan SEMUA upstream backup
+ * yang melayani model ini, terurut sesuai prioritas admin. Caller mencoba
+ * kandidat pertama dan pindah ke kandidat berikutnya kalau gagal.
+ * Array kosong = model tidak di-route ke backup mana pun (caller pakai
+ * upstream master seperti biasa). Upstream #1 hanya aktif kalau
+ * BACKUP_API_KEY diset.
  */
-export async function resolveBackupUpstream(modelId: string): Promise<ResolvedBackupUpstream | null> {
+export async function resolveBackupUpstreams(modelId: string): Promise<ResolvedBackupUpstream[]> {
   const rows = await prisma.setting.findMany({
-    where: { key: { in: [SETTING_KEY, URL_SETTING_KEY, EXTRA_SETTING_KEY] } },
+    where: {
+      key: { in: [SETTING_KEY, URL_SETTING_KEY, EXTRA_SETTING_KEY, PRIORITY_SETTING_KEY] },
+    },
   });
   const get = (key: string) => rows.find((r) => r.key === key)?.value;
 
-  if (BACKUP_API_KEY) {
-    const { map } = parseMapSetting(get(SETTING_KEY));
-    const upstreamModelId = map[modelId];
-    if (upstreamModelId) {
-      const { url } = parseUrlSetting(get(URL_SETTING_KEY));
-      return { upstreamModelId, url, apiKey: BACKUP_API_KEY, label: "backup-upstream" };
-    }
-  }
+  const extras = parseExtraSetting(get(EXTRA_SETTING_KEY));
+  const extraById = new Map(extras.map((u) => [u.id, u]));
+  const order = orderUpstreamIds(parsePrioritySetting(get(PRIORITY_SETTING_KEY)), extras);
+  const out: ResolvedBackupUpstream[] = [];
 
-  for (const u of parseExtraSetting(get(EXTRA_SETTING_KEY))) {
-    if (!u.enabled || !u.apiKeyCipher) continue;
+  for (const id of order) {
+    if (id === PRIMARY_UPSTREAM_ID) {
+      if (!BACKUP_API_KEY) continue;
+      const upstreamModelId = parseMapSetting(get(SETTING_KEY)).map[modelId];
+      if (!upstreamModelId) continue;
+      const { url } = parseUrlSetting(get(URL_SETTING_KEY));
+      out.push({ upstreamModelId, url, apiKey: BACKUP_API_KEY, label: "backup-upstream" });
+      continue;
+    }
+
+    const u = extraById.get(id);
+    if (!u || !u.enabled || !u.apiKeyCipher) continue;
     const upstreamModelId = u.map[modelId];
     if (!upstreamModelId) continue;
     let apiKey: string;
@@ -320,14 +430,20 @@ export async function resolveBackupUpstream(modelId: string): Promise<ResolvedBa
       console.error(`[backup-routing] gagal dekripsi API key upstream ${u.label || u.id}:`, e);
       continue;
     }
-    return {
+    out.push({
       upstreamModelId,
       url: u.url,
       apiKey,
       label: `backup-upstream:${u.label || u.id}`,
-    };
+    });
   }
-  return null;
+  return out;
+}
+
+/** Upstream backup dengan prioritas tertinggi untuk model ini (tanpa failover). */
+export async function resolveBackupUpstream(modelId: string): Promise<ResolvedBackupUpstream | null> {
+  const list = await resolveBackupUpstreams(modelId);
+  return list[0] ?? null;
 }
 
 /**

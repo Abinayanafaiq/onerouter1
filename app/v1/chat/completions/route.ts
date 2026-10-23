@@ -31,7 +31,7 @@ import {
   MASTER_API_URL,
   MASTER_API_KEY,
 } from "@/app/lib/constants";
-import { resolveBackupUpstream } from "@/app/lib/backup-routing";
+import { resolveBackupUpstreams, isBackupFailoverStatus } from "@/app/lib/backup-routing";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -163,10 +163,14 @@ export async function POST(request: Request) {
   // secondary upstream with its own endpoint, key, and upstream model IDs.
   // Upstream #1 needs BACKUP_API_KEY; additional upstreams configured in
   // /admin/settings carry their own key. Unrouted models use the master upstream.
-  const backupUpstream = await resolveBackupUpstream(resolvedModel.modelId);
-  const useBackupUpstream = backupUpstream !== null;
+  // When several upstreams serve the same model they are tried in the admin's
+  // priority order, failing over to the next one on key/quota/server errors.
+  const backupUpstreams = await resolveBackupUpstreams(resolvedModel.modelId);
+  const useBackupUpstream = backupUpstreams.length > 0;
   if (useBackupUpstream) {
-    console.log(`[v1/chat] routing ${resolvedModel.modelId} -> ${backupUpstream.label} as ${backupUpstream.upstreamModelId}`);
+    console.log(
+      `[v1/chat] routing ${resolvedModel.modelId} -> ${backupUpstreams.map((b) => `${b.label} as ${b.upstreamModelId}`).join(" > ")}`,
+    );
   }
 
   // 5b. Resolve master key from DB (with env fallback when zero DB keys).
@@ -270,10 +274,11 @@ export async function POST(request: Request) {
   console.log("[v1/chat] provider request ALLOWED");
 
   // 9. Forward to upstream provider with failover
-  body.model = useBackupUpstream ? backupUpstream.upstreamModelId : resolvedModel.masterId;
+  // For backup routing, model + URL are re-set per attempt (one per upstream).
+  body.model = useBackupUpstream ? backupUpstreams[0].upstreamModelId : resolvedModel.masterId;
   const clientWantsStream = body.stream === true;
-  const upstreamUrl = useBackupUpstream
-    ? `${backupUpstream.url}/chat/completions`
+  let upstreamUrl = useBackupUpstream
+    ? `${backupUpstreams[0].url}/chat/completions`
     : `${MASTER_API_URL}/chat/completions`;
   console.log("[v1/chat] forwarding to:", upstreamUrl, "client stream:", clientWantsStream);
 
@@ -340,9 +345,10 @@ export async function POST(request: Request) {
     console.log(`[v1/chat] stripped unsupported fields: ${strippedFields.join(", ")}`);
   }
 
-  // The backup upstream uses a single dedicated key (no DB rotation), so
-  // like the env fallback there is only one attempt.
-  const MAX_ATTEMPTS = usingEnvFallback || useBackupUpstream ? 1 : 3;
+  // Each backup upstream uses a single dedicated key (no DB rotation), so
+  // there is one attempt per backup upstream, in priority order. The env
+  // fallback likewise gets only one attempt.
+  const MAX_ATTEMPTS = useBackupUpstream ? backupUpstreams.length : usingEnvFallback ? 1 : 3;
   let lastUpstreamStatus = 502;
   let lastUpstreamText = "";
 
@@ -353,8 +359,11 @@ export async function POST(request: Request) {
   try {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let currentKey: { id: string; plaintext: string };
-      if (useBackupUpstream) {
-        currentKey = { id: "backup-upstream", plaintext: backupUpstream.apiKey };
+      const backup = useBackupUpstream ? backupUpstreams[attempt] : null;
+      if (backup) {
+        currentKey = { id: "backup-upstream", plaintext: backup.apiKey };
+        body.model = backup.upstreamModelId;
+        upstreamUrl = `${backup.url}/chat/completions`;
       } else if (usingEnvFallback) {
         currentKey = { id: "env-fallback", plaintext: MASTER_API_KEY };
       } else {
@@ -366,22 +375,35 @@ export async function POST(request: Request) {
         currentKey = next;
       }
 
-      const maskedLog = useBackupUpstream
-        ? backupUpstream.label
+      const maskedLog = backup
+        ? backup.label
         : usingEnvFallback
           ? "env-fallback"
           : maskForKeyLog(currentKey.plaintext);
       console.log(`[v1/chat] attempt ${attempt + 1}/${MAX_ATTEMPTS} with key ${maskedLog}`);
 
-      let upstream = await fetchUpstream(upstreamUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentKey.plaintext}`,
-          "x-session-hash": sessionHash,
-        },
-        body: JSON.stringify(body),
-      });
+      // A backup upstream that isn't the last candidate fails over to the
+      // next one on errors (network/timeout included) instead of returning.
+      const canFailover = backup !== null && attempt + 1 < MAX_ATTEMPTS;
+
+      let upstream: Response;
+      try {
+        upstream = await fetchUpstream(upstreamUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentKey.plaintext}`,
+            "x-session-hash": sessionHash,
+          },
+          body: JSON.stringify(body),
+        });
+      } catch (e) {
+        if (!canFailover) throw e;
+        console.error(`[v1/chat] ${maskedLog} unreachable, failing over to next upstream:`, e);
+        lastUpstreamStatus = 502;
+        lastUpstreamText = e instanceof Error ? e.message : String(e);
+        continue;
+      }
 
       console.log("[v1/chat] upstream status:", upstream.status);
 
@@ -438,13 +460,16 @@ export async function POST(request: Request) {
         upstream.status === 403 ||
         upstream.status === 429;
       // Backup-routed requests use a non-DB dedicated key — never mark it
-      // errored and don't retry (there is no other key to rotate to).
-      const isRetryable =
-        !usingEnvFallback && !useBackupUpstream && (isKeyError || upstream.status >= 500);
+      // errored; retry only by failing over to the next backup upstream.
+      const isRetryable = backup
+        ? canFailover && isBackupFailoverStatus(upstream.status)
+        : !usingEnvFallback && (isKeyError || upstream.status >= 500);
 
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
-        if (isKeyError) {
+        if (backup) {
+          console.error(`[v1/chat] ${maskedLog} error ${upstream.status}, failing over to next upstream`);
+        } else if (isKeyError) {
           console.error(`[v1/chat] upstream key error: ${upstream.status}, marking key ${maskedLog} errored`);
           await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));
         } else {
@@ -453,8 +478,9 @@ export async function POST(request: Request) {
         lastUpstreamStatus = upstream.status;
         lastUpstreamText = text;
         // Brief backoff before the next attempt so we don't hammer an
-        // already-struggling origin with back-to-back retries.
-        if (attempt + 1 < MAX_ATTEMPTS) {
+        // already-struggling origin with back-to-back retries. Backup
+        // failover hits a different upstream, so it goes immediately.
+        if (!backup && attempt + 1 < MAX_ATTEMPTS) {
           await sleep(
             UPSTREAM_RETRY_BACKOFF_MS[
               Math.min(attempt, UPSTREAM_RETRY_BACKOFF_MS.length - 1)

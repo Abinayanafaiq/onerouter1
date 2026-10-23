@@ -9,8 +9,6 @@ import {
   saveBackupUpstreamUrl,
   resetBackupUpstreamUrl,
   validateBackupUpstreamUrl,
-  getExtraUpstreams,
-  extraUpstreamModelOwners,
 } from "@/app/lib/backup-routing";
 import { BACKUP_API_URL, BACKUP_UPSTREAM_MODEL_MAP } from "@/app/lib/constants";
 
@@ -63,18 +61,6 @@ export async function POST(request: Request) {
         { success: false, error: "Format map tidak valid: semua model ID dan upstream ID harus terisi" },
         { status: 400 },
       );
-    }
-
-    // Satu model publik hanya boleh di-route ke satu upstream.
-    const extraOwners = extraUpstreamModelOwners(await getExtraUpstreams());
-    for (const modelId of Object.keys(map)) {
-      const owner = extraOwners.get(modelId);
-      if (owner) {
-        return NextResponse.json(
-          { success: false, error: `Model "${modelId}" sudah dipakai di ${owner}` },
-          { status: 400 },
-        );
-      }
     }
 
     // URL opsional — kalau dikirim, wajib valid; kalau tidak dikirim, setting

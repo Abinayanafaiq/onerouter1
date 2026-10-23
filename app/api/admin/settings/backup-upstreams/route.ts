@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import {
-  getBackupRoutingMap,
   getExtraUpstreams,
   buildExtraUpstreams,
   saveExtraUpstreams,
@@ -56,14 +55,11 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as { upstreams?: unknown };
-    const [existing, { map: primaryMap }] = await Promise.all([
-      getExtraUpstreams(),
-      getBackupRoutingMap(),
-    ]);
+    const existing = await getExtraUpstreams();
 
     let built;
     try {
-      built = buildExtraUpstreams(body.upstreams, existing, primaryMap);
+      built = buildExtraUpstreams(body.upstreams, existing);
     } catch (e) {
       // encryptSecret melempar kalau MASTER_KEY_ENCRYPTION_KEY tidak diset/invalid.
       console.error("[admin/settings/backup-upstreams POST] encrypt failed:", e);
