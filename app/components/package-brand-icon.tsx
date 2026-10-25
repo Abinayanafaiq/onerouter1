@@ -3,6 +3,7 @@ const brandIcons: Record<string, string> = {
   deepseek: "deepseek-color.svg",
   gemini: "gemini-color.svg",
   qwen: "qwen-color.svg",
+  minimax: "minimax-color.svg",
 };
 
 /**

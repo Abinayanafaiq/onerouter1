@@ -13,6 +13,7 @@ const modelGroups = [
   { key: "deepseek", label: "DeepSeek", background: "bg-cyan-400/10 border-cyan-400/20" },
   { key: "gemini", label: "Gemini", background: "bg-blue-400/10 border-blue-400/20" },
   { key: "qwen", label: "Qwen", background: "bg-fuchsia-400/10 border-fuchsia-400/20" },
+  { key: "minimax", label: "MiniMax", background: "bg-pink-400/10 border-pink-400/20" },
   { key: "claude", label: "Claude", background: "bg-orange-400/10 border-orange-400/20" },
 ] as const;
 
@@ -24,6 +25,7 @@ const groupTints: Record<string, string> = {
   deepseek: "#87c6ff",
   gemini: "#b6c9ff",
   qwen: "#dcbdfc",
+  minimax: "#f9a8d4",
   claude: "#f0a585",
   other: "#bbd8ed",
 };

@@ -73,6 +73,7 @@ const MODEL_GROUPS = [
   { key: "deepseek", label: "DeepSeek" },
   { key: "gemini", label: "Gemini" },
   { key: "qwen", label: "Qwen" },
+  { key: "minimax", label: "MiniMax" },
   { key: "claude", label: "Claude" },
 ] as const;
 
