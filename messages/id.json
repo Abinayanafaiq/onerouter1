@@ -1102,5 +1102,29 @@
     "empty": "Belum ada model aktif.",
     "methodTitle": "Cara kami menghitung",
     "methodBody": "Uptime adalah persentase request yang berhasil dibanding request yang gagal karena layanan atau upstream. Request yang ditolak karena saldo atau kuota habis, model tidak diizinkan, atau format request salah tidak dihitung sebagai gangguan. Durasi respons adalah waktu total sampai respons selesai, termasuk streaming, jadi dipengaruhi panjang jawaban. Status memakai data 1 jam terakhir, atau 24 jam bila trafik sedikit."
+  },
+  "Invoice": {
+    "title": "Invoice",
+    "paid": "Lunas",
+    "back": "Kembali",
+    "print": "Cetak / Simpan PDF",
+    "billedTo": "Ditagihkan kepada",
+    "orderDate": "Tanggal order",
+    "paidDate": "Tanggal lunas",
+    "paymentMethod": "Metode pembayaran",
+    "orderId": "ID order",
+    "item": "Deskripsi",
+    "qty": "Jumlah",
+    "amount": "Harga",
+    "total": "Total",
+    "walletTopUp": "Top up saldo dompet",
+    "quota": "Kuota {tokens} token",
+    "durationDays": "Masa aktif {days} hari",
+    "durationHours": "Masa aktif {hours} jam",
+    "thanks": "Terima kasih telah menggunakan {app}.",
+    "note": "Invoice ini dibuat otomatis dan sah tanpa tanda tangan.",
+    "link": "Invoice",
+    "listTitle": "Invoice top up",
+    "listEmpty": "Belum ada top up yang lunas."
   }
 }

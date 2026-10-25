@@ -65,6 +65,7 @@ export default async function PackagesPage() {
   if (!userId) return null;
 
   const t = await getTranslations("MyPackages");
+  const tInvoice = await getTranslations("Invoice");
   const locale = await getLocale();
 
   const [keys, orders, packageModels] = await Promise.all([
@@ -343,6 +344,7 @@ export default async function PackagesPage() {
                 <th className="px-5 py-3 text-right font-medium">{t("thPrice")}</th>
                 <th className="px-5 py-3 text-left font-medium">{t("thPayment")}</th>
                 <th className="px-5 py-3 text-center font-medium">{t("thStatus")}</th>
+                <th className="px-5 py-3 text-right font-medium">{tInvoice("link")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
@@ -356,10 +358,17 @@ export default async function PackagesPage() {
                     <td className="px-5 py-3.5 text-right font-mono text-xs">Rp{order.amount.toLocaleString(locale)}</td>
                     <td className="px-5 py-3.5 text-xs text-muted-foreground">{order.paymentMethod.replaceAll("_", " ")}</td>
                     <td className="px-5 py-3.5 text-center"><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span></td>
+                    <td className="px-5 py-3.5 text-right">
+                      {order.status === "APPROVED" ? (
+                        <Link href={`/invoice/${order.id}`} className="text-xs font-semibold text-accent hover:underline">{tInvoice("link")}</Link>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
-              {orders.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-xs text-muted-foreground">{t("historyEmpty")}</td></tr>}
+              {orders.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-center text-xs text-muted-foreground">{t("historyEmpty")}</td></tr>}
             </tbody>
           </table>
         </div>

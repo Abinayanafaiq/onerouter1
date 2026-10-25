@@ -9,6 +9,7 @@ import { getTelegramGroupUrl } from "@/app/lib/telegram";
 import { ADMIN_EMAIL } from "@/app/lib/constants";
 import { Link } from "@/i18n/navigation";
 import { WalletTopUpForm } from "./topup-form";
+import { WALLET_TOPUP_PACKAGE_ID } from "@/app/lib/order-approval";
 
 /* ------------------------------------------------------------------ */
 /* Inline icons                                                        */
@@ -135,13 +136,14 @@ function FaqList({ faqs }: { faqs: { q: string; a: string }[] }) {
 /* ------------------------------------------------------------------ */
 export default async function WalletPage() {
   const t = await getTranslations("Wallet");
+  const tInvoice = await getTranslations("Invoice");
   const locale = await getLocale();
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
   if (!userId) return null;
 
   const wallet = await getOrCreateWallet(userId);
-  const [transactions, summary, bscConfigured, telegramGroupUrl, lastOrder] = await Promise.all([
+  const [transactions, summary, bscConfigured, telegramGroupUrl, lastOrder, paidTopUps] = await Promise.all([
     getTransactions(wallet.id, 100),
     getWalletSummary(userId),
     isBscConfigured(),
@@ -150,6 +152,12 @@ export default async function WalletPage() {
       where: { userId, whatsapp: { not: null } },
       orderBy: { createdAt: "desc" },
       select: { whatsapp: true },
+    }),
+    prisma.order.findMany({
+      where: { userId, packageId: WALLET_TOPUP_PACKAGE_ID, status: "APPROVED" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, amount: true, paymentMethod: true, createdAt: true, activatedAt: true },
     }),
   ]);
 
@@ -418,6 +426,39 @@ export default async function WalletPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Invoice top up */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {tInvoice("listTitle")}
+          </h2>
+        </div>
+        {paidTopUps.length === 0 ? (
+          <div className="rounded-2xl border border-white/[0.08] bg-card p-10 text-center">
+            <p className="text-sm text-muted-foreground">{tInvoice("listEmpty")}</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-card divide-y divide-white/[0.06]">
+            {paidTopUps.map((order) => (
+              <div key={order.id} className="flex items-center justify-between gap-3 p-4 transition hover:bg-white/[0.02]">
+                <div className="min-w-0">
+                  <div className="font-mono text-sm font-semibold">Rp{order.amount.toLocaleString("id-ID")}</div>
+                  <div className="mt-1 truncate text-xs text-muted-foreground">
+                    {(order.activatedAt ?? order.createdAt).toLocaleString(locale)} · {order.paymentMethod.replaceAll("_", " ")}
+                  </div>
+                </div>
+                <Link
+                  href={`/invoice/${order.id}`}
+                  className="shrink-0 rounded-lg border border-accent/20 bg-accent/[0.08] px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/[0.12]"
+                >
+                  {tInvoice("link")}
+                </Link>
+              </div>
+            ))}
           </div>
         )}
       </div>

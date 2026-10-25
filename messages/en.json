@@ -1102,5 +1102,29 @@
     "empty": "No active models yet.",
     "methodTitle": "How we measure",
     "methodBody": "Uptime is the share of successful requests versus requests that failed because of the service or its upstream. Requests rejected for an empty balance or quota, a model that is not allowed, or a malformed request do not count as downtime. Response duration is the total time until the response finishes, including streaming, so it depends on answer length. Status uses the last hour of data, or the last 24 hours when traffic is low."
+  },
+  "Invoice": {
+    "title": "Invoice",
+    "paid": "Paid",
+    "back": "Back",
+    "print": "Print / Save PDF",
+    "billedTo": "Billed to",
+    "orderDate": "Order date",
+    "paidDate": "Paid date",
+    "paymentMethod": "Payment method",
+    "orderId": "Order ID",
+    "item": "Description",
+    "qty": "Qty",
+    "amount": "Price",
+    "total": "Total",
+    "walletTopUp": "Wallet balance top up",
+    "quota": "{tokens} token quota",
+    "durationDays": "Valid for {days} days",
+    "durationHours": "Valid for {hours} hours",
+    "thanks": "Thank you for using {app}.",
+    "note": "This invoice is generated automatically and is valid without a signature.",
+    "link": "Invoice",
+    "listTitle": "Top-up invoices",
+    "listEmpty": "No paid top-ups yet."
   }
 }
