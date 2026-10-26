@@ -62,6 +62,40 @@ function harnessConfig(providerId: string, baseURL: string, modelIds: string[]) 
 ${modelIds.map((id) => `          - id: ${id}`).join("\n")}`;
 }
 
+// Zed reads the key from `<PROVIDER_ID>_API_KEY` (upper snake case) or the
+// system keychain; it must never be stored in settings.json.
+function zedConfig(
+  providerId: string,
+  baseURL: string,
+  modelIds: string[],
+  imageModelIds: ReadonlySet<string> = new Set(),
+) {
+  return JSON.stringify(
+    {
+      language_models: {
+        openai_compatible: {
+          [providerId]: {
+            api_url: baseURL,
+            available_models: modelIds.map((id) => ({
+              name: id,
+              display_name: id,
+              max_tokens: 128000,
+              capabilities: {
+                tools: true,
+                images: imageModelIds.has(id),
+                parallel_tool_calls: false,
+                prompt_cache_key: false,
+              },
+            })),
+          },
+        },
+      },
+    },
+    null,
+    2,
+  );
+}
+
 function PanelHeader({ logo, name, href, children }: { logo: string; name: string; href: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-4 border-b border-white/[0.06] pb-5">
@@ -212,6 +246,32 @@ export default async function DocsPage() {
     { label: "Base URL", payg: API_BASE_URL, pkg: PACKAGE_BASE_URL },
     { label: "API protocol", payg: "OpenAI Chat Completions", pkg: "OpenAI Chat Completions" },
     { label: "API key", payg: t("harnessFieldKeyPayg"), pkg: t("harnessFieldKeyPackage") },
+  ];
+
+  const zedPaygCode = zedConfig("nineinference", API_BASE_URL, opencodePaygModelIds, imageModelIds);
+  const zedPackageCode = zedConfig(
+    "nineinference-paket",
+    PACKAGE_BASE_URL,
+    packageModelIds.length > 0 ? packageModelIds : [sampleModel],
+  );
+  const zedEnvCode = `# macOS / Linux — PAYG
+export NINEINFERENCE_API_KEY="sk_live_xxx"
+# ${t("zedEnvPackageComment")}
+export NINEINFERENCE_PAKET_API_KEY="pkg_xxx"
+
+# Windows (PowerShell)
+setx NINEINFERENCE_API_KEY "sk_live_xxx"
+setx NINEINFERENCE_PAKET_API_KEY "pkg_xxx"`;
+  const zedFields = [
+    { label: "Provider ID", values: ["nineinference", "nineinference-paket"] },
+    { label: "API URL", values: [API_BASE_URL, PACKAGE_BASE_URL] },
+    { label: "API key", values: [t("harnessFieldKeyPayg"), t("harnessFieldKeyPackage")] },
+  ];
+  const zedErrors = [
+    { code: t("zedErrNoProviderTitle"), desc: t("zedErrNoProvider") },
+    { code: "401 authentication_error", desc: t("zedErrAuth") },
+    { code: "403 package_endpoint_required", desc: t("opencodeErrPackageEndpoint") },
+    { code: t("zedErrToolsTitle"), desc: t("zedErrTools") },
   ];
 
   const ninerouterPaygPrefix = "9i";
@@ -545,6 +605,89 @@ console.log(res.choices[0].message.content);`;
                       </p>
                     </Step>
                   </ol>
+                </div>
+              ),
+            },
+            {
+              id: "zed",
+              label: "Zed",
+              logo: "/logos/zed.svg",
+              hint: t("zedHint"),
+              content: (
+                <div className="glass rounded-2xl p-6">
+                  <PanelHeader logo="/logos/zed.svg" name="Zed" href="https://zed.dev">
+                    {t("zedIntro")}
+                  </PanelHeader>
+
+                  <ol className="mt-6">
+                    <Step n={1} title={t("zedStep1Title")}>
+                      <p>
+                        {t.rich("zedStep1Desc", {
+                          link: (chunks) => (
+                            <a href="https://zed.dev/download" target="_blank" rel="noreferrer" className="font-medium text-foreground underline">
+                              {chunks}
+                            </a>
+                          ),
+                        })}
+                      </p>
+                    </Step>
+
+                    <Step n={2} title={t("zedStep2Title")}>
+                      <p>{t.rich("zedStep2Desc", { b: bold, code: inlineCode })}</p>
+                      <DocsTabs
+                        variant="pills"
+                        ariaLabel={t("configKeyType")}
+                        tabs={[
+                          {
+                            id: "payg",
+                            label: t("opencodeConfigPayg"),
+                            content: <CopyableCode code={zedPaygCode} language="settings.json" />,
+                          },
+                          {
+                            id: "package",
+                            label: t("opencodeConfigPackage"),
+                            content: <CopyableCode code={zedPackageCode} language="settings.json" />,
+                          },
+                        ]}
+                      />
+                      <p>{t.rich("zedStep2Note", { b: bold, code: inlineCode })}</p>
+                      <FieldTable
+                        columns={[{ label: t("harnessFieldCol") }, { label: "PAYG" }, { label: t("packageTitle"), accent: true }]}
+                        rows={zedFields}
+                      />
+                    </Step>
+
+                    <Step n={3} title={t("zedStep3Title")}>
+                      <p>{t.rich("zedStep3Desc", { b: bold, code: inlineCode })}</p>
+                      <p>{t.rich("zedStep3Env", { code: inlineCode })}</p>
+                      <CopyableCode code={zedEnvCode} />
+                      <p className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3">
+                        {t.rich("zedStep3Warning", { b: bold, code: inlineCode })}
+                      </p>
+                    </Step>
+
+                    <Step n={4} title={t("zedStep4Title")}>
+                      <p>{t.rich("zedStep4Desc", { b: bold, code: inlineCode })}</p>
+                      <p>{t.rich("zedStep4Image", { b: bold, code: inlineCode })}</p>
+                    </Step>
+                  </ol>
+
+                  <details className="group/zed mt-6 rounded-xl border border-white/[0.08] bg-white/[0.02]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+                      {t("zedTroubleTitle")}
+                      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition group-open/zed:rotate-180" aria-hidden>
+                        <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </summary>
+                    <ul className="space-y-3 border-t border-white/[0.06] px-4 py-4">
+                      {zedErrors.map((e) => (
+                        <li key={e.code} className="text-xs leading-relaxed text-muted-foreground">
+                          <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-red-400">{e.code}</code>
+                          <p className="mt-1">{e.desc}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 </div>
               ),
             },
