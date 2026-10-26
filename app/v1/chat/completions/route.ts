@@ -20,6 +20,7 @@ import {
   stripUnsupportedFields,
   fetchUpstream,
   aggregateUpstreamStream,
+  withNonStreamKeepAlive,
   computeSessionHash,
   UPSTREAM_RETRY_BACKOFF_MS,
   sleep,
@@ -58,6 +59,20 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  // Peek at the body only to learn whether the client wants SSE; handleChat
+  // parses it again. Slow non-stream requests get keep-alive newlines so
+  // reverse proxies (nginx/Cloudflare) don't time them out.
+  const wantsStream = await request
+    .clone()
+    .json()
+    .then((b: unknown) => (b as { stream?: unknown } | null)?.stream === true)
+    .catch(() => false);
+  const work = handleChat(request);
+  if (wantsStream) return work;
+  return withNonStreamKeepAlive(work, corsHeaders(), "[v1/chat]");
+}
+
+async function handleChat(request: Request) {
   const startedAt = Date.now();
   const clientIp = getClientIp(request.headers);
   const userAgent = request.headers.get("user-agent");

@@ -48,6 +48,96 @@ export function fetchUpstream(url: string, init: RequestInit): Promise<Response>
   );
 }
 
+/** Non-stream responses slower than this switch to keep-alive mode. */
+export const NON_STREAM_KEEPALIVE_AFTER_MS = 15_000;
+/** Gap between keep-alive newlines once keep-alive mode is active. */
+export const NON_STREAM_KEEPALIVE_INTERVAL_MS = 15_000;
+
+/**
+ * Keep slow NON-streaming requests alive through reverse proxies.
+ *
+ * A non-stream completion sends no bytes until the whole answer is ready, so
+ * nginx (`proxy_read_timeout`, default 60s) or Cloudflare (100s) cut the
+ * connection on long generations and hand the client an HTML 504/524 page —
+ * which clients then fail to parse ("Expecting value: line 1 column 1").
+ *
+ * If `work` finishes within NON_STREAM_KEEPALIVE_AFTER_MS its Response is
+ * returned untouched (real status codes preserved). Otherwise a 200 JSON
+ * response is committed right away, a "\n" is written every
+ * NON_STREAM_KEEPALIVE_INTERVAL_MS, and the final body is appended when
+ * `work` resolves. JSON parsers ignore leading whitespace, so clients see a
+ * normal JSON body. Trade-off: an error that happens after the switch is sent
+ * as an `{ "error": ... }` body with HTTP 200, since the status is already out.
+ */
+export async function withNonStreamKeepAlive(
+  work: Promise<Response>,
+  headers: Record<string, string>,
+  logTag: string,
+): Promise<Response> {
+  const early = await Promise.race([
+    work,
+    sleep(NON_STREAM_KEEPALIVE_AFTER_MS).then(() => null),
+  ]);
+  if (early) return early;
+
+  console.log(`${logTag} non-stream response slow, switching to keep-alive mode`);
+  const encoder = new TextEncoder();
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let cancelled = false;
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      controller.enqueue(encoder.encode("\n"));
+      timer = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode("\n"));
+        } catch {
+          // Client already disconnected.
+        }
+      }, NON_STREAM_KEEPALIVE_INTERVAL_MS);
+
+      let payload: string;
+      try {
+        const res = await work;
+        payload = await res.text();
+        if (!res.ok) {
+          console.warn(`${logTag} keep-alive: final status ${res.status} sent as HTTP 200 body`);
+        }
+      } catch (e) {
+        console.error(`${logTag} keep-alive: handler failed:`, e);
+        payload = JSON.stringify({
+          error: { message: "Internal server error", type: "api_error", param: null, code: null },
+        });
+      } finally {
+        clearInterval(timer);
+      }
+      if (cancelled) return;
+      try {
+        controller.enqueue(encoder.encode(payload));
+        controller.close();
+      } catch {
+        // Client already disconnected.
+      }
+    },
+    cancel() {
+      cancelled = true;
+      clearInterval(timer);
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+      // no-transform: skips Next's gzip, which would buffer the newlines.
+      "Cache-Control": "no-cache, no-transform",
+      // Tell nginx not to buffer this response.
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
 export type AggregatedCompletion = {
   id: string;
   object: "chat.completion";

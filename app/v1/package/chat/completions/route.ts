@@ -11,6 +11,7 @@ import {
   repairToolCallArguments,
   normalizeUserMessageContent,
   stripUnsupportedFields,
+  withNonStreamKeepAlive,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
@@ -59,6 +60,20 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  // Body hanya diintip untuk tahu client minta SSE atau tidak; handleChat
+  // mem-parse ulang. Request non-stream yang lambat dikirimi newline keep-alive
+  // supaya tidak diputus reverse proxy (nginx/Cloudflare).
+  const wantsStream = await request
+    .clone()
+    .json()
+    .then((b: unknown) => (b as { stream?: unknown } | null)?.stream === true)
+    .catch(() => false);
+  const work = handleChat(request);
+  if (wantsStream) return work;
+  return withNonStreamKeepAlive(work, corsHeaders(), `[${ts()}] [v1/package/chat]`);
+}
+
+async function handleChat(request: Request) {
   const startedAt = Date.now();
   const clientIp = getClientIp(request.headers);
   const userAgent = request.headers.get("user-agent");
