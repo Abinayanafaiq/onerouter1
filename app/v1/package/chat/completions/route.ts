@@ -10,6 +10,7 @@ import {
   dedupeReasoningFields,
   repairToolCallArguments,
   normalizeUserMessageContent,
+  normalizeToolChoice,
   stripUnsupportedFields,
   withNonStreamKeepAlive,
   type RequestMeta,
@@ -228,6 +229,14 @@ async function handleChat(request: Request) {
   const userContentFixed = normalizeUserMessageContent(body);
   if (userContentFixed > 0) {
     console.log(`[${ts()}] [v1/package/chat] normalisasi content user di ${userContentFixed} pesan key=${apiKey.id}`);
+  }
+  // tool_choice berbentuk objek ({"type":"function",...}) ditolak upstream
+  // dengan 400 "cannot unmarshal object ... tool_choice of type string".
+  const toolChoiceFixed = normalizeToolChoice(body);
+  if (toolChoiceFixed) {
+    console.log(
+      `[${ts()}] [v1/package/chat] tool_choice ${toolChoiceFixed.from} -> "${toolChoiceFixed.to}"${toolChoiceFixed.narrowedTo ? ` (tools disaring ke ${toolChoiceFixed.narrowedTo})` : ""} key=${apiKey.id}`,
+    );
   }
   // Field tambahan dari client (promptCacheKey, setCacheKey, session_id, ...)
   // ditolak upstream dengan 400 "Extra inputs are not permitted".

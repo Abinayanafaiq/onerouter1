@@ -720,6 +720,62 @@ export function stripUnsupportedFields(body: Record<string, unknown>): string[] 
   return removed;
 }
 
+const TOOL_CHOICE_OBJECT_MAP: Record<string, string> = {
+  auto: "auto",
+  none: "none",
+  required: "required",
+  any: "required",
+  function: "required",
+  tool: "required",
+};
+
+/**
+ * Coerce an object-form `tool_choice` into a string, in place. The upstream
+ * (Go) declares `tool_choice` as a string and answers HTTP 400 "cannot
+ * unmarshal object into Go struct field Request.tool_choice of type string"
+ * for OpenAI's `{"type":"function","function":{...}}` or Anthropic-style
+ * `{"type":"auto"|"any"|"tool"}`. Forcing a specific function can't be
+ * expressed as a string, so it becomes "required" (the model must call a
+ * tool). To keep the forced function exact, `tools` is narrowed to that one
+ * function — but only when no assistant turn in the history called a
+ * different tool, since dropping a tool the history references can itself be
+ * rejected. Returns `{ from, to, narrowedTo }` when changed (for logging).
+ */
+export function normalizeToolChoice(
+  body: Record<string, unknown>,
+): { from: string; to: string; narrowedTo: string | null } | null {
+  const choice = body.tool_choice;
+  if (!isPlainObject(choice)) return null;
+  const type = typeof choice.type === "string" ? choice.type.toLowerCase() : "";
+  const mapped = TOOL_CHOICE_OBJECT_MAP[type] ?? (isPlainObject(choice.function) ? "required" : "auto");
+  body.tool_choice = mapped;
+
+  // OpenAI: {"function":{"name"}}; Anthropic-style: {"type":"tool","name"}.
+  const forced = isPlainObject(choice.function) ? choice.function.name : choice.name;
+  let narrowedTo: string | null = null;
+  if (mapped === "required" && typeof forced === "string" && forced && Array.isArray(body.tools)) {
+    const toolName = (t: unknown) =>
+      isPlainObject(t) && isPlainObject(t.function) ? t.function.name : undefined;
+    const kept = body.tools.filter((t) => toolName(t) === forced);
+    const historyUsesOther =
+      Array.isArray(body.messages) &&
+      body.messages.some(
+        (m) =>
+          isPlainObject(m) &&
+          Array.isArray(m.tool_calls) &&
+          m.tool_calls.some((c) => {
+            const name = isPlainObject(c) && isPlainObject(c.function) ? c.function.name : undefined;
+            return name !== forced;
+          }),
+      );
+    if (kept.length > 0 && kept.length < body.tools.length && !historyUsesOther) {
+      body.tools = kept;
+      narrowedTo = forced;
+    }
+  }
+  return { from: JSON.stringify(choice).slice(0, 120), to: mapped, narrowedTo };
+}
+
 /**
  * Collapse `reasoning` into `reasoning_content` on each message, in place.
  * Clients (and our own aggregated non-stream response) can echo an assistant
