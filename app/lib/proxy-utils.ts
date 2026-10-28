@@ -875,6 +875,79 @@ export function repairToolCallArguments(body: Record<string, unknown>): number {
   return fixed;
 }
 
+const MISSING_TOOL_RESULT = "Tool call was cancelled before it returned a result.";
+
+/**
+ * Pair every assistant `tool_calls[].id` with exactly one `role: "tool"`
+ * message directly after it, in place. Clients that interrupt a tool call,
+ * send partial parallel results or trim/compact history leave unmatched
+ * calls or orphan results, and the upstream answers HTTP 400 "tool calls and
+ * tool results do not match" on every following request. Each call's real
+ * result (wherever it sits in the history) is moved right after its call, a
+ * placeholder result is inserted for calls without one, and tool messages
+ * with no matching call are dropped. Returns the counts (for logging).
+ */
+export function reconcileToolMessages(
+  body: Record<string, unknown>,
+): { inserted: number; dropped: number; moved: number } {
+  const result = { inserted: 0, dropped: 0, moved: 0 };
+  if (!Array.isArray(body.messages)) return result;
+  const messages: unknown[] = body.messages;
+
+  const isTool = (m: unknown): m is Record<string, unknown> => isPlainObject(m) && m.role === "tool";
+  const results = new Map<string, Record<string, unknown>>();
+  for (const m of messages) {
+    if (isTool(m) && typeof m.tool_call_id === "string" && !results.has(m.tool_call_id)) {
+      results.set(m.tool_call_id, m);
+    }
+  }
+
+  const out: unknown[] = [];
+  const used = new Set<Record<string, unknown>>();
+  let generated = 0;
+  for (const m of messages) {
+    if (isTool(m)) continue; // emitted after its call below
+    out.push(m);
+    if (!isPlainObject(m) || m.role !== "assistant" || !Array.isArray(m.tool_calls)) continue;
+    for (const call of m.tool_calls) {
+      if (!isPlainObject(call)) continue;
+      if (typeof call.id !== "string" || call.id === "") call.id = `call_onerouter_${generated++}`;
+      const id = call.id as string;
+      const real = results.get(id);
+      if (real && !used.has(real)) {
+        used.add(real);
+        out.push(real);
+      } else {
+        out.push({ role: "tool", tool_call_id: id, content: MISSING_TOOL_RESULT });
+        result.inserted++;
+      }
+    }
+  }
+
+  // A kept result is "moved" unless it already sat in the run of tool
+  // messages right after the assistant turn that made its call.
+  messages.forEach((m, i) => {
+    if (!isTool(m)) return;
+    if (!used.has(m)) {
+      result.dropped++;
+      return;
+    }
+    let j = i - 1;
+    while (j >= 0 && isTool(messages[j])) j--;
+    const owner = messages[j];
+    const inPlace =
+      isPlainObject(owner) &&
+      Array.isArray(owner.tool_calls) &&
+      owner.tool_calls.some((c) => isPlainObject(c) && c.id === m.tool_call_id);
+    if (!inPlace) result.moved++;
+  });
+
+  if (out.length !== messages.length || out.some((m, i) => m !== messages[i])) {
+    body.messages = out;
+  }
+  return result;
+}
+
 const IMAGE_DETAILS = new Set(["auto", "low", "high"]);
 
 function imageUrlPart(url: unknown, detail?: unknown): Record<string, unknown> | null {

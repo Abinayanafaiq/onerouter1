@@ -16,6 +16,7 @@ import {
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
+  reconcileToolMessages,
   normalizeUserMessageContent,
   stripUnsupportedFields,
   fetchUpstream,
@@ -344,6 +345,15 @@ async function handleChat(request: Request) {
   const toolArgsRepaired = repairToolCallArguments(body);
   if (toolArgsRepaired > 0) {
     console.log(`[v1/chat] repaired invalid tool_calls arguments on ${toolArgsRepaired} tool call(s)`);
+  }
+  // Unmatched tool calls / orphan tool results (interrupted calls, trimmed
+  // history) are rejected upstream with 400 "tool calls and tool results do
+  // not match".
+  const toolPairing = reconcileToolMessages(body);
+  if (toolPairing.inserted || toolPairing.dropped || toolPairing.moved) {
+    console.log(
+      `[v1/chat] reconciled tool messages: inserted=${toolPairing.inserted} dropped=${toolPairing.dropped} moved=${toolPairing.moved}`,
+    );
   }
 
   // Non-OpenAI user content parts (Anthropic `image`, `input_text`, string

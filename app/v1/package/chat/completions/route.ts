@@ -9,6 +9,7 @@ import {
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
+  reconcileToolMessages,
   normalizeUserMessageContent,
   normalizeToolChoice,
   stripUnsupportedFields,
@@ -222,6 +223,15 @@ async function handleChat(request: Request) {
   const toolArgsRepaired = repairToolCallArguments(body);
   if (toolArgsRepaired > 0) {
     console.log(`[${ts()}] [v1/package/chat] perbaiki arguments tool_calls tidak valid di ${toolArgsRepaired} tool call key=${apiKey.id}`);
+  }
+  // Tool call tanpa result / result tanpa tool call (call di-interrupt,
+  // history dipotong) ditolak upstream dengan 400 "tool calls and tool
+  // results do not match".
+  const toolPairing = reconcileToolMessages(body);
+  if (toolPairing.inserted || toolPairing.dropped || toolPairing.moved) {
+    console.log(
+      `[${ts()}] [v1/package/chat] rekonsiliasi pesan tool: sisip=${toolPairing.inserted} buang=${toolPairing.dropped} pindah=${toolPairing.moved} key=${apiKey.id}`,
+    );
   }
   // Content pesan user dengan format non-OpenAI (part `image` ala Anthropic,
   // `input_text`, image_url berupa string, content null) ditolak upstream
