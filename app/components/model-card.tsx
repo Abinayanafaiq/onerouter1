@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { PackageBrandIcon } from "@/app/components/package-brand-icon";
 import type { ModelCardData } from "@/app/lib/model-card-data";
 
 export type { ModelCardData };
@@ -29,6 +30,19 @@ const DEFAULT_STYLE = {
   avatar: "text-muted-foreground border-white/10 bg-white/[0.04]",
   dot: "bg-white/40",
 };
+
+/** Map a model's provider/ID to a brand-icon group key (see PackageBrandIcon). */
+function brandGroup(m: ModelCardData): string | null {
+  const hay = (m.provider + " " + m.name + " " + m.modelId).toLowerCase();
+  if (/glm|zhipu|z\.ai/.test(hay)) return "glm";
+  if (/deepseek/.test(hay)) return "deepseek";
+  if (/qwen|alibaba/.test(hay)) return "qwen";
+  if (/kimi|moonshot/.test(hay)) return "kimi";
+  if (/minimax/.test(hay)) return "minimax";
+  if (/gemini|google/.test(hay)) return "gemini";
+  if (/claude|anthropic/.test(hay)) return "claude";
+  return null;
+}
 
 function capabilityKeys(m: ModelCardData): string[] {
   const tags: string[] = [];
@@ -97,6 +111,7 @@ export function ModelCard({ model }: { model: ModelCardData }) {
   const locale = useLocale();
   const style = PROVIDER_STYLE[model.provider] ?? DEFAULT_STYLE;
   const caps = capabilityKeys(model);
+  const brand = brandGroup(model);
 
   return (
     <div className="glass card-glow group flex flex-col rounded-2xl p-5">
@@ -106,7 +121,11 @@ export function ModelCard({ model }: { model: ModelCardData }) {
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${style.avatar}`}
           aria-hidden
         >
-          {model.provider.charAt(0).toUpperCase()}
+          {brand ? (
+            <PackageBrandIcon group={brand} className="h-5 w-5" />
+          ) : (
+            model.provider.charAt(0).toUpperCase()
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
