@@ -136,7 +136,7 @@ async function handleChat(request: Request) {
     return apiError("API key tidak valid atau kedaluwarsa.", 401, "authentication_error", "invalid_api_key");
   }
   if (apiKey.billingMode !== "TOKEN_PACKAGE") {
-    console.warn(`[${ts()}] [v1/package/chat] ditolak: key=${apiKey.id} user=${apiKey.userId} billingMode=${apiKey.billingMode} (bukan paket)`);
+    console.warn(`[${ts()}] [v1/package/chat] ditolak: key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId}) billingMode=${apiKey.billingMode} (bukan paket)`);
     return apiError("Endpoint ini hanya menerima API key paket.", 403, "invalid_api_key_mode", "package_key_required");
   }
   if (!PACKAGE_UPSTREAM_API_KEY) {
@@ -146,7 +146,7 @@ async function handleChat(request: Request) {
 
   const limit = checkKeyAndUserRateLimit(apiKey.id, apiKey.rateLimit, apiKey.userId, apiKey.user.rateLimit);
   if (!limit.allowed) {
-    console.warn(`[${ts()}] [v1/package/chat] rate limited key=${apiKey.id} user=${apiKey.userId} retryAfter=${limit.retryAfter}s`);
+    console.warn(`[${ts()}] [v1/package/chat] rate limited key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId}) retryAfter=${limit.retryAfter}s`);
     return Response.json(
       { error: { message: "Terlalu banyak request.", type: "rate_limit_error", param: null, code: "rate_limit_exceeded" } },
       { status: 429, headers: { ...corsHeaders(), "Retry-After": String(limit.retryAfter) } },
@@ -157,7 +157,7 @@ async function handleChat(request: Request) {
   try {
     body = await request.json() as Record<string, unknown>;
   } catch {
-    console.warn(`[${ts()}] [v1/package/chat] body JSON tidak valid key=${apiKey.id} user=${apiKey.userId}`);
+    console.warn(`[${ts()}] [v1/package/chat] body JSON tidak valid key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId})`);
     return apiError("Body JSON tidak valid.", 400, "invalid_request_error", "invalid_json");
   }
 
@@ -204,7 +204,7 @@ async function handleChat(request: Request) {
   const maxOutput = Math.min(Math.max(Math.floor(requestedMax), 1), 8192);
   const reservation = await reservePackageTokens(apiKey.id, promptEstimate + maxOutput);
   if (!reservation.ok) {
-    console.warn(`[${ts()}] [v1/package/chat] kuota tidak cukup key=${apiKey.id} user=${apiKey.userId} butuh=${promptEstimate + maxOutput} (prompt~${promptEstimate} + maxOut=${maxOutput})`);
+    console.warn(`[${ts()}] [v1/package/chat] kuota tidak cukup key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId}) butuh=${promptEstimate + maxOutput} (prompt~${promptEstimate} + maxOut=${maxOutput})`);
     return apiError("Kuota paket tidak mencukupi. Silakan beli paket baru.", 402, "insufficient_quota", "package_quota_exhausted");
   }
 
@@ -312,7 +312,7 @@ async function handleChat(request: Request) {
     const canFailover = i + 1 < targets.length;
     body.model = target.model;
     console.log(
-      `[${ts()}] [v1/package/chat] forwarding to: ${target.url} model=${requestedModel}->${body.model}${target.label ? ` (${target.label}, ${i + 1}/${targets.length})` : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
+      `[${ts()}] [v1/package/chat] forwarding to: ${target.url} model=${requestedModel}->${body.model}${target.label ? ` (${target.label}, ${i + 1}/${targets.length})` : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId})`,
     );
 
     const outHeaders: Record<string, string> = {
@@ -367,7 +367,7 @@ async function handleChat(request: Request) {
     const upstreamMessage = await upstream.text().catch(() => "");
     console.error(
       `[${ts()}] [v1/package/chat] upstream error: ${upstream.status} ${upstreamMessage.slice(0, 500).replace(/\s*\n\s*/g, " ")}` +
-        ` | model=${requestedModel}->${body.model} stream=${isStream} key=${apiKey.id} user=${apiKey.userId} | ${failureContext}`,
+        ` | model=${requestedModel}->${body.model} stream=${isStream} key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId}) | ${failureContext}`,
     );
     await releasePackageTokens(reservation.id);
     console.log(`[${ts()}] [v1/package/chat] reservation released (upstream error)`);
@@ -448,7 +448,7 @@ async function handleChat(request: Request) {
             console.log(`[${ts()}] [v1/package/chat] stream settled: in=${inputTokens} out=${outputTokens} dur=${Date.now() - startedAt}ms key=${apiKey.id}`);
             controller.enqueue(encoder.encode(`: x_package_usage ${JSON.stringify(settled.usage)}\n\n`));
           } else {
-            console.error(`[${ts()}] [v1/package/chat] settle GAGAL (stream): in=${inputTokens} out=${outputTokens} reservation=${reservation.id} key=${apiKey.id} user=${apiKey.userId}`);
+            console.error(`[${ts()}] [v1/package/chat] settle GAGAL (stream): in=${inputTokens} out=${outputTokens} reservation=${reservation.id} key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId})`);
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
@@ -502,7 +502,7 @@ async function handleChat(request: Request) {
     requestMeta: meta(200),
   });
   if (!settled.ok) {
-    console.error(`[${ts()}] [v1/package/chat] settle GAGAL: in=${input} out=${output} reservation=${reservation.id} key=${apiKey.id} user=${apiKey.userId}`);
+    console.error(`[${ts()}] [v1/package/chat] settle GAGAL: in=${input} out=${output} reservation=${reservation.id} key=${apiKey.id} user=${apiKey.user.email} (${apiKey.userId})`);
     return apiError("Gagal mencatat penggunaan paket.", 500, "billing_error", "settlement_failed");
   }
   console.log(`[${ts()}] [v1/package/chat] settled: in=${input} out=${output} dur=${Date.now() - startedAt}ms key=${apiKey.id}`);
