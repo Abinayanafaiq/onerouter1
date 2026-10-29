@@ -10,16 +10,23 @@ const categories = [
   { key: "kimi", label: "Kimi" },
   { key: "deepseek", label: "DeepSeek" },
   { key: "claude", label: "Claude" },
+  { key: "qwen", label: "Qwen" },
+  { key: "gemini", label: "Gemini" },
+  { key: "minimax", label: "MiniMax" },
+  { key: "mixed", label: "Multi-model" },
   { key: "other", label: "Model lainnya" },
   { key: "legacy", label: "Legacy" },
 ] as const;
 
+const brandKeys = ["glm", "kimi", "deepseek", "claude", "qwen", "gemini", "minimax"];
+
 function categoryOf(pkg: PackageData) {
   if (pkg.productType !== "TOKEN_PACKAGE") return "legacy";
   if (pkg.allowedModels.length === 0) return "general";
-  return categories.slice(1, 5).find(({ key }) =>
-    pkg.allowedModels.every((model) => model.toLowerCase().includes(key)),
-  )?.key ?? "other";
+  const models = pkg.allowedModels.map((model) => model.toLowerCase());
+  const brand = brandKeys.find((key) => models.every((model) => model.includes(key)));
+  if (brand) return brand;
+  return new Set(models).size > 1 ? "mixed" : "other";
 }
 
 export function PackagesManager({
