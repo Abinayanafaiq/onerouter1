@@ -45,7 +45,8 @@ function groupPackages(packages: PackageDef[]) {
 }
 
 export async function PackageCatalog({ promoOnly = false }: { promoOnly?: boolean }) {
-  const allPackages = await getAllPackages();
+  // Paket yang stoknya habis tidak ditampilkan.
+  const allPackages = (await getAllPackages()).filter((pkg) => pkg.stock > 0);
   const tokenPackages = promoOnly ? allPackages.filter((pkg) => pkg.isPromo) : allPackages;
   const t = await getTranslations("BuyPackage");
   const locale = await getLocale();
