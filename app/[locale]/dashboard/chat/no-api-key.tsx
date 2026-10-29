@@ -40,15 +40,21 @@ export function NoApiKey() {
   }
 
   return (
-    <div className="border rounded-lg p-6 text-center space-y-4">
+    <div className="glass flex flex-col items-center gap-4 rounded-2xl p-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent">
+        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+          <circle cx="8" cy="15" r="4" stroke="currentColor" strokeWidth="1.8" />
+          <path d="m11 12 9-9m-3 3 3 3m-6 0 2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
       <div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-medium text-foreground">
           {t("noActiveKey")}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
           {t.rich("noActiveKeyHint", {
             link: (chunks) => (
-              <Link href="/dashboard/api-keys" className="font-medium hover:underline">
+              <Link href="/dashboard/api-keys" className="font-medium text-foreground hover:underline">
                 {chunks}
               </Link>
             ),
@@ -58,12 +64,12 @@ export function NoApiKey() {
       <button
         onClick={generateAndRefresh}
         disabled={generating}
-        className="bg-foreground text-background px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-50"
       >
         {generating ? t("generating") : t("generateApiKey")}
       </button>
       {error && (
-        <p className="text-xs text-red-600">{error}</p>
+        <p className="text-xs text-red-400">{error}</p>
       )}
     </div>
   );

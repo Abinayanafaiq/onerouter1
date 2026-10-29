@@ -16,11 +16,6 @@ type ModelInfo = {
   outputPrice: number;
 };
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
-
 type BillingInfo = {
   inputTokens: number;
   outputTokens: number;
@@ -30,6 +25,28 @@ type BillingInfo = {
   totalCost: number;
   remainingBalance: number;
 };
+
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  model?: string;
+  billing?: BillingInfo;
+};
+
+function AssistantAvatar() {
+  return (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
+      <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+        <path
+          d="M12 3v3m0 12v3M3 12h3m12 0h3M6.3 6.3l2.1 2.1m7.2 7.2 2.1 2.1m0-11.4-2.1 2.1m-7.2 7.2-2.1 2.1"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
+}
 
 export function ChatPlayground({
   models,
@@ -44,10 +61,11 @@ export function ChatPlayground({
   const [input, setInput] = useState("");
   const [model, setModel] = useState(models[0]?.id || "");
   const [loading, setLoading] = useState(false);
-  const [billing, setBilling] = useState<BillingInfo | null>(null);
+  const [lastBilling, setLastBilling] = useState<BillingInfo | null>(null);
   const [balance, setBalance] = useState(initialBalance);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -55,21 +73,33 @@ export function ChatPlayground({
     }
   }, [messages, loading]);
 
+  // Auto-grow the composer up to a max height.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 180) + "px";
+  }, [input]);
+
   const isExhausted = balance <= 0;
   const isLow = !isExhausted && balance < LOW_BALANCE_THRESHOLD;
-  const estRemaining = billing && billing.totalCost > 0
-    ? Math.floor(balance / billing.totalCost)
+  const estRemaining = lastBilling && lastBilling.totalCost > 0
+    ? Math.floor(balance / lastBilling.totalCost)
     : null;
+  const currentModel = models.find((m) => m.id === model);
 
-  async function send() {
-    if (!input.trim() || loading || isExhausted) return;
+  const fmtToks = (idr: number, digits: number) =>
+    idrToToks(idr).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: digits });
+
+  async function send(text?: string) {
+    const content = (text ?? input).trim();
+    if (!content || loading || isExhausted) return;
     setError(null);
-    const userMsg: Message = { role: "user", content: input.trim() };
+    const userMsg: Message = { role: "user", content };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-    setBilling(null);
 
     try {
       const res = await fetch("/api/dashboard/chat", {
@@ -90,6 +120,7 @@ export function ChatPlayground({
         const errMsg = data?.error?.message || `HTTP ${res.status}`;
         setError(errMsg);
         setMessages((prev) => prev.slice(0, -1));
+        setInput(content);
         // 402 = insufficient balance: lock the UI and sync balance.
         if (res.status === 402) {
           setBalance(0);
@@ -100,19 +131,33 @@ export function ChatPlayground({
 
       const assistantContent =
         data?.choices?.[0]?.message?.content || t("emptyResponse");
-      setMessages((prev) => [...prev, { role: "assistant", content: assistantContent }]);
+      const billing = data.x_billing as BillingInfo | undefined;
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: assistantContent, model: currentModel?.name ?? model, billing },
+      ]);
 
-      if (data.x_billing) {
-        setBilling(data.x_billing as BillingInfo);
-        setBalance(data.x_billing.remainingBalance as number);
+      if (billing) {
+        setLastBilling(billing);
+        setBalance(billing.remainingBalance);
       }
       // Sync navbar badge + analytics after every request.
       triggerWalletRefresh();
     } catch {
       setError(t("connectionFailed"));
       setMessages((prev) => prev.slice(0, -1));
+      setInput(content);
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
     }
-    setLoading(false);
+  }
+
+  function newChat() {
+    setMessages([]);
+    setError(null);
+    setInput("");
+    inputRef.current?.focus();
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -122,47 +167,17 @@ export function ChatPlayground({
     }
   }
 
+  const suggestions = [t("suggestion1"), t("suggestion2"), t("suggestion3")];
+
   return (
     <div className="space-y-3">
-      {/* Balance + Model selector */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className={`border rounded-md px-3 py-1.5 text-xs ${isExhausted ? "border-red-500/40 bg-red-500/10" : ""}`}>
-          <span className="text-muted-foreground">{t("balanceLabel")}: </span>
-          <span className={`font-bold ${isExhausted ? "text-red-500" : "text-green-600"}`}>
-            {idrToToks(balance).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs text-muted-foreground">{t("modelLabel")}:</label>
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            disabled={isExhausted}
-            className="border rounded-md px-2 py-1.5 text-xs bg-background disabled:opacity-50"
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.id})
-              </option>
-            ))}
-          </select>
-        </div>
-        {estRemaining !== null && !isExhausted && (
-          <span className="text-[11px] text-muted-foreground">
-            {t("requestsRemaining", { count: estRemaining.toLocaleString(locale) })}
-          </span>
-        )}
-      </div>
-
       {/* Exhausted lock */}
       {isExhausted && (
-        <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-500 font-medium">
-            {t("insufficientCredits")}
-          </p>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+          <p className="text-sm font-medium text-red-400">{t("insufficientCredits")}</p>
           <Link
             href="/dashboard/wallet"
-            className="shrink-0 bg-foreground text-background px-4 py-2 rounded-md text-xs font-medium hover:opacity-90"
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black transition hover:opacity-90"
           >
             {t("topUpCredits")}
           </Link>
@@ -171,8 +186,8 @@ export function ChatPlayground({
 
       {/* Low-balance warning */}
       {isLow && (
-        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-yellow-600">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-xs text-amber-400">
             {t("lowBalanceWarning", {
               estimate:
                 estRemaining !== null
@@ -182,118 +197,205 @@ export function ChatPlayground({
           </p>
           <Link
             href="/dashboard/wallet"
-            className="shrink-0 border border-yellow-500/40 text-yellow-600 px-3 py-1.5 rounded-md text-xs font-medium hover:bg-yellow-500/10"
+            className="shrink-0 rounded-lg border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/10"
           >
             {t("topUp")}
           </Link>
         </div>
       )}
 
-      {/* Chat messages */}
-      <div
-        ref={scrollRef}
-        className="border rounded-lg h-[400px] overflow-y-auto p-4 space-y-3 bg-muted/20"
-      >
-        {messages.length === 0 && !loading && (
-          <div className="text-center text-sm text-muted-foreground py-12">
-            {t("emptyStateLine1")}
-            <br />
-            {t("emptyStateLine2")}
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-foreground text-background"
-                  : "bg-background border"
-              }`}
+      <div className="glass flex h-[calc(100vh-14rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] px-4 py-3">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              disabled={isExhausted || loading}
+              aria-label={t("modelLabel")}
+              className="w-full appearance-none truncate rounded-lg border border-white/10 bg-white/[0.03] py-2 pl-3 pr-8 text-xs font-medium text-foreground transition hover:border-white/20 focus:border-accent/50 focus:outline-none disabled:opacity-50 sm:w-64"
             >
-              {msg.content}
-            </div>
+              {models.map((m) => (
+                <option key={m.id} value={m.id} className="bg-neutral-900">
+                  {m.name}
+                </option>
+              ))}
+            </select>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+            >
+              <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-background border rounded-lg px-3 py-2 text-sm text-muted-foreground">
-              <span className="animate-pulse">{t("typing")}</span>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Billing info after response */}
-      {billing && (
-        <div className="border rounded-lg p-3 bg-muted/30">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            {t("billingResponse")}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-            <div>
-              <div className="text-muted-foreground">{t("inputTokens")}</div>
-              <div className="font-bold">{billing.inputTokens.toLocaleString()}</div>
+          {currentModel && (
+            <span className="hidden text-[11px] text-muted-foreground tabular-nums md:inline">
+              Rp{currentModel.inputPrice.toLocaleString(locale)} / Rp{currentModel.outputPrice.toLocaleString(locale)}
+              <span className="text-muted-foreground/60"> per 1M</span>
+            </span>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <div
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] ${
+                isExhausted
+                  ? "border-red-500/30 bg-red-500/10"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+              title={estRemaining !== null ? t("requestsRemaining", { count: estRemaining.toLocaleString(locale) }) : undefined}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${isExhausted ? "bg-red-400" : isLow ? "bg-amber-400" : "bg-accent"}`} />
+              <span className="text-muted-foreground">{t("balanceLabel")}</span>
+              <span className={`font-semibold tabular-nums ${isExhausted ? "text-red-400" : "text-foreground"}`}>
+                {fmtToks(balance, 4)} {TOKS_LABEL}
+              </span>
             </div>
-            <div>
-              <div className="text-muted-foreground">{t("outputTokens")}</div>
-              <div className="font-bold">{billing.outputTokens.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">{t("totalTokens")}</div>
-              <div className="font-bold">{billing.totalTokens.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">{t("totalCost")}</div>
-              <div className="font-bold text-red-600">
-                {idrToToks(billing.totalCost).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 6 })} {TOKS_LABEL}
-              </div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">{t("remainingBalance")}</div>
-              <div className="font-bold text-green-600">
-                {idrToToks(billing.remainingBalance).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {TOKS_LABEL}
-              </div>
-            </div>
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-2">
-            {t("costBreakdown", {
-              input: `${idrToToks(billing.inputCost).toFixed(6)} ${TOKS_LABEL}`,
-              output: `${idrToToks(billing.outputCost).toFixed(6)} ${TOKS_LABEL}`,
-            })}
+            <button
+              type="button"
+              onClick={newChat}
+              disabled={loading || messages.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition hover:border-white/20 hover:text-foreground disabled:opacity-40 disabled:hover:border-white/10 disabled:hover:text-muted-foreground"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span className="hidden sm:inline">{t("newChat")}</span>
+            </button>
           </div>
         </div>
-      )}
 
-      {error && (
-        <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 text-sm text-red-600">
-          {error}
-          {error.includes("balance") && (
-            <> · <Link href="/dashboard/wallet" className="underline font-medium">{t("topUpLink")}</Link></>
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          {messages.length === 0 && !loading ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent">
+                <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                  <path
+                    d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <h2 className="mt-4 text-base font-semibold text-foreground">{t("emptyTitle")}</h2>
+              <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                {t("emptyStateLine1")} {t("emptyStateLine2")}
+              </p>
+              <div className="mt-6 grid w-full max-w-xl gap-2 sm:grid-cols-3">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => send(s)}
+                    disabled={isExhausted}
+                    className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 text-left text-xs leading-relaxed text-muted-foreground transition hover:border-accent/30 hover:bg-accent/5 hover:text-foreground disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-5">
+              {messages.map((msg, i) =>
+                msg.role === "user" ? (
+                  <div key={i} className="flex justify-end">
+                    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-sm leading-relaxed text-black">
+                      {msg.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="flex gap-3">
+                    <AssistantAvatar />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 text-[11px] font-medium text-muted-foreground">{msg.model}</div>
+                      <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                        {msg.content}
+                      </div>
+                      {msg.billing && (
+                        <div
+                          className="mt-2 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-2 py-1 text-[10px] text-muted-foreground tabular-nums"
+                          title={t("costBreakdown", {
+                            input: `${idrToToks(msg.billing.inputCost).toFixed(6)} ${TOKS_LABEL}`,
+                            output: `${idrToToks(msg.billing.outputCost).toFixed(6)} ${TOKS_LABEL}`,
+                          })}
+                        >
+                          <span>
+                            {msg.billing.inputTokens.toLocaleString(locale)} → {msg.billing.outputTokens.toLocaleString(locale)} {t("tokensShort")}
+                          </span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-accent-2">−{fmtToks(msg.billing.totalCost, 6)} {TOKS_LABEL}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span>
+                            {t("remainingBalance")}: {fmtToks(msg.billing.remainingBalance, 4)} {TOKS_LABEL}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ),
+              )}
+              {loading && (
+                <div className="flex gap-3">
+                  <AssistantAvatar />
+                  <div className="flex items-center gap-1 pt-2" aria-label={t("typing")}>
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
 
-      {/* Input */}
-      <div className="flex gap-2">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={isExhausted ? t("placeholderExhausted") : t("placeholderDefault")}
-          rows={2}
-          className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none disabled:opacity-50"
-          disabled={loading || isExhausted}
-        />
-        <button
-          onClick={send}
-          disabled={loading || !input.trim() || isExhausted}
-          className="bg-foreground text-background px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50 self-end"
-        >
-          {loading ? "..." : t("send")}
-        </button>
+        {/* Error */}
+        {error && (
+          <div className="mx-4 mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {error}
+            {error.includes("balance") && (
+              <> · <Link href="/dashboard/wallet" className="font-medium underline">{t("topUpLink")}</Link></>
+            )}
+          </div>
+        )}
+
+        {/* Composer */}
+        <div className="border-t border-white/[0.06] p-3 sm:p-4">
+          <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-2 transition focus-within:border-accent/40">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isExhausted ? t("placeholderExhausted") : t("placeholderDefault")}
+              rows={1}
+              className="max-h-[180px] flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
+              disabled={loading || isExhausted}
+            />
+            <button
+              type="button"
+              onClick={() => send()}
+              disabled={loading || !input.trim() || isExhausted}
+              aria-label={t("send")}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-black transition hover:opacity-90 disabled:bg-white/10 disabled:text-muted-foreground"
+            >
+              {loading ? (
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 animate-spin">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2.5" />
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path d="M12 19V5m-6 6 6-6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+          </div>
+          <p className="mx-auto mt-1.5 max-w-3xl px-1 text-[10px] text-muted-foreground/60">{t("enterHint")}</p>
+        </div>
       </div>
     </div>
   );

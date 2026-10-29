@@ -73,17 +73,15 @@ export default async function ChatPage() {
   });
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-5xl space-y-4">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">{t("title")}</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("subtitle")}
-          </p>
+          <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("subtitle")}</p>
         </div>
         <Link
           href="/dashboard"
-          className="text-xs text-muted-foreground hover:text-foreground transition"
+          className="text-xs text-muted-foreground transition hover:text-foreground"
         >
           ← {t("backToDashboard")}
         </Link>
@@ -92,8 +90,8 @@ export default async function ChatPage() {
       {!apiKey ? (
         <NoApiKey />
       ) : balance <= 0 ? (
-        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-6 text-center">
-          <p className="text-sm text-yellow-700">
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
+          <p className="text-sm text-amber-400">
             {t.rich("noBalance", {
               link: (chunks) => (
                 <Link href="/dashboard/wallet" className="font-medium underline">
