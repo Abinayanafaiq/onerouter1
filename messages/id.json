@@ -871,7 +871,10 @@
     "confirmDelete": "Hapus paket \"{name}\" dari daftar? API key-nya tidak bisa dipakai lagi. Riwayat pembelian tetap tersimpan.",
     "deleteFailed": "Gagal menghapus paket.",
     "cleanupButton": "Hapus {count} paket tidak aktif",
-    "confirmCleanup": "Hapus {count} paket yang sudah kedaluwarsa atau kuotanya habis? Paket yang masih punya sisa kuota tidak akan terhapus."
+    "confirmCleanup": "Hapus {count} paket yang sudah kedaluwarsa atau kuotanya habis? Paket yang masih punya sisa kuota tidak akan terhapus.",
+    "modelAccessLabel": "Akses model",
+    "modelAccessAll": "Semua model paket",
+    "modelsCountShort": "{count} model"
   },
   "BuyPackage": {
     "promoEyebrow": "Paket promo",

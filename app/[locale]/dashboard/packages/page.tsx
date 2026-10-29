@@ -4,6 +4,7 @@ import { prisma } from "@/app/lib/prisma";
 import { packageKeyHasValue } from "@/app/lib/api-keys";
 import { getEnabledPackageModels } from "@/app/lib/package-models";
 import { CopyChip } from "@/app/components/copy-chip";
+import { PackageBrandIcon, brandGroupOf, brandGroupsOf } from "@/app/components/package-brand-icon";
 import { RevealKey } from "../reveal-key";
 import { RegeneratePackageKey } from "./regenerate-package-key";
 import { CleanupPackagesButton, DeletePackageButton } from "./delete-package";
@@ -74,7 +75,11 @@ export default async function PackagesPage() {
       orderBy: { createdAt: "desc" },
       include: {
         // Order pertama yang menerbitkan key ini = paket asal (untuk renew).
-        orders: { orderBy: { createdAt: "asc" }, take: 1, select: { packageId: true } },
+        orders: {
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { packageId: true, package: { select: { allowedModels: true } } },
+        },
       },
     }),
     prisma.order.findMany({
@@ -119,7 +124,13 @@ export default async function PackagesPage() {
   // Flat list sorted by provider (stable sort keeps the admin-defined `sort`
   // order within each provider) so the grid renders uniform, tidy cells.
   const sortedModels = [...packageModels].sort((a, b) => a.provider.localeCompare(b.provider));
-  const providerCount = new Set(packageModels.map((model) => model.provider)).size;
+  const providerGroups = new Map<string, typeof sortedModels>();
+  for (const model of sortedModels) {
+    providerGroups.set(model.provider, [...(providerGroups.get(model.provider) ?? []), model]);
+  }
+  const providerCount = providerGroups.size;
+  // Brand semua model paket — dipakai untuk paket "akses semua model".
+  const allBrands = brandGroupsOf(packageModels.map((m) => `${m.provider} ${m.modelId}`));
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -199,6 +210,11 @@ export default async function PackagesPage() {
               const sourcePackageId = key.orders[0]?.packageId;
               const renewPkg = sourcePackageId ? renewableById.get(sourcePackageId) : undefined;
               const canRenew = Boolean(sourcePackageId && renewPkg && !renewPkg.isPromo);
+              const allowedModels = key.allowedModels.length
+                ? key.allowedModels
+                : key.orders[0]?.package?.allowedModels ?? [];
+              const keyBrands = allowedModels.length ? brandGroupsOf(allowedModels) : allBrands;
+              const mainBrand = allowedModels.length && keyBrands.length === 1 ? keyBrands[0] : null;
 
               return (
                 <article
@@ -218,8 +234,8 @@ export default async function PackagesPage() {
 
                   <div className="flex items-start justify-between gap-3 p-5 pb-0 sm:p-6 sm:pb-0">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/30 text-accent">
-                        <PackageIcon />
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/30 text-accent">
+                        {mainBrand ? <PackageBrandIcon group={mainBrand} className="h-6 w-6" /> : <PackageIcon />}
                       </span>
                       <div className="min-w-0">
                         <h3 className="truncate text-sm font-semibold tracking-tight">{key.name || key.label || t("defaultKeyName")}</h3>
@@ -273,7 +289,19 @@ export default async function PackagesPage() {
                       </span>
                     </div>
 
-                    <dl className="mt-5 grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{t("modelAccessLabel")}</span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <BrandStack brands={keyBrands} />
+                        <span className="truncate text-[11px] text-foreground/80">
+                          {allowedModels.length
+                            ? t("modelsCountShort", { count: allowedModels.length })
+                            : t("modelAccessAll")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <dl className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                       <Info label={t("activeUntil")} value={formatDate(key.expiresAt, locale, t)} />
                       <Info label={t("tokensUsed")} value={formatNumber(key.tokenUsed, locale)} mono />
                       <Info label={t("totalRequests")} value={key.requestCount.toLocaleString(locale)} mono />
@@ -350,9 +378,18 @@ export default async function PackagesPage() {
             <tbody className="divide-y divide-white/[0.05]">
               {orders.map((order) => {
                 const status = orderStatus(order.status, t);
+                const orderBrands = brandGroupsOf(order.package.allowedModels);
+                const orderBrand = orderBrands.length === 1 ? orderBrands[0] : null;
                 return (
                   <tr key={order.id} className="transition hover:bg-white/[0.03]">
-                    <td className="px-5 py-3.5 font-medium">{order.package.name}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-white/10 bg-black/30 text-accent">
+                          {orderBrand ? <PackageBrandIcon group={orderBrand} className="h-4 w-4" /> : <PackageIcon className="h-3.5 w-3.5" />}
+                        </span>
+                        <span className="font-medium">{order.package.name}</span>
+                      </div>
+                    </td>
                     <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">{formatDate(order.createdAt, locale, t)}</td>
                     <td className="px-5 py-3.5 text-right font-mono text-xs">{formatNumber(order.tokenQuotaSnapshot ?? order.package.tokenQuota, locale)}</td>
                     <td className="px-5 py-3.5 text-right font-mono text-xs">Rp{order.amount.toLocaleString(locale)}</td>
@@ -393,28 +430,43 @@ export default async function PackagesPage() {
             {t("modelsEmpty")}
           </div>
         ) : (
-          <div className="grid gap-2.5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
-            {sortedModels.map((model) => (
-              <div
-                key={model.id}
-                className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 transition hover:border-accent/25 hover:bg-accent/[0.03]"
-              >
-                <div className="min-w-0 flex-1">
-                  <code className="block truncate font-mono text-[12px] text-foreground/90" title={model.modelId}>
-                    {model.modelId}
-                  </code>
-                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
-                    <span className="truncate">{model.provider}</span>
-                    <span aria-hidden="true" className="text-white/20">•</span>
-                    <span className={`shrink-0 ${model.supportsStreaming ? "text-emerald-300" : ""}`}>
-                      {model.supportsStreaming ? t("streamBadge") : t("nonStreamBadge")}
+          <div className="space-y-6 p-4 sm:p-5">
+            {[...providerGroups].map(([provider, models]) => {
+              const brand = brandGroupOf(`${provider} ${models[0]?.modelId ?? ""}`);
+              return (
+                <div key={provider}>
+                  <div className="mb-2.5 flex items-center gap-2.5">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-white/10 bg-black/30 text-accent">
+                      {brand ? <PackageBrandIcon group={brand} className="h-4 w-4" /> : <PackageIcon className="h-3.5 w-3.5" />}
                     </span>
+                    <h3 className="text-sm font-semibold tracking-tight">{provider}</h3>
+                    <span className="text-[11px] text-muted-foreground">{t("modelsCountShort", { count: models.length })}</span>
+                    <span className="h-px flex-1 bg-white/[0.06]" />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {models.map((model) => (
+                      <div
+                        key={model.id}
+                        className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 transition hover:border-accent/25 hover:bg-accent/[0.03]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <code className="block truncate font-mono text-[12px] text-foreground/90" title={model.modelId}>
+                            {model.modelId}
+                          </code>
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${model.supportsStreaming ? "bg-emerald-400" : "bg-white/30"}`} />
+                            <span className={model.supportsStreaming ? "text-emerald-300" : "text-muted-foreground"}>
+                              {model.supportsStreaming ? t("streamBadge") : t("nonStreamBadge")}
+                            </span>
+                          </div>
+                        </div>
+                        <CopyChip text={model.modelId} />
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <CopyChip text={model.modelId} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <div className="flex flex-col gap-2 border-t border-white/[0.07] bg-white/[0.015] px-5 py-4 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -459,6 +511,26 @@ function Info({ label, value, mono }: { label: string; value: string; mono?: boo
   );
 }
 
-function PackageIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
+function BrandStack({ brands }: { brands: string[] }) {
+  const shown = brands.slice(0, 5);
+  const extra = brands.length - shown.length;
+  if (shown.length === 0) return null;
+  return (
+    <div className="flex shrink-0 items-center -space-x-1.5">
+      {shown.map((brand) => (
+        <span key={brand} className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-neutral-900 ring-2 ring-black/40">
+          <PackageBrandIcon group={brand} className="h-3.5 w-3.5" />
+        </span>
+      ))}
+      {extra > 0 && (
+        <span className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-neutral-900 text-[9px] font-semibold text-muted-foreground ring-2 ring-black/40">
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PackageIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
 }

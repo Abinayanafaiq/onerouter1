@@ -871,7 +871,10 @@
     "confirmDelete": "Remove package \"{name}\" from the list? Its API key will stop working. Purchase history is kept.",
     "deleteFailed": "Failed to delete package.",
     "cleanupButton": "Delete {count} inactive packages",
-    "confirmCleanup": "Delete {count} packages that are expired or out of quota? Packages with remaining quota will not be deleted."
+    "confirmCleanup": "Delete {count} packages that are expired or out of quota? Packages with remaining quota will not be deleted.",
+    "modelAccessLabel": "Model access",
+    "modelAccessAll": "All package models",
+    "modelsCountShort": "{count} models"
   },
   "BuyPackage": {
     "promoEyebrow": "Promo packages",

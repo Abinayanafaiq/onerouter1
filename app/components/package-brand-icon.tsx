@@ -31,6 +31,27 @@ function AnthropicLogo({ className }: { className: string }) {
   );
 }
 
+/**
+ * Tebak brand (key untuk PackageBrandIcon) dari teks bebas: nama provider,
+ * nama model, atau modelId. Null kalau tidak dikenali.
+ */
+export function brandGroupOf(text: string): string | null {
+  const hay = text.toLowerCase();
+  if (/glm|zhipu|z\.ai/.test(hay)) return "glm";
+  if (/deepseek/.test(hay)) return "deepseek";
+  if (/qwen|alibaba/.test(hay)) return "qwen";
+  if (/kimi|moonshot/.test(hay)) return "kimi";
+  if (/minimax/.test(hay)) return "minimax";
+  if (/gemini|google/.test(hay)) return "gemini";
+  if (/claude|anthropic/.test(hay)) return "claude";
+  return null;
+}
+
+/** Brand-brand unik dari daftar modelId, urutan sesuai kemunculan. */
+export function brandGroupsOf(modelIds: string[]): string[] {
+  return [...new Set(modelIds.map(brandGroupOf).filter((g): g is string => Boolean(g)))];
+}
+
 export function PackageBrandIcon({ group, className = "h-5 w-5" }: { group: string; className?: string }) {
   if (group === "glm") return <GlmLogo className={`${className} text-white`} />;
   if (group === "claude") return <AnthropicLogo className={`${className} text-[#D97757]`} />;
