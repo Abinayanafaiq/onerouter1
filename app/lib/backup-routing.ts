@@ -371,7 +371,11 @@ export function isBackupFailoverStatus(status: number): boolean {
     status === 403 ||
     status === 404 ||
     status === 408 ||
+    // 413/431: upstream menolak karena ukuran request — upstream lain mungkin
+    // batasnya lebih longgar.
+    status === 413 ||
     status === 429 ||
+    status === 431 ||
     status >= 500
   );
 }
