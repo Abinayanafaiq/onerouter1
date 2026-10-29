@@ -55,6 +55,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+const compactNumber = new Intl.NumberFormat("id-ID", { notation: "compact" });
+
 const inputClass =
   "w-full px-2.5 py-1.5 border border-neutral-700 rounded-md bg-neutral-950 text-sm font-mono text-neutral-200";
 
@@ -84,6 +86,7 @@ export function PackageEditor({
     isActive: pkg?.isActive ?? true,
     allowedModels: pkg?.allowedModels?.join(", ") ?? "",
   });
+  const [open, setOpen] = useState(isCreate);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -165,6 +168,45 @@ export function PackageEditor({
     setTimeout(() => setError(null), 3500);
   }
 
+  if (!isCreate && !open) {
+    const soldOut = pkg.stock <= 0;
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className="w-full flex items-center gap-3 border border-neutral-800 rounded-lg px-4 py-2.5 bg-neutral-900 text-left hover:border-neutral-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-100"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm text-neutral-200">{pkg.name}</span>
+            {!pkg.isActive && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400">Nonaktif</span>
+            )}
+            {pkg.isPromo && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-900/40 text-rose-300">Promo</span>
+            )}
+            {soldOut && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-900/40 text-red-300">Stok habis</span>
+            )}
+          </div>
+          {pkg.allowedModels.length > 0 && (
+            <p className="text-[11px] text-neutral-500 font-mono truncate mt-0.5">
+              {pkg.allowedModels.join(", ")}
+            </p>
+          )}
+        </div>
+        <div className="hidden sm:flex items-center gap-4 text-xs text-neutral-400 font-mono shrink-0">
+          <span>{compactNumber.format(Number(pkg.tokenQuota) || 0)} token</span>
+          <span>Rp{pkg.price.toLocaleString("id-ID")}</span>
+          <span>{pkg.durationDays} hari</span>
+          <span>stok {pkg.stock}</span>
+        </div>
+        <span aria-hidden="true" className="text-neutral-500 text-xs shrink-0">▾</span>
+      </button>
+    );
+  }
+
   return (
     <div className="border border-neutral-800 rounded-lg p-4 bg-neutral-900 space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -188,13 +230,23 @@ export function PackageEditor({
           )}
         </div>
         {!isCreate && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-neutral-500">Aktif</span>
-            <Toggle
-              checked={form.isActive}
-              onChange={(v) => set("isActive", v)}
-              label="Aktif"
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-neutral-500">Aktif</span>
+              <Toggle
+                checked={form.isActive}
+                onChange={(v) => set("isActive", v)}
+                label="Aktif"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-expanded={true}
+              className="text-xs text-neutral-400 hover:text-neutral-100 transition"
+            >
+              Tutup ▴
+            </button>
           </div>
         )}
       </div>

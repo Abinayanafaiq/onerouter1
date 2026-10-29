@@ -38,6 +38,12 @@ export function PackagesManager({
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [selected, setSelected] = useState("general");
+  const [query, setQuery] = useState("");
+  const search = query.trim().toLowerCase();
+  const matchesSearch = (pkg: PackageData) =>
+    [pkg.name, ...pkg.allowedModels].some((text) => text.toLowerCase().includes(search));
+  const isVisible = (pkg: PackageData) =>
+    search ? matchesSearch(pkg) : categoryOf(pkg) === activeCategory;
   const visibleCategories = categories.filter(({ key }) => packages.some((pkg) => categoryOf(pkg) === key));
   const activeCategory = visibleCategories.some(({ key }) => key === selected)
     ? selected
@@ -59,7 +65,18 @@ export function PackagesManager({
         <PackageEditor pkg={null} onClose={() => setShowAdd(false)} availableModels={availableModels} />
       )}
 
-      {visibleCategories.length > 0 && (
+      {packages.length > 0 && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cari nama paket atau model…"
+          aria-label="Cari paket"
+          className="w-full sm:max-w-xs px-3 py-1.5 border border-neutral-700 rounded-md bg-neutral-950 text-sm text-neutral-200 placeholder:text-neutral-600"
+        />
+      )}
+
+      {visibleCategories.length > 0 && !search && (
         <div className="flex flex-wrap gap-2" aria-label="Pilih kategori paket">
           {visibleCategories.map(({ key, label }) => (
             <button
@@ -90,10 +107,13 @@ export function PackagesManager({
           </div>
         ) : (
           packages.map((p) => (
-            <div key={p.id} hidden={categoryOf(p) !== activeCategory}>
+            <div key={p.id} hidden={!isVisible(p)}>
               <PackageEditor pkg={p} availableModels={availableModels} />
             </div>
           ))
+        )}
+        {search && !packages.some(matchesSearch) && (
+          <p className="text-sm text-neutral-500 text-center py-6">Tidak ada paket yang cocok dengan &quot;{query.trim()}&quot;.</p>
         )}
       </div>
     </div>
