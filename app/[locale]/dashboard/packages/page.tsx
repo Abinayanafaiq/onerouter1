@@ -363,7 +363,7 @@ export default async function PackagesPage() {
       <section className="space-y-4">
         <SectionHeading title={t("historyTitle")} subtitle={t("historySubtitle")} />
         <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.02]">
-          <table className="w-full min-w-[680px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-white/[0.07] bg-white/[0.025]">
               <tr className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
                 <th className="px-5 py-3 text-left font-medium">{t("thPackage")}</th>
@@ -393,8 +393,8 @@ export default async function PackagesPage() {
                     <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">{formatDate(order.createdAt, locale, t)}</td>
                     <td className="px-5 py-3.5 text-right font-mono text-xs">{formatNumber(order.tokenQuotaSnapshot ?? order.package.tokenQuota, locale)}</td>
                     <td className="px-5 py-3.5 text-right font-mono text-xs">Rp{order.amount.toLocaleString(locale)}</td>
-                    <td className="px-5 py-3.5 text-xs text-muted-foreground">{order.paymentMethod.replaceAll("_", " ")}</td>
-                    <td className="px-5 py-3.5 text-center"><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span></td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">{order.paymentMethod.replaceAll("_", " ")}</td>
+                    <td className="px-5 py-3.5 text-center"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-medium ${status.cls}`}>{status.label}</span></td>
                     <td className="px-5 py-3.5 text-right">
                       {order.status === "APPROVED" ? (
                         <Link href={`/invoice/${order.id}`} className="text-xs font-semibold text-accent hover:underline">{tInvoice("link")}</Link>
