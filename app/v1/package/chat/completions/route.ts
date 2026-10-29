@@ -17,6 +17,7 @@ import {
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 import { resolvePackageModel } from "@/app/lib/package-models";
+import { DsmlStreamFixer, fixDsmlInCompletion, requestHasTools } from "@/app/lib/dsml-tool-calls";
 import { createApiRequestLog } from "@/app/lib/api-request-log";
 import { resolveBackupUpstreams, isBackupFailoverStatus } from "@/app/lib/backup-routing";
 import {
@@ -327,9 +328,17 @@ async function handleChat(request: Request) {
     let buffer = "";
     let inputTokens = 0;
     let outputTokens = 0;
+    // DeepSeek kadang membocorkan markup tool call DSML mentah ke content;
+    // ubah kembali jadi delta tool_calls native kalau client mengirim tools.
+    const dsmlFixer = requestHasTools(body) ? new DsmlStreamFixer() : null;
 
     const stream = new ReadableStream({
       async start(controller) {
+        const forward = (line: string) => {
+          for (const out of dsmlFixer ? dsmlFixer.transformLine(line) : [line]) {
+            controller.enqueue(encoder.encode(`${out}\n`));
+          }
+        };
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -347,15 +356,21 @@ async function handleChat(request: Request) {
                   // Content chunks are forwarded unchanged even if not JSON.
                 }
               }
-              if (payload !== "[DONE]") controller.enqueue(encoder.encode(`${line}\n`));
+              if (payload !== "[DONE]") forward(line);
             }
           }
-          if (buffer && !buffer.includes("[DONE]")) controller.enqueue(encoder.encode(buffer));
+          if (buffer && !buffer.includes("[DONE]")) forward(buffer);
         } catch (err) {
           const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
           console.error(`[${ts()}] [v1/package/chat] error saat membaca stream upstream: ${reason}`);
           throw err;
         } finally {
+          if (dsmlFixer) {
+            for (const out of dsmlFixer.flush()) controller.enqueue(encoder.encode(`${out}\n`));
+            if (dsmlFixer.recovered > 0) {
+              console.log(`[${ts()}] [v1/package/chat] ubah ${dsmlFixer.recovered} tool call DSML bocor jadi tool_calls (stream) key=${apiKey.id}`);
+            }
+          }
           // If the vendor omits usage, charge conservative local estimates rather than a free request.
           if (inputTokens + outputTokens === 0) {
             console.warn(`[${ts()}] [v1/package/chat] upstream tidak mengirim usage; tagih estimasi prompt~${promptEstimate} out=${maxOutput} key=${apiKey.id}`);
@@ -406,6 +421,12 @@ async function handleChat(request: Request) {
     console.log(`[${ts()}] [v1/package/chat] reservation released (invalid upstream response)`);
     await logUpstreamFailure(502);
     return apiError("Upstream mengembalikan respons yang tidak valid.", 502, "api_error", "invalid_upstream_response");
+  }
+  if (requestHasTools(body)) {
+    const recovered = fixDsmlInCompletion(data);
+    if (recovered > 0) {
+      console.log(`[${ts()}] [v1/package/chat] ubah ${recovered} tool call DSML bocor jadi tool_calls key=${apiKey.id}`);
+    }
   }
   let { input, output } = normalizedUsage(data.usage);
   if (input + output === 0) {

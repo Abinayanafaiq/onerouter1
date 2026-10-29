@@ -41,6 +41,7 @@ import {
   countEnabledMasterKeys,
   maskForKeyLog,
 } from "@/app/lib/master-api-keys";
+import { DsmlStreamFixer, fixDsmlInCompletion, requestHasTools } from "@/app/lib/dsml-tool-calls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -553,9 +554,17 @@ async function handleChat(request: Request) {
         let streamPromptTokens = 0;
         let streamCompletionTokens = 0;
         let buffer = "";
+        // DeepSeek can leak raw DSML tool-call markup into content; turn it
+        // back into native tool_calls deltas when the client offered tools.
+        const dsmlFixer = requestHasTools(body) ? new DsmlStreamFixer() : null;
 
         const stream = new ReadableStream({
           async start(controller) {
+            const forward = (line: string) => {
+              for (const out of dsmlFixer ? dsmlFixer.transformLine(line) : [line]) {
+                controller.enqueue(encoder.encode(out + "\n"));
+              }
+            };
             try {
               while (true) {
                 const { done, value } = await reader.read();
@@ -586,11 +595,17 @@ async function handleChat(request: Request) {
                       );
                     }
                   }
-                  controller.enqueue(encoder.encode(line + "\n"));
+                  forward(line);
                 }
               }
-              if (buffer) controller.enqueue(encoder.encode(buffer));
+              if (buffer) forward(buffer);
             } finally {
+              if (dsmlFixer) {
+                for (const out of dsmlFixer.flush()) controller.enqueue(encoder.encode(out + "\n"));
+                if (dsmlFixer.recovered > 0) {
+                  console.log(`[v1/chat] converted ${dsmlFixer.recovered} leaked DSML tool call(s) to tool_calls (stream)`);
+                }
+              }
               // Settle the reservation against actual usage
               if (streamPromptTokens === 0 && streamCompletionTokens === 0) {
                 console.warn(
@@ -661,6 +676,13 @@ async function handleChat(request: Request) {
           requestMeta: buildMeta(502),
         });
         return errorResponse("Upstream returned an invalid response", 502, "api_error");
+      }
+
+      if (requestHasTools(body)) {
+        const recovered = fixDsmlInCompletion(data);
+        if (recovered > 0) {
+          console.log(`[v1/chat] converted ${recovered} leaked DSML tool call(s) to tool_calls`);
+        }
       }
 
       const promptTokensResp = data.usage?.prompt_tokens || 0;
