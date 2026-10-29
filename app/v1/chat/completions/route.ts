@@ -34,6 +34,7 @@ import {
   MASTER_API_KEY,
 } from "@/app/lib/constants";
 import { resolveBackupUpstreams, isBackupFailoverStatus } from "@/app/lib/backup-routing";
+import { logFailover } from "@/app/lib/failover-log";
 import {
   getActiveMasterKeyForRequest,
   markKeyError,
@@ -425,7 +426,7 @@ async function handleChat(request: Request) {
         });
       } catch (e) {
         if (!canFailover) throw e;
-        console.error(`[v1/chat] ${maskedLog} unreachable, failing over to next upstream:`, e);
+        logFailover(`[v1/chat] ${maskedLog} unreachable, failing over to next upstream: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`);
         lastUpstreamStatus = 502;
         lastUpstreamText = e instanceof Error ? e.message : String(e);
         continue;
@@ -494,7 +495,7 @@ async function handleChat(request: Request) {
       if (isRetryable) {
         const text = await upstream.text().catch(() => "");
         if (backup) {
-          console.error(`[v1/chat] ${maskedLog} error ${upstream.status}, failing over to next upstream`);
+          logFailover(`[v1/chat] ${maskedLog} error ${upstream.status}, failing over to next upstream: ${text.slice(0, 200)}`);
         } else if (isKeyError) {
           console.error(`[v1/chat] upstream key error: ${upstream.status}, marking key ${maskedLog} errored`);
           await markKeyError(currentKey.id, upstream.status, text.slice(0, 500));

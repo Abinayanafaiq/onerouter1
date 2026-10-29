@@ -20,6 +20,7 @@ import { resolvePackageModel } from "@/app/lib/package-models";
 import { DsmlStreamFixer, fixDsmlInCompletion, requestHasTools } from "@/app/lib/dsml-tool-calls";
 import { createApiRequestLog } from "@/app/lib/api-request-log";
 import { resolveBackupUpstreams, isBackupFailoverStatus } from "@/app/lib/backup-routing";
+import { logFailover } from "@/app/lib/failover-log";
 import {
   releasePackageTokens,
   reservePackageTokens,
@@ -286,11 +287,11 @@ async function handleChat(request: Request) {
       });
     } catch (err) {
       const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      console.error(`[${ts()}] [v1/package/chat] gagal menghubungi upstream${target.label ? ` ${target.label}` : ""}: ${reason}${request.signal.aborted ? " (client abort)" : ""}`);
       if (canFailover && !request.signal.aborted) {
-        console.warn(`[${ts()}] [v1/package/chat] failover ke upstream berikutnya key=${apiKey.id}`);
+        logFailover(`[v1/package/chat] ${target.label || "upstream"} tidak terjangkau (${reason}), failover ke upstream berikutnya key=${apiKey.id}`);
         continue;
       }
+      console.error(`[${ts()}] [v1/package/chat] gagal menghubungi upstream${target.label ? ` ${target.label}` : ""}: ${reason}${request.signal.aborted ? " (client abort)" : ""}`);
       await releasePackageTokens(reservation.id);
       // Client yang membatalkan request bukan gangguan layanan.
       if (!request.signal.aborted) await logUpstreamFailure(502);
@@ -300,8 +301,8 @@ async function handleChat(request: Request) {
 
     if (!upstream.ok && canFailover && isBackupFailoverStatus(upstream.status)) {
       const text = await upstream.text().catch(() => "");
-      console.error(
-        `[${ts()}] [v1/package/chat] ${target.label} error ${upstream.status}, failover ke upstream berikutnya: ${text.slice(0, 200)}`,
+      logFailover(
+        `[v1/package/chat] ${target.label} error ${upstream.status}, failover ke upstream berikutnya key=${apiKey.id}: ${text.slice(0, 200)}`,
       );
       continue;
     }

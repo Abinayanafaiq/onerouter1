@@ -44,3 +44,6 @@ next-env.d.ts
 
 # backup database (berisi data produksi, JANGAN di-commit)
 backups/
+
+# failover upstream logs
+/logs/
