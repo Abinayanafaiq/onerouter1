@@ -37,6 +37,46 @@ const PACKAGE_UPSTREAM_API_KEY = process.env.PACKAGE_UPSTREAM_API_KEY || "";
 // Timestamp lokal server untuk prefix log debug (format: YYYY-MM-DD HH:mm:ss)
 const ts = () => new Date().toLocaleString("sv-SE");
 
+// Header respons upstream yang berguna untuk melacak asal error (proxy/CDN
+// mana yang menolak, request id untuk dilaporkan ke penyedia upstream).
+const UPSTREAM_DEBUG_HEADERS = ["server", "via", "cf-ray", "x-request-id", "request-id", "x-amzn-requestid", "content-type", "retry-after"];
+
+/** Ringkasan request keluar + respons upstream untuk log error. Tanpa nilai rahasia. */
+function describeUpstreamFailure(opts: {
+  target: { url: string; label?: string };
+  attempt: number;
+  totalTargets: number;
+  headers: Record<string, string>;
+  bodyBytes: number;
+  messageCount: number;
+  upstream: Response;
+}) {
+  const { target, upstream } = opts;
+  let endpoint = target.url;
+  try {
+    const u = new URL(target.url);
+    endpoint = `${u.host}${u.pathname}`;
+  } catch {}
+  // Ukuran tiap header yang kita kirim — penting untuk 431 (header terlalu besar).
+  const headerSizes = Object.entries(opts.headers)
+    .map(([k, v]) => `${k}=${v.length}B`)
+    .join(",");
+  const headerTotal = Object.entries(opts.headers).reduce((n, [k, v]) => n + k.length + v.length + 4, 0);
+  const respHeaders = UPSTREAM_DEBUG_HEADERS
+    .map((h) => [h, upstream.headers.get(h)] as const)
+    .filter(([, v]) => v)
+    .map(([h, v]) => `${h}=${v}`)
+    .join(" ");
+  return [
+    `target=${target.label || "upstream"} (${opts.attempt}/${opts.totalTargets})`,
+    `endpoint=${endpoint}`,
+    `url_len=${target.url.length}`,
+    `req_headers=${headerTotal}B [${headerSizes}]`,
+    `req_body=${opts.bodyBytes}B messages=${opts.messageCount}`,
+    respHeaders ? `resp_headers: ${respHeaders}` : "resp_headers: -",
+  ].join(" | ");
+}
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -266,6 +306,7 @@ async function handleChat(request: Request) {
   }
 
   let upstream!: Response;
+  let failureContext = "";
   for (const [i, target] of targets.entries()) {
     // Hanya upstream backup yang bukan kandidat terakhir yang boleh failover.
     const canFailover = i + 1 < targets.length;
@@ -274,15 +315,17 @@ async function handleChat(request: Request) {
       `[${ts()}] [v1/package/chat] forwarding to: ${target.url} model=${requestedModel}->${body.model}${target.label ? ` (${target.label}, ${i + 1}/${targets.length})` : ""} stream=${isStream} reserved=${promptEstimate + maxOutput} key=${apiKey.id} user=${apiKey.userId}`,
     );
 
+    const outHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${target.apiKey}`,
+      "x-session-hash": computeSessionHash(apiKey.userId),
+    };
+    const outBody = JSON.stringify(body);
     try {
       upstream = await fetch(target.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${target.apiKey}`,
-          "x-session-hash": computeSessionHash(apiKey.userId),
-        },
-        body: JSON.stringify(body),
+        headers: outHeaders,
+        body: outBody,
         signal: request.signal,
       });
     } catch (err) {
@@ -298,11 +341,22 @@ async function handleChat(request: Request) {
       return apiError("Gagal menghubungi upstream paket.", 502, "api_error", "upstream_unavailable");
     }
     console.log(`[${ts()}] [v1/package/chat] upstream status:`, upstream.status);
+    if (!upstream.ok) {
+      failureContext = describeUpstreamFailure({
+        target,
+        attempt: i + 1,
+        totalTargets: targets.length,
+        headers: outHeaders,
+        bodyBytes: Buffer.byteLength(outBody),
+        messageCount: Array.isArray(body.messages) ? body.messages.length : 0,
+        upstream,
+      });
+    }
 
     if (!upstream.ok && canFailover && isBackupFailoverStatus(upstream.status)) {
       const text = await upstream.text().catch(() => "");
       logFailover(
-        `[v1/package/chat] ${target.label} error ${upstream.status}, failover ke upstream berikutnya key=${apiKey.id}: ${text.slice(0, 200)}`,
+        `[v1/package/chat] ${target.label} error ${upstream.status}, failover ke upstream berikutnya key=${apiKey.id}: ${text.slice(0, 200)} | ${failureContext}`,
       );
       continue;
     }
@@ -311,7 +365,10 @@ async function handleChat(request: Request) {
 
   if (!upstream.ok) {
     const upstreamMessage = await upstream.text().catch(() => "");
-    console.error(`[${ts()}] [v1/package/chat] upstream error:`, upstream.status, upstreamMessage.slice(0, 500));
+    console.error(
+      `[${ts()}] [v1/package/chat] upstream error: ${upstream.status} ${upstreamMessage.slice(0, 500).replace(/\s*\n\s*/g, " ")}` +
+        ` | model=${requestedModel}->${body.model} stream=${isStream} key=${apiKey.id} user=${apiKey.userId} | ${failureContext}`,
+    );
     await releasePackageTokens(reservation.id);
     console.log(`[${ts()}] [v1/package/chat] reservation released (upstream error)`);
     await logUpstreamFailure(upstream.status);
