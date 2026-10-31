@@ -50,7 +50,10 @@ export function PakasirPendingVerifier() {
     verify();
     const onFocus = () => verify();
     window.addEventListener("focus", onFocus);
-    const interval = setInterval(verify, 15000);
+    // Lewati tab di background; focus memicu verify saat user kembali.
+    const interval = setInterval(() => {
+      if (!document.hidden) verify();
+    }, 15000);
 
     return () => {
       active = false;

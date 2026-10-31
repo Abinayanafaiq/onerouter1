@@ -17,7 +17,6 @@ export function triggerWalletRefresh() {
 type Summary = {
   balanceToks: number;
   balance: number;
-  estimatedRemainingRequests: number | null;
 };
 
 export function CreditBadge({ initialToks }: { initialToks: number }) {
@@ -29,7 +28,7 @@ export function CreditBadge({ initialToks }: { initialToks: number }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/wallet/summary", { cache: "no-store" });
+      const res = await fetch("/api/wallet/summary?lite=1", { cache: "no-store" });
       if (res.ok) {
         const data = (await res.json()) as { success: boolean; summary?: Summary };
         if (data.success && data.summary) {
@@ -50,7 +49,10 @@ export function CreditBadge({ initialToks }: { initialToks: number }) {
     const onEvent = () => refresh();
     window.addEventListener(WALLET_REFRESH_EVENT, onEvent);
     window.addEventListener("focus", onEvent);
-    const interval = setInterval(refresh, 30000);
+    // Tab di background tidak perlu polling; focus memicu refresh saat kembali.
+    const interval = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, 60000);
     return () => {
       clearTimeout(mountTimer);
       window.removeEventListener(WALLET_REFRESH_EVENT, onEvent);

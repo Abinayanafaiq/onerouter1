@@ -341,10 +341,15 @@ export async function authenticateRequest(
     if (!ip || !whitelist.includes(ip)) return null;
   }
 
-  // Touch lastUsedAt without blocking the request path.
-  void prisma.apiKey
-    .update({ where: { id: apiKey.id }, data: { lastUsedAt: new Date() } })
-    .catch(() => {});
+  // Touch lastUsedAt without blocking the request path, at most once a minute
+  // per key: a write on every request takes the same ApiKey row lock that
+  // package reserve/settle need and was the most-called statement in the DB.
+  const now = new Date();
+  if (!apiKey.lastUsedAt || now.getTime() - apiKey.lastUsedAt.getTime() > 60_000) {
+    void prisma.apiKey
+      .update({ where: { id: apiKey.id }, data: { lastUsedAt: now } })
+      .catch(() => {});
+  }
 
   return {
     ...apiKey,
