@@ -1112,6 +1112,36 @@ export function sanitizeUpstreamError(
   return { ...sanitizeUpstreamStatus(status), type: "api_error", code: null, param: null };
 }
 
+/**
+ * Sanitize an upstream SSE `data:` line that carries a mid-stream error.
+ * Upstreams (e.g. DeepSeek) emit `{"error":{"code":400,...}}` with a numeric
+ * code after HTTP 200 is already sent; strict OpenAI clients (Rust/serde based
+ * ones like Zed or Codex) fail to parse it with "invalid type: integer `400`,
+ * expected a string". The raw message may also name the real provider. Such
+ * lines are rewritten into a sanitized OpenAI-shaped error with a string/null
+ * code; every other line is returned unchanged.
+ */
+export function sanitizeStreamErrorLine(line: string, logTag: string): string {
+  if (!line.startsWith("data:")) return line;
+  const payload = line.slice(5).trim();
+  if (!payload.startsWith("{") || !payload.includes('"error"')) return line;
+  let parsed: { error?: unknown };
+  try {
+    parsed = JSON.parse(payload);
+  } catch {
+    return line;
+  }
+  if (!parsed.error) return line;
+  console.error(`${logTag} upstream mid-stream error:`, payload.slice(0, 500));
+  const err = (typeof parsed.error === "object" ? parsed.error : {}) as { code?: unknown; status?: unknown };
+  const rawStatus = Number(err.code ?? err.status);
+  const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 502;
+  const safe = sanitizeUpstreamError(status, payload);
+  return `data: ${JSON.stringify({
+    error: { message: safe.message, type: safe.type, param: safe.param, code: safe.code },
+  })}`;
+}
+
 function sanitizeUpstreamStatus(status: number): { message: string; status: number } {
   switch (status) {
     case 400:

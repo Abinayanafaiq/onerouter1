@@ -14,8 +14,10 @@ import {
   normalizeToolChoice,
   stripUnsupportedFields,
   withNonStreamKeepAlive,
+  sanitizeStreamErrorLine,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
+
 import { resolvePackageModel } from "@/app/lib/package-models";
 import { DsmlStreamFixer, fixDsmlInCompletion, requestHasTools } from "@/app/lib/dsml-tool-calls";
 import { createApiRequestLog } from "@/app/lib/api-request-log";
@@ -414,7 +416,7 @@ async function handleChat(request: Request) {
                   // Content chunks are forwarded unchanged even if not JSON.
                 }
               }
-              if (payload !== "[DONE]") forward(line);
+              if (payload !== "[DONE]") forward(sanitizeStreamErrorLine(line, "[v1/package/chat]"));
             }
           }
           if (buffer && !buffer.includes("[DONE]")) forward(buffer);

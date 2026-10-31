@@ -13,6 +13,7 @@ import {
   getClientIp,
   errorResponse,
   sanitizeUpstreamError,
+  sanitizeStreamErrorLine,
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
@@ -596,7 +597,7 @@ async function handleChat(request: Request) {
                       );
                     }
                   }
-                  forward(line);
+                  forward(sanitizeStreamErrorLine(line, "[v1/chat]"));
                 }
               }
               if (buffer) forward(buffer);
