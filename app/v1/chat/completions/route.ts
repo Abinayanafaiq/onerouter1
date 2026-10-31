@@ -598,7 +598,7 @@ async function handleChat(request: Request) {
                       );
                     }
                   }
-                  forward(sanitizeStreamErrorLine(line, "[v1/chat]", describeRequestShape(body)));
+                  forward(sanitizeStreamErrorLine(line, "[v1/chat]", () => describeRequestShape(body)));
                 }
               }
               if (buffer) forward(buffer);

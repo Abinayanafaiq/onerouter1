@@ -417,7 +417,7 @@ async function handleChat(request: Request) {
                   // Content chunks are forwarded unchanged even if not JSON.
                 }
               }
-              if (payload !== "[DONE]") forward(sanitizeStreamErrorLine(line, "[v1/package/chat]", describeRequestShape(body)));
+              if (payload !== "[DONE]") forward(sanitizeStreamErrorLine(line, "[v1/package/chat]", () => describeRequestShape(body)));
             }
           }
           if (buffer && !buffer.includes("[DONE]")) forward(buffer);

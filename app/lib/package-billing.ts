@@ -44,25 +44,20 @@ export async function reservePackageTokens(apiKeyId: string, amount: number) {
 }
 
 export async function releasePackageTokens(reservationId: string) {
-  return prisma.$transaction(async (tx) => {
-    const reservation = await tx.tokenReservation.findUnique({ where: { id: reservationId } });
-    if (!reservation || reservation.status !== "RESERVED") return false;
-
-    const claimed = await tx.tokenReservation.updateMany({
-      where: { id: reservationId, status: "RESERVED" },
-      data: {
-        status: "RELEASED",
-        releasedTokens: reservation.reservedTokens,
-        settledAt: new Date(),
-      },
-    });
-    if (claimed.count !== 1) return false;
-    await tx.apiKey.update({
-      where: { id: reservation.apiKeyId },
-      data: { tokenUsed: { decrement: reservation.reservedTokens } },
-    });
-    return true;
-  });
+  // Single atomic statement (no interactive transaction) — see settlePackageTokens.
+  const updated = await prisma.$executeRaw`
+    WITH released AS (
+      UPDATE public."TokenReservation"
+      SET "status" = 'RELEASED', "releasedTokens" = "reservedTokens", "settledAt" = NOW()
+      WHERE "id" = ${reservationId} AND "status" = 'RESERVED'
+      RETURNING "apiKeyId", "reservedTokens"
+    )
+    UPDATE public."ApiKey" k
+    SET "tokenUsed" = k."tokenUsed" - r."reservedTokens", "updatedAt" = NOW()
+    FROM released r
+    WHERE k."id" = r."apiKeyId"
+  `;
+  return updated === 1;
 }
 
 export async function settlePackageTokens(params: {

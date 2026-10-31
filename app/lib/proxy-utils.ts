@@ -1151,7 +1151,12 @@ export function describeRequestShape(body: Record<string, unknown>): string {
   return `msgs=${messages.length} chars=${chars} tools=${Array.isArray(body.tools) ? body.tools.length : 0} opts={${opts.join(" ")}} roles=${roles.join(" ")}`;
 }
 
-export function sanitizeStreamErrorLine(line: string, logTag: string, requestShape?: string): string {
+export function sanitizeStreamErrorLine(
+  line: string,
+  logTag: string,
+  // Lazy: describing a large body is expensive and this runs on every SSE line.
+  requestShape?: () => string,
+): string {
   if (!line.startsWith("data:")) return line;
   const payload = line.slice(5).trim();
   if (!payload.startsWith("{") || !payload.includes('"error"')) return line;
@@ -1163,7 +1168,7 @@ export function sanitizeStreamErrorLine(line: string, logTag: string, requestSha
   }
   if (!parsed.error) return line;
   console.error(`${logTag} upstream mid-stream error:`, payload.slice(0, 500));
-  if (requestShape) console.error(`${logTag} request shape: ${requestShape.slice(0, 4000)}`);
+  if (requestShape) console.error(`${logTag} request shape: ${requestShape().slice(0, 4000)}`);
   const err = (typeof parsed.error === "object" ? parsed.error : {}) as { code?: unknown; status?: unknown };
   const rawStatus = Number(err.code ?? err.status);
   const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 502;
