@@ -15,6 +15,7 @@ import {
   stripUnsupportedFields,
   withNonStreamKeepAlive,
   sanitizeStreamErrorLine,
+  describeRequestShape,
   type RequestMeta,
 } from "@/app/lib/proxy-utils";
 
@@ -416,7 +417,7 @@ async function handleChat(request: Request) {
                   // Content chunks are forwarded unchanged even if not JSON.
                 }
               }
-              if (payload !== "[DONE]") forward(sanitizeStreamErrorLine(line, "[v1/package/chat]"));
+              if (payload !== "[DONE]") forward(sanitizeStreamErrorLine(line, "[v1/package/chat]", describeRequestShape(body)));
             }
           }
           if (buffer && !buffer.includes("[DONE]")) forward(buffer);

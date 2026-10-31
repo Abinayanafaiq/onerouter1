@@ -14,6 +14,7 @@ import {
   errorResponse,
   sanitizeUpstreamError,
   sanitizeStreamErrorLine,
+  describeRequestShape,
   normalizeReasoningEffort,
   dedupeReasoningFields,
   repairToolCallArguments,
@@ -597,7 +598,7 @@ async function handleChat(request: Request) {
                       );
                     }
                   }
-                  forward(sanitizeStreamErrorLine(line, "[v1/chat]"));
+                  forward(sanitizeStreamErrorLine(line, "[v1/chat]", describeRequestShape(body)));
                 }
               }
               if (buffer) forward(buffer);

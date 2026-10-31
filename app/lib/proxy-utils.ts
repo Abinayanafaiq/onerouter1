@@ -1121,7 +1121,32 @@ export function sanitizeUpstreamError(
  * lines are rewritten into a sanitized OpenAI-shaped error with a string/null
  * code; every other line is returned unchanged.
  */
-export function sanitizeStreamErrorLine(line: string, logTag: string): string {
+/**
+ * One-line summary of a chat request's shape (no message text) for server
+ * logs, so an upstream 400 without details can still be diagnosed.
+ */
+export function describeRequestShape(body: Record<string, unknown>): string {
+  const messages = Array.isArray(body.messages) ? (body.messages as Record<string, unknown>[]) : [];
+  const roles = messages.map((m) => {
+    const r = String(m.role ?? "?")[0];
+    const extras = [
+      Array.isArray(m.tool_calls) ? `tc${m.tool_calls.length}` : "",
+      m.reasoning_content !== undefined ? "rc" : "",
+      Array.isArray(m.content) ? `[${(m.content as { type?: string }[]).map((p) => p.type ?? "?").join(",")}]` : "",
+      m.content === null || m.content === "" ? "empty" : "",
+    ].filter(Boolean);
+    return extras.length > 0 ? `${r}(${extras.join(" ")})` : r;
+  });
+  const keys = Object.keys(body).filter((k) => k !== "messages" && k !== "tools");
+  const opts = keys.map((k) => {
+    const v = body[k];
+    return typeof v === "object" && v !== null ? k : `${k}=${String(v).slice(0, 40)}`;
+  });
+  const chars = JSON.stringify(messages).length;
+  return `msgs=${messages.length} chars=${chars} tools=${Array.isArray(body.tools) ? body.tools.length : 0} opts={${opts.join(" ")}} roles=${roles.join(" ")}`;
+}
+
+export function sanitizeStreamErrorLine(line: string, logTag: string, requestShape?: string): string {
   if (!line.startsWith("data:")) return line;
   const payload = line.slice(5).trim();
   if (!payload.startsWith("{") || !payload.includes('"error"')) return line;
@@ -1133,6 +1158,7 @@ export function sanitizeStreamErrorLine(line: string, logTag: string): string {
   }
   if (!parsed.error) return line;
   console.error(`${logTag} upstream mid-stream error:`, payload.slice(0, 500));
+  if (requestShape) console.error(`${logTag} request shape: ${requestShape.slice(0, 4000)}`);
   const err = (typeof parsed.error === "object" ? parsed.error : {}) as { code?: unknown; status?: unknown };
   const rawStatus = Number(err.code ?? err.status);
   const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 502;
