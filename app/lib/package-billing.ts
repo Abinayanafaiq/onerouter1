@@ -19,8 +19,10 @@ export async function reservePackageTokens(apiKeyId: string, amount: number) {
   const reservedTokens = BigInt(Math.max(1, Math.ceil(amount)));
   const requestId = randomUUID();
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.$executeRaw`
+  // Single atomic statement (no interactive transaction) so the ApiKey row
+  // lock is held only for this statement — see settlePackageTokens.
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    WITH reserved AS (
       UPDATE public."ApiKey"
       SET "tokenUsed" = "tokenUsed" + ${reservedTokens}, "updatedAt" = NOW()
       WHERE "id" = ${apiKeyId}
@@ -29,14 +31,16 @@ export async function reservePackageTokens(apiKeyId: string, amount: number) {
         AND "enabled" = true
         AND ("expiresAt" IS NULL OR "expiresAt" > NOW())
         AND "tokenUsed" + ${reservedTokens} <= "tokenQuota"
-    `;
-    if (updated !== 1) return { ok: false as const };
-
-    const reservation = await tx.tokenReservation.create({
-      data: { requestId, apiKeyId, reservedTokens },
-    });
-    return { ok: true as const, id: reservation.id, reservedTokens: Number(reservedTokens) };
-  });
+      RETURNING "id"
+    )
+    INSERT INTO public."TokenReservation"
+      ("id", "requestId", "apiKeyId", "reservedTokens", "consumedTokens", "releasedTokens", "status", "createdAt")
+    SELECT ${randomUUID()}, ${requestId}, r."id", ${reservedTokens}, 0, 0, 'RESERVED', NOW()
+    FROM reserved r
+    RETURNING "id"
+  `;
+  if (rows.length !== 1) return { ok: false as const };
+  return { ok: true as const, id: rows[0].id, reservedTokens: Number(reservedTokens) };
 }
 
 export async function releasePackageTokens(reservationId: string) {
@@ -74,53 +78,53 @@ export async function settlePackageTokens(params: {
   const outputTokens = Math.max(0, Math.floor(params.outputTokens));
   const totalTokens = inputTokens + outputTokens;
 
+  const actual = BigInt(totalTokens);
+  let key: { tokenQuota: bigint; tokenUsed: bigint; expiresAt: Date | null };
   try {
-    return await prisma.$transaction(async (tx) => {
-      const reservation = await tx.tokenReservation.findUnique({ where: { id: params.reservationId } });
-      if (!reservation || reservation.status !== "RESERVED") {
-        return { ok: false as const, error: "Reservation sudah diproses" };
-      }
+    // Claim the reservation and adjust the key in ONE statement. The previous
+    // interactive transaction took ~5 round-trips while holding the ApiKey row
+    // lock; with many parallel streams on the same key (and a tiny pool) the
+    // settles queued on that lock, blew the 5s tx timeout and starved the pool
+    // (P2028) for every other request. A single statement is atomic on its own,
+    // holds the lock only for its own duration and needs no interactive tx.
+    // Refund when usage is below the reservation; when vendor usage exceeds it,
+    // charge the overage without ever crossing tokenQuota.
+    const rows = await prisma.$queryRaw<{ tokenQuota: bigint; tokenUsed: bigint; expiresAt: Date | null }[]>`
+      WITH claimed AS (
+        UPDATE public."TokenReservation"
+        SET "status" = 'SETTLED',
+            "consumedTokens" = ${actual}::bigint,
+            "releasedTokens" = GREATEST("reservedTokens" - ${actual}::bigint, 0),
+            "settledAt" = NOW()
+        WHERE "id" = ${params.reservationId} AND "status" = 'RESERVED'
+        RETURNING "reservedTokens"
+      )
+      UPDATE public."ApiKey" k
+      SET "tokenUsed" = CASE
+            WHEN ${actual}::bigint > c."reservedTokens"
+              THEN LEAST(k."tokenQuota", k."tokenUsed" + (${actual}::bigint - c."reservedTokens"))
+            ELSE k."tokenUsed" - (c."reservedTokens" - ${actual}::bigint)
+          END,
+          "requestCount" = k."requestCount" + 1,
+          "requestToday" = k."requestToday" + 1,
+          "lastRequestAt" = NOW(),
+          "updatedAt" = NOW()
+      FROM claimed c
+      WHERE k."id" = ${params.apiKeyId}
+      RETURNING k."tokenQuota", k."tokenUsed", k."expiresAt"
+    `;
+    if (rows.length !== 1) return { ok: false, error: "Reservation sudah diproses" };
+    key = rows[0];
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Settlement gagal" };
+  }
+  const remaining = key.tokenQuota - key.tokenUsed;
 
-      const actual = BigInt(totalTokens);
-      const refund = actual < reservation.reservedTokens ? reservation.reservedTokens - actual : 0n;
-      const extra = actual > reservation.reservedTokens ? actual - reservation.reservedTokens : 0n;
-      const claimed = await tx.tokenReservation.updateMany({
-        where: { id: reservation.id, status: "RESERVED" },
-        data: {
-          status: "SETTLED",
-          consumedTokens: actual,
-          releasedTokens: refund,
-          settledAt: new Date(),
-        },
-      });
-      if (claimed.count !== 1) return { ok: false as const, error: "Settlement bersamaan terdeteksi" };
-
-      if (refund > 0n) {
-        await tx.apiKey.update({
-          where: { id: params.apiKeyId },
-          data: { tokenUsed: { decrement: refund } },
-        });
-      } else if (extra > 0n) {
-        // Usage reported by the vendor can exceed the local reservation
-        // estimate. Charge the overage without ever crossing tokenQuota.
-        await tx.$executeRaw`
-          UPDATE public."ApiKey"
-          SET "tokenUsed" = LEAST("tokenQuota", "tokenUsed" + ${extra}),
-              "updatedAt" = NOW()
-          WHERE "id" = ${params.apiKeyId}
-        `;
-      }
-      const key = await tx.apiKey.update({
-        where: { id: params.apiKeyId },
-        data: {
-          requestCount: { increment: 1 },
-          requestToday: { increment: 1 },
-          lastRequestAt: new Date(),
-        },
-      });
-      const remaining = key.tokenQuota - key.tokenUsed;
-
-      await tx.usageLog.create({
+  // Usage/audit logs are written after the quota is settled and outside any
+  // lock: a log failure must not undo or block the billing itself.
+  try {
+    await prisma.$transaction([
+      prisma.usageLog.create({
         data: {
           apiKeyId: params.apiKeyId,
           userId: params.userId,
@@ -135,8 +139,8 @@ export async function settlePackageTokens(params: {
           totalCost: 0,
           remainingBalance: 0,
         },
-      });
-      await tx.apiRequestLog.create({
+      }),
+      prisma.apiRequestLog.create({
         data: {
           apiKeyId: params.apiKeyId,
           userId: params.userId,
@@ -155,20 +159,23 @@ export async function settlePackageTokens(params: {
           clientIp: params.requestMeta.clientIp,
           userAgent: params.requestMeta.userAgent,
         },
-      });
-
-      return {
-        ok: true as const,
-        usage: {
-          inputTokens,
-          outputTokens,
-          totalTokens,
-          remainingTokens: Number(remaining > 0 ? remaining : 0n),
-          expiresAt: key.expiresAt?.toISOString() ?? null,
-        },
-      };
-    });
+      }),
+    ]);
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Settlement gagal" };
+    console.error(
+      `[package-billing] settle OK tapi gagal tulis log reservation=${params.reservationId}:`,
+      error instanceof Error ? error.message : error,
+    );
   }
+
+  return {
+    ok: true,
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      remainingTokens: Number(remaining > 0 ? remaining : 0n),
+      expiresAt: key.expiresAt?.toISOString() ?? null,
+    },
+  };
 }
