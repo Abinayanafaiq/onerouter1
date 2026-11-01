@@ -13,12 +13,13 @@ import { randomBytes } from "crypto";
  * Clients then print the raw tags instead of running the tool. This module
  * turns that markup back into OpenAI `tool_calls`, for both aggregated
  * (non-stream) completions and SSE streams. Both the fullwidth `｜` and the
- * ASCII `|` spelling are accepted, as is any `*calls` container name.
+ * ASCII `|` spelling are accepted, single or repeated (`<||DSML||`), as is any
+ * `*calls` container name.
  */
 
 export type ParsedToolCall = { name: string; arguments: string };
 
-const BAR = "[|｜]";
+const BAR = "(?:[|｜]\\s*)+";
 const START_RE = new RegExp(`<\\s*${BAR}\\s*DSML\\s*${BAR}`);
 const BLOCK_CLOSE_RE = new RegExp(`<\\s*/\\s*${BAR}\\s*DSML\\s*${BAR}\\s*\\w*calls\\s*>`);
 const INVOKE_RE = new RegExp(
