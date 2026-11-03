@@ -7,6 +7,7 @@ import {
   localeFromCountry,
   LOCALE_COOKIE,
 } from "./i18n/locale";
+import { isMaintenanceMode, maintenanceResponse } from "./app/lib/maintenance";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -17,6 +18,10 @@ function pathnameLocale(pathname: string): AppLocale | null {
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isMaintenanceMode()) {
+    return maintenanceResponse(pathname);
+  }
 
   if (
     pathname.startsWith("/api") ||
@@ -71,5 +76,7 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|v1|_next|_vercel|.*\\..*).*)"],
+  // /api dan /v1 ikut dicocokkan agar mode pemeliharaan juga menutup API.
+  // Di luar pemeliharaan keduanya langsung diteruskan oleh proxy().
+  matcher: ["/((?!_next|_vercel|.*\\..*).*)", "/api/:path*", "/v1/:path*"],
 };

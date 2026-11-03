@@ -5,6 +5,11 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Proxy kini juga mencakup /api dan /v1, dan body di atas batas ini akan
+    // terpotong diam-diam (bawaan 10MB), misalnya chat dengan gambar base64.
+    proxyClientMaxBodySize: "100mb",
+  },
   // Favicon disajikan dari DB lewat /api/site/favicon, tapi /api/ diblokir di
   // robots.txt sehingga Google tidak bisa mengambilnya. Alias di root ini bisa
   // di-crawl, dan /favicon.ico adalah lokasi bawaan yang dicari crawler.
