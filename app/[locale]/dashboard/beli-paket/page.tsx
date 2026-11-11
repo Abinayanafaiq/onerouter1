@@ -15,7 +15,12 @@ const modelGroups = [
   { key: "qwen", label: "Qwen", background: "bg-fuchsia-400/10 border-fuchsia-400/20" },
   { key: "minimax", label: "MiniMax", background: "bg-pink-400/10 border-pink-400/20" },
   { key: "claude", label: "Claude", background: "bg-orange-400/10 border-orange-400/20" },
+  { key: "uncensored", label: "Uncensored", background: "bg-red-400/10 border-red-400/20" },
 ] as const;
+
+// Model uncensored dikenali dari modelId atau nama paket; diprioritaskan di atas keluarga brand
+// supaya mis. "deepseek-uncensored" masuk grup Uncensored, bukan DeepSeek.
+const UNCENSORED_PATTERN = /uncensor|abliterat/i;
 
 // Warna aksen per keluarga model untuk garis atas & glow kartu.
 const groupTints: Record<string, string> = {
@@ -27,6 +32,7 @@ const groupTints: Record<string, string> = {
   qwen: "#dcbdfc",
   minimax: "#f9a8d4",
   claude: "#f0a585",
+  uncensored: "#fca5a5",
   other: "#bbd8ed",
 };
 const PROMO_TINT = "#fda4af";
@@ -36,7 +42,9 @@ function groupPackages(packages: PackageDef[]) {
   const sorted = [...packages].sort((a, b) => a.price - b.price);
   for (const pkg of sorted) {
     const models = pkg.allowedModels ?? [];
-    const family = models.length === 0
+    const family = models.some((model) => UNCENSORED_PATTERN.test(model)) || UNCENSORED_PATTERN.test(pkg.name)
+      ? "uncensored"
+      : models.length === 0
       ? "general"
       : modelGroups.find(({ key }) => models.every((model) => model.toLowerCase().includes(key)))?.key ?? "other";
     groups.set(family, [...(groups.get(family) ?? []), pkg]);
