@@ -30,7 +30,7 @@ export function MobilePackageCta({ label }: { label: string }) {
       <a
         href="#paket"
         tabIndex={show ? 0 : -1}
-        className="btn-accent flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm"
+        className="lp-btn min-h-11 w-full text-sm"
       >
         {label}
       </a>

@@ -64,7 +64,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
               </Link>
               <Link
                 href="/dashboard"
-                className="btn-accent rounded-lg px-4 py-2 text-[13px]"
+                className="lp-btn px-4 py-2 text-[13px]"
               >
                 {t("Common.openConsole")}
               </Link>
@@ -79,7 +79,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
               </Link>
               <Link
                 href="/register"
-                className="btn-accent rounded-lg px-4 py-2 text-[13px]"
+                className="lp-btn px-4 py-2 text-[13px]"
               >
                 {t("Common.register")}
               </Link>
@@ -127,7 +127,7 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                 <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
+                  className="lp-btn px-4 py-2.5 text-center text-sm"
                 >
                   {t("Common.openConsole")}
                 </Link>
@@ -136,14 +136,14 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="rounded-lg border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-foreground"
+                    className="lp-btn-ghost px-4 py-2.5 text-center text-sm"
                   >
                     {t("Common.login")}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
-                    className="btn-accent rounded-lg px-4 py-2.5 text-center text-sm"
+                    className="lp-btn px-4 py-2.5 text-center text-sm"
                   >
                     {t("Common.register")}
                   </Link>

@@ -58,13 +58,7 @@ const INFRA_ICONS = [
   </svg>,
 ];
 
-const PROVIDER_DOT: Record<string, string> = {
-  GLM: "bg-emerald-400",
-  DeepSeek: "bg-violet-400",
-  Alibaba: "bg-orange-400",
-  "Moonshot AI": "bg-sky-400",
-  MiniMax: "bg-pink-400",
-};
+const PROVIDERS = ["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"];
 
 /** Sama dengan pengelompokan di halaman Beli Paket (dashboard). */
 const MODEL_GROUPS = [
@@ -82,19 +76,6 @@ function packageGroup(allowedModels: string[]): string {
   return (
     MODEL_GROUPS.find(({ key }) => allowedModels.every((m) => m.toLowerCase().includes(key)))?.key ?? "other"
   );
-}
-
-function capabilityLabel(
-  name: string,
-  modelId: string,
-  labels: { coding: string; fast: string; reasoning: string; vision: string; general: string },
-): string {
-  const h = (name + " " + modelId).toLowerCase();
-  if (/code|coder/.test(h)) return labels.coding;
-  if (/fast|flash/.test(h)) return labels.fast;
-  if (/vision|vl|image/.test(h)) return labels.vision;
-  if (/pro|reason/.test(h)) return labels.reasoning;
-  return labels.general;
 }
 
 export default async function Home({
@@ -118,14 +99,6 @@ export default async function Home({
   const models: ModelCardData[] = enabledModels.map(toModelCardData);
   const modelCount = models.length;
   const isEn = locale === "en";
-
-  const capLabels = {
-    coding: t("capCoding"),
-    fast: t("capFast"),
-    reasoning: t("capReasoning"),
-    vision: t("capVision"),
-    general: t("capGeneral"),
-  };
 
   /* ---------- Paket token (fokus utama landing page) ---------- */
   // Urutan: yang masih ada stok dulu, lalu dari harga termurah.
@@ -203,11 +176,19 @@ export default async function Home({
     })),
   };
 
-  const checkIcon = (
-    <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden>
-      <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  const heroPoints = [
+    ...(cheapest
+      ? [
+          <>
+            {isEn ? "From " : "Mulai dari "}
+            <span className="text-foreground">Rp{cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}</span>
+          </>,
+        ]
+      : []),
+    isEn ? "Pay via QRIS" : "Bayar via QRIS",
+    isEn ? "No subscription" : "Tanpa langganan",
+    isEn ? "Instant API key" : "API key instan",
+  ];
 
   return (
     <div className="landing-shell relative min-h-screen overflow-x-hidden bg-background">
@@ -220,61 +201,53 @@ export default async function Home({
       {/* ============================================================
           HERO + HARGA PAKET TOKEN (tampilan utama)
           ============================================================ */}
-      <section id="paket" className="landing-section relative scroll-mt-16 px-4 pb-14 pt-24 sm:px-6 sm:pb-20 sm:pt-32">
-        <div className="pointer-events-none absolute inset-0 -z-10 grid-bg opacity-40" aria-hidden />
+      <section id="paket" className="landing-section relative scroll-mt-16 px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-40">
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(60% 40% at 50% 0%, rgba(184,255,69,0.10) 0%, transparent 70%)",
+              "radial-gradient(50% 32% at 50% 0%, rgba(255,255,255,0.07) 0%, transparent 70%)",
           }}
           aria-hidden
         />
 
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-3 py-1.5 text-[11px] font-semibold text-accent">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-              </span>
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="lp-eyebrow">
               {isEn ? `${modelCount} AI models · OpenAI-compatible` : `${modelCount} model AI · Kompatibel OpenAI`}
-            </div>
+            </p>
 
-            <h1 className="landing-display mt-5 text-[2.1rem] font-semibold leading-[1.05] sm:text-5xl lg:text-6xl">
+            <h1 className="lp-display mt-6 text-[2.75rem] sm:text-6xl lg:text-7xl">
               {isEn ? (
-                <>AI Token Packages, <span className="gradient-text-accent">cheap &amp; clear</span></>
+                <>AI Token Packages,<br /><em>cheap &amp; clear</em></>
               ) : (
-                <>Paket Token AI <span className="gradient-text-accent">murah &amp; jelas</span></>
+                <>Paket Token AI,<br /><em>murah &amp; jelas</em></>
               )}
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">
               {isEn
                 ? "Pick a package, pay once, and get an API key instantly. One key for DeepSeek, GLM, Qwen, Kimi and more."
                 : "Pilih paket, bayar sekali, API key langsung jadi. Satu key untuk DeepSeek, GLM, Qwen, Kimi, dan lainnya."}
             </p>
-            {cheapest && (
-              <p className="mt-3 text-[13px] text-foreground/90">
-                {isEn ? "Starting from " : "Mulai dari "}
-                <strong className="text-accent">Rp{cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}</strong>
-              </p>
-            )}
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "Pay via QRIS" : "Bayar via QRIS"}</span>
-              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "No subscription" : "Tanpa langganan"}</span>
-              <span className="flex items-center gap-1.5">{checkIcon}{isEn ? "Instant API key" : "API key instan"}</span>
-            </div>
+            <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px] text-muted-foreground sm:gap-x-3">
+              {heroPoints.map((point, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  {i > 0 && <span aria-hidden className="hidden h-3 w-px bg-white/20 sm:block" />}
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div id="paket-list" className="mt-8 sm:mt-10">
+          <div id="paket-list" className="mt-12 sm:mt-16">
             <PackagePricing packages={landingPackages} groups={packageGroups} isEn={isEn} />
           </div>
 
-          <p className="mt-6 text-center text-[12px] leading-relaxed text-muted-foreground">
+          <p className="mt-8 text-center text-[12px] leading-relaxed text-muted-foreground">
             {isEn ? "Token quota counts input + output. " : "Kuota token dihitung input + output. "}
             {isEn ? "Prefer to pay only for what you use? " : "Mau bayar sesuai pemakaian saja? "}
-            <a href="#payg" className="font-medium text-accent underline underline-offset-2">
+            <a href="#payg" className="text-foreground underline underline-offset-4">
               {isEn ? "See pay-as-you-go rates" : "Lihat tarif per model"}
             </a>
           </p>
@@ -282,34 +255,47 @@ export default async function Home({
       </section>
 
       {/* ============================================================
+          PROVIDERS
+          ============================================================ */}
+      <section className="landing-section px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <span className="lp-eyebrow">{t("providersLabel")}</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+            {PROVIDERS.map((p) => (
+              <span key={p} className="lp-display text-xl italic text-foreground/80">
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
           CARA BELI — 3 langkah
           ============================================================ */}
-      <section className="landing-section px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="landing-display text-center text-2xl font-semibold sm:text-4xl">
-            {isEn ? "How it works" : "Cara beli, 3 langkah"}
-          </h2>
-          <ol className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-4">
+      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <SectionHead
+            eyebrow={isEn ? "How it works" : "Cara beli"}
+            title={isEn ? "Three steps to your API key" : "Tiga langkah, API key siap"}
+          />
+          <ol className="mt-10 grid gap-px overflow-hidden rounded-2xl border bg-[var(--color-border)] sm:mt-12 sm:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="glass flex gap-4 rounded-2xl p-4 sm:flex-col sm:p-6">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-black">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="text-[15px] font-semibold text-foreground">{s.title}</h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</p>
-                </div>
+              <li key={s.title} className="bg-background p-6 sm:p-8">
+                <span className="lp-display text-4xl text-muted-foreground">0{i + 1}</span>
+                <h3 className="mt-6 text-[15px] font-medium text-foreground">{s.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</p>
               </li>
             ))}
           </ol>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <div className="mt-10">
             <Link
               href={isAuthed ? "/dashboard/beli-paket" : "/register"}
-              className="btn-accent inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-7 text-sm"
+              className="lp-btn min-h-12 w-full px-7 text-sm sm:w-auto"
             >
               {isAuthed ? (isEn ? "Buy a package" : "Beli paket sekarang") : isEn ? "Sign up free" : "Daftar gratis"}
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
           </div>
@@ -317,63 +303,36 @@ export default async function Home({
       </section>
 
       {/* ============================================================
-          LOGO STRIP / PROVIDERS
-          ============================================================ */}
-      <section className="landing-section border-y border-white/[0.05] bg-[#b8ff45] py-5 text-[#101208]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-black/55">
-              {t("providersLabel")}
-            </span>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-              {["GLM", "DeepSeek", "Alibaba Qwen", "Moonshot AI", "MiniMax"].map((p) => (
-                <span key={p} className="text-sm font-bold tracking-tight text-black/70">
-                  {p}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
           TARIF PER MODEL (bayar per pemakaian)
           ============================================================ */}
-      <section id="payg" className="landing-section scroll-mt-20 px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {isEn ? "Alternative: pay as you go" : "Alternatif: bayar per pemakaian"}
-            </span>
-            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
-              {isEn ? "Per-model rates" : "Tarif per model"}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-              {isEn
-                ? "Top up TOKS balance and pay only for tokens used. Balance never expires."
-                : "Isi saldo TOKS, bayar hanya token yang dipakai. Saldo tidak kedaluwarsa."}
+      <section id="payg" className="landing-section scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHead
+              eyebrow={isEn ? "Alternative: pay as you go" : "Alternatif: bayar per pemakaian"}
+              title={isEn ? "Per-model rates" : "Tarif per model"}
+              desc={
+                isEn
+                  ? "Top up TOKS balance and pay only for tokens used. Balance never expires."
+                  : "Isi saldo TOKS, bayar hanya token yang dipakai. Saldo tidak kedaluwarsa."
+              }
+            />
+            <p className="shrink-0 text-[13px] text-muted-foreground">
+              1 TOKS <span aria-hidden>=</span> <span className="text-foreground">Rp1.000</span>
             </p>
-            <div className="mx-auto mt-4 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[12px]">
-              <span className="font-semibold text-accent">1 TOKS</span>
-              <span className="text-muted-foreground">=</span>
-              <span className="font-semibold text-foreground">Rp1.000</span>
-            </div>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-10 sm:mt-12">
             <PremiumPricingTable models={models} t={t} tc={tc} isEn={isEn} />
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href={isAuthed ? "/dashboard/wallet" : "/register"}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-6 text-sm font-medium text-foreground transition hover:border-accent/40 hover:bg-accent/[0.05]"
-            >
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href={isAuthed ? "/dashboard/wallet" : "/register"} className="lp-btn-ghost min-h-12 px-7 text-sm">
               {isEn ? "Top up balance" : "Isi saldo TOKS"}
             </Link>
             <Link
               href="/models"
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-transparent px-6 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              className="inline-flex min-h-12 items-center justify-center px-4 text-sm text-muted-foreground transition hover:text-foreground"
             >
               {t("viewAllModelsArrow")}
             </Link>
@@ -384,28 +343,16 @@ export default async function Home({
       {/* ============================================================
           KEUNGGULAN PLATFORM
           ============================================================ */}
-      <section id="platform" className="landing-section scroll-mt-20 bg-white/[0.018] px-4 py-14 sm:px-6 sm:py-20">
+      <section id="platform" className="landing-section scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {t("infraEyebrow")}
-            </span>
-            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
-              {t("infraTitle")}
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground sm:text-base">{t("infraDesc")}</p>
-          </div>
+          <SectionHead eyebrow={t("infraEyebrow")} title={t("infraTitle")} desc={t("infraDesc")} />
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border bg-[var(--color-border)] sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
             {INFRA_FEATURES.map((f) => (
-              <div key={f.title} className="glass flex gap-4 rounded-2xl p-4 sm:flex-col sm:p-6">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-accent">
-                  {f.icon}
-                </span>
-                <div>
-                  <h3 className="text-[15px] font-semibold tracking-tight text-foreground">{f.title}</h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{f.desc}</p>
-                </div>
+              <div key={f.title} className="bg-background p-6 sm:p-8">
+                <span className="text-foreground">{f.icon}</span>
+                <h3 className="mt-6 text-[15px] font-medium tracking-tight text-foreground">{f.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -413,61 +360,20 @@ export default async function Home({
       </section>
 
       {/* ============================================================
-          MODEL SHOWCASE
-          ============================================================ */}
-      <section id="models" className="landing-section scroll-mt-20 px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                {t("catalogEyebrow")}
-              </span>
-              <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">
-                {t("catalogTitle")}
-              </h2>
-              <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-                {t("catalogDesc", { count: modelCount })}
-              </p>
-            </div>
-            <Link
-              href="/models"
-              className="inline-flex min-h-10 items-center justify-center self-start rounded-lg border border-white/10 bg-white/[0.02] px-4 text-[13px] font-medium text-foreground transition hover:border-white/20 hover:bg-white/[0.05] sm:self-auto"
-            >
-              {t("viewAllModelsArrow")}
-            </Link>
-          </div>
-
-          {models.length === 0 ? (
-            <div className="glass mt-8 rounded-2xl p-10 text-center text-sm text-muted-foreground">
-              {t("catalogEmpty")}
-            </div>
-          ) : (
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-              {models.slice(0, 6).map((m) => (
-                <ModelShowcaseCard key={m.id} model={m} capLabels={capLabels} isEn={isEn} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ============================================================
           DEVELOPER EXPERIENCE
           ============================================================ */}
-      <section className="landing-section bg-white/[0.018] px-4 py-14 sm:px-6 sm:py-20">
+      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {t("dxEyebrow")}
-            </span>
-            <h2 className="landing-display mt-3 text-2xl font-semibold sm:text-4xl">{t("dxTitle")}</h2>
-            <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-              {isEn
+          <SectionHead
+            eyebrow={t("dxEyebrow")}
+            title={t("dxTitle")}
+            desc={
+              isEn
                 ? "Already using the OpenAI SDK? Just point your client to our base URL — done."
-                : "Sudah pakai OpenAI SDK? Cukup arahkan client ke base URL kami — selesai."}
-            </p>
-          </div>
-          <div className="mt-8 min-w-0">
+                : "Sudah pakai OpenAI SDK? Cukup arahkan client ke base URL kami — selesai."
+            }
+          />
+          <div className="mt-10 min-w-0 sm:mt-12">
             <CodeTabs />
           </div>
         </div>
@@ -476,27 +382,24 @@ export default async function Home({
       {/* ============================================================
           FAQ
           ============================================================ */}
-      <section className="landing-section px-4 py-14 sm:px-6 sm:py-20">
+      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-              {isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
-            </span>
-            <h2 className="landing-display mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
-              {isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
-            </h2>
-          </div>
+          <SectionHead
+            center
+            eyebrow={isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
+            title={isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
+          />
 
-          <div className="mt-8 space-y-2.5">
+          <div className="mt-10 border-t sm:mt-12">
             {FAQS.map((f) => (
-              <details key={f.q} className="group glass overflow-hidden rounded-xl transition open:border-white/[0.14]">
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 text-sm font-semibold text-foreground transition hover:text-accent sm:px-5 [&::-webkit-details-marker]:hidden">
+              <details key={f.q} className="group border-b">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 py-5 text-[15px] font-medium text-foreground [&::-webkit-details-marker]:hidden">
                   {f.q}
-                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden>
-                    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45" aria-hidden>
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                   </svg>
                 </summary>
-                <p className="px-4 pb-4 text-[13px] leading-relaxed text-muted-foreground sm:px-5">{f.a}</p>
+                <p className="pb-6 pr-10 text-[14px] leading-relaxed text-muted-foreground">{f.a}</p>
               </details>
             ))}
           </div>
@@ -506,34 +409,27 @@ export default async function Home({
       {/* ============================================================
           FINAL CTA
           ============================================================ */}
-      <section className="landing-section px-4 pb-24 pt-6 sm:px-6 sm:pb-20">
-        <div className="mx-auto max-w-4xl">
-          <div className="glass relative overflow-hidden rounded-2xl border-accent/20 p-6 text-center sm:p-14">
-            <div
-              className="pointer-events-none absolute inset-0 -z-10"
-              style={{ background: "radial-gradient(60% 70% at 50% 0%, rgba(184,255,69,0.10), transparent 70%)" }}
-              aria-hidden
-            />
-            <h2 className="landing-display text-2xl font-semibold sm:text-4xl">
-              {isEn ? "Start saving on AI today" : "Hemat biaya AI mulai hari ini"}
+      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="lp-invert rounded-3xl px-6 py-14 text-center sm:px-14 sm:py-20">
+            <h2 className="lp-display text-4xl sm:text-6xl">
+              {isEn ? (
+                <>Start saving on AI <em>today</em></>
+              ) : (
+                <>Hemat biaya AI <em>mulai hari ini</em></>
+              )}
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+            <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
               {isEn
                 ? "Pick a token package, pay via QRIS, and your API key is ready in seconds."
                 : "Pilih paket token, bayar via QRIS, API key siap dalam hitungan detik."}
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <a href="#paket" className="btn-accent inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-7 text-sm">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <a href="#paket" className="lp-btn min-h-12 px-7 text-sm">
                 {isEn ? "See token packages" : "Lihat paket token"}
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                  <path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
               </a>
               {!isAuthed && (
-                <Link
-                  href="/register"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 text-sm font-medium text-foreground transition hover:border-white/25"
-                >
+                <Link href="/register" className="lp-btn-ghost min-h-12 px-7 text-sm">
                   {t("registerFree")}
                 </Link>
               )}
@@ -545,15 +441,12 @@ export default async function Home({
       {/* ============================================================
           FOOTER
           ============================================================ */}
-      <footer className="border-t border-white/[0.06] px-4 pb-24 pt-10 sm:px-6 sm:pb-12">
-        <div className="mx-auto max-w-7xl">
+      <footer className="landing-section px-4 pb-24 pt-12 sm:px-6 sm:pb-12">
+        <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
             <div className="col-span-2 lg:col-span-1">
-              <Link href="/" className="flex items-center gap-2.5">
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-                  9i
-                </span>
-                <span className="text-[15px] font-semibold tracking-tight">9inference</span>
+              <Link href="/" className="lp-display text-2xl text-foreground">
+                9inference
               </Link>
               <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{tf("tagline")}</p>
             </div>
@@ -590,7 +483,7 @@ export default async function Home({
             </div>
           </div>
 
-          <div className="mt-10 border-t border-white/[0.06] pt-6 text-center sm:flex sm:items-center sm:justify-between sm:text-left">
+          <div className="mt-12 border-t pt-6 text-center sm:flex sm:items-center sm:justify-between sm:text-left">
             <p className="text-[12px] text-muted-foreground">{tf("copyright", { year: new Date().getFullYear() })}</p>
             <p className="mt-2 text-[12px] text-muted-foreground sm:mt-0">
               {isEn ? "No subscription. No hidden fees." : "Tanpa langganan. Tanpa biaya tersembunyi."}
@@ -617,6 +510,26 @@ export default async function Home({
 
 /* ===== Helpers ===== */
 
+function SectionHead({
+  eyebrow,
+  title,
+  desc,
+  center = false,
+}: {
+  eyebrow: string;
+  title: string;
+  desc?: string;
+  center?: boolean;
+}) {
+  return (
+    <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
+      <p className="lp-eyebrow">{eyebrow}</p>
+      <h2 className="lp-display mt-4 text-[2rem] sm:text-5xl">{title}</h2>
+      {desc && <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">{desc}</p>}
+    </div>
+  );
+}
+
 function FooterCol({
   title,
   links,
@@ -626,8 +539,8 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
-      <ul className="mt-3 space-y-2">
+      <div className="lp-eyebrow">{title}</div>
+      <ul className="mt-4 space-y-2">
         {links.map((l) => (
           <li key={l.href}>
             <Link href={l.href} className="block py-0.5 text-[13px] text-muted-foreground transition hover:text-foreground">
@@ -640,61 +553,16 @@ function FooterCol({
   );
 }
 
-function ModelShowcaseCard({
-  model,
-  capLabels,
-  isEn,
-}: {
-  model: ModelCardData;
-  capLabels: { coding: string; fast: string; reasoning: string; vision: string; general: string };
-  isEn: boolean;
-}) {
-  const cap = capabilityLabel(model.name, model.modelId, capLabels);
-  const dot = PROVIDER_DOT[model.provider] ?? "bg-white/40";
-  const isLive = !model.maintenanceMode;
-
+/** Status model satu warna: titik penuh = aktif, cincin kosong = pemeliharaan. */
+function ModelStatus({ maintenance, tc }: { maintenance: boolean; tc: (key: string) => string }) {
   return (
-    <div className="glass group relative flex flex-col rounded-2xl p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold tracking-tight text-foreground">{model.name}</h3>
-          <div className="mt-1 flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-            <span className="text-[12px] text-muted-foreground">{model.provider}</span>
-          </div>
-        </div>
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium ${
-            isLive ? "border-accent/25 bg-accent/10 text-accent" : "border-amber-500/30 bg-amber-500/10 text-amber-400"
-          }`}
-        >
-          {isLive ? (isEn ? "Active" : "Aktif") : isEn ? "Maintenance" : "Pemeliharaan"}
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[12px]">
-        <div>
-          <div className="text-[10px] text-muted-foreground">{isEn ? "Context" : "Konteks"}</div>
-          <div className="mt-0.5 font-semibold text-foreground">{model.contextWindow ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-muted-foreground">{isEn ? "Strength" : "Kemampuan"}</div>
-          <div className="mt-0.5 font-semibold text-foreground">{cap}</div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
-        <code className="min-w-0 flex-1 truncate rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 font-mono text-[11px] text-foreground/80">
-          {model.modelId}
-        </code>
-        <Link
-          href={`/models/${encodeURIComponent(model.modelId)}`}
-          className="shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:border-white/20"
-        >
-          {isEn ? "Details" : "Detail"}
-        </Link>
-      </div>
-    </div>
+    <span className={`inline-flex items-center gap-2 text-[12px] ${maintenance ? "text-muted-foreground" : "text-foreground"}`}>
+      <span
+        aria-hidden
+        className={`h-1.5 w-1.5 rounded-full ${maintenance ? "ring-1 ring-inset ring-white/50" : "bg-foreground"}`}
+      />
+      {maintenance ? tc("maintenance") : tc("active")}
+    </span>
   );
 }
 
@@ -711,45 +579,47 @@ function PremiumPricingTable({
 }) {
   if (models.length === 0) {
     return (
-      <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">
+      <div className="rounded-2xl border p-10 text-center text-sm text-muted-foreground">
         {isEn ? "Prices are being updated." : "Harga sedang diperbarui."}
       </div>
     );
   }
   const nf = (n: number) => n.toLocaleString(isEn ? "en-US" : "id-ID");
+  const toks = (n: number) => (n / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 });
   const perM = isEn ? "/ 1M tokens" : "/ 1 juta token";
+  const th = "px-6 py-4 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground";
 
   return (
-    <div className="glass overflow-hidden rounded-2xl">
-      {/* HP: daftar kartu ringkas, tanpa scroll horizontal */}
-      <ul className="divide-y divide-white/[0.06] md:hidden">
+    <div className="overflow-hidden rounded-2xl border">
+      {/* HP: daftar ringkas, tanpa scroll horizontal */}
+      <ul className="md:hidden">
         {models.map((m) => (
-          <li key={m.id} className="px-4 py-3.5">
+          <li key={m.id} className="border-b px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-foreground">{m.name}</div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <span className={`h-1.5 w-1.5 rounded-full ${PROVIDER_DOT[m.provider] ?? "bg-white/40"}`} />
+                <Link
+                  href={`/models/${encodeURIComponent(m.modelId)}`}
+                  className="block truncate text-[15px] font-medium text-foreground"
+                >
+                  {m.name}
+                </Link>
+                <div className="mt-0.5 text-[12px] text-muted-foreground">
                   {m.provider}
-                  {m.contextWindow ? <span>· {m.contextWindow}</span> : null}
+                  {m.contextWindow ? <span> · {m.contextWindow}</span> : null}
                 </div>
               </div>
-              {m.maintenanceMode && (
-                <span className="shrink-0 text-[11px] font-medium text-amber-400">{tc("maintenance")}</span>
-              )}
+              {m.maintenanceMode && <ModelStatus maintenance tc={tc} />}
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Input</div>
-                <div className="font-mono text-[13px] font-semibold text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
-                <div className="text-[10px] text-muted-foreground">{perM}</div>
+            <dl className="mt-3 grid grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Input</dt>
+                <dd className="mt-1 font-mono text-foreground">Rp{nf(m.inputPricePerMillion)}</dd>
               </div>
-              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Output</div>
-                <div className="font-mono text-[13px] font-semibold text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
-                <div className="text-[10px] text-muted-foreground">{perM}</div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Output</dt>
+                <dd className="mt-1 font-mono text-foreground">Rp{nf(m.outputPricePerMillion)}</dd>
               </div>
-            </div>
+            </dl>
           </li>
         ))}
       </ul>
@@ -758,64 +628,46 @@ function PremiumPricingTable({
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/[0.08] text-left">
-              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Model</th>
-              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Provider</th>
-              <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{isEn ? "Context" : "Konteks"}</th>
-              <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Input {perM}</th>
-              <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Output {perM}</th>
-              <th className="px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+            <tr className="border-b text-left">
+              <th className={th}>Model</th>
+              <th className={th}>Provider</th>
+              <th className={th}>{isEn ? "Context" : "Konteks"}</th>
+              <th className={`${th} text-right`}>Input {perM}</th>
+              <th className={`${th} text-right`}>Output {perM}</th>
+              <th className={`${th} text-right`}>Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.04]">
+          <tbody>
             {models.map((m) => (
-              <tr key={m.id} className="transition hover:bg-white/[0.02]">
-                <td className="px-5 py-4">
-                  <div className="font-semibold text-foreground">{m.name}</div>
-                  <code className="text-[11px] text-muted-foreground">{m.modelId}</code>
+              <tr key={m.id} className="border-b transition-colors hover:bg-white/[0.03]">
+                <td className="px-6 py-4">
+                  <Link
+                    href={`/models/${encodeURIComponent(m.modelId)}`}
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    {m.name}
+                  </Link>
+                  <code className="mt-0.5 block text-[11px] text-muted-foreground">{m.modelId}</code>
                 </td>
-                <td className="px-5 py-4">
-                  <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                    <span className={`h-1.5 w-1.5 rounded-full ${PROVIDER_DOT[m.provider] ?? "bg-white/40"}`} />
-                    {m.provider}
-                  </span>
+                <td className="px-6 py-4 text-[13px] text-muted-foreground">{m.provider}</td>
+                <td className="px-6 py-4 font-mono text-[12px] text-muted-foreground">{m.contextWindow || "—"}</td>
+                <td className="px-6 py-4 text-right">
+                  <div className="font-mono text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">{toks(m.inputPricePerMillion)} TOKS</div>
                 </td>
-                <td className="px-5 py-4">
-                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
-                    {m.contextWindow || "—"}
-                  </span>
+                <td className="px-6 py-4 text-right">
+                  <div className="font-mono text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">{toks(m.outputPricePerMillion)} TOKS</div>
                 </td>
-                <td className="px-5 py-4 text-right">
-                  <div className="font-mono font-semibold text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {(m.inputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <div className="font-mono font-semibold text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {(m.outputPricePerMillion / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} TOKS
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-center">
-                  {m.maintenanceMode ? (
-                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      {tc("maintenance")}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent">
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                      {tc("active")}
-                    </span>
-                  )}
+                <td className="px-6 py-4 text-right">
+                  <ModelStatus maintenance={m.maintenanceMode} tc={tc} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="border-t border-white/[0.08] px-4 py-3 text-[11px] text-muted-foreground sm:px-5">
+      <div className="px-5 py-3.5 text-[12px] leading-relaxed text-muted-foreground sm:px-6">
         {t("pricingTableNote")}
       </div>
     </div>

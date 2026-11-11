@@ -114,24 +114,12 @@ export function CodeTabs() {
     <div className="grid gap-6 lg:grid-cols-5">
       {/* Left: integrations */}
       <div className="min-w-0 lg:col-span-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Works with your stack
-        </div>
-        <div className="mt-4 space-y-2">
+        <div className="lp-eyebrow">Works with your stack</div>
+        <div className="mt-4 border-t">
           {INTEGRATIONS.map((it) => (
-            <div
-              key={it.name}
-              className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 transition hover:border-white/15"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-accent">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <div>
-                <div className="text-[13px] font-semibold text-foreground">{it.name}</div>
-                <div className="text-[11px] text-muted-foreground">{it.desc}</div>
-              </div>
+            <div key={it.name} className="flex items-baseline justify-between gap-4 border-b py-3.5">
+              <div className="text-[14px] font-medium text-foreground">{it.name}</div>
+              <div className="text-[12px] text-muted-foreground">{it.desc}</div>
             </div>
           ))}
         </div>
@@ -139,9 +127,9 @@ export function CodeTabs() {
 
       {/* Right: code */}
       <div className="min-w-0 lg:col-span-3">
-        <div className="glass overflow-hidden rounded-2xl">
+        <div className="overflow-hidden rounded-2xl border bg-white/[0.02]">
           {/* Tabs */}
-          <div className="flex items-center border-b border-white/[0.06] px-2">
+          <div className="flex items-center border-b px-2">
             {TABS.map((t, i) => (
               <button
                 key={t.id}
@@ -156,7 +144,7 @@ export function CodeTabs() {
                 {active === i && (
                   <motion.span
                     layoutId="tab-underline"
-                    className="absolute inset-x-0 -bottom-px h-[2px] bg-accent"
+                    className="absolute inset-x-0 -bottom-px h-px bg-accent"
                     transition={{ type: "spring", stiffness: 400, damping: 32 }}
                   />
                 )}
@@ -203,7 +191,7 @@ export function CodeTabs() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5">
+          <div className="flex items-center justify-between border-t px-4 py-2.5">
             <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {tab.lang}
             </span>
