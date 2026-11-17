@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
-
-const brandLogo = "/ChatGPT%20Image%20Oct%201%2C%202026%2C%2012_18_30%20AM.png";
+import { BrandLogo } from "@/app/components/landing/brand-logo";
 
 function Caret() {
   return <span aria-hidden className="lp-caret" />;
@@ -39,8 +38,8 @@ export function LandingHeader({ isAuthed }: { isAuthed: boolean }) {
     >
       <div className="mx-auto flex h-16 max-w-[1320px] items-center justify-between gap-6 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-8">
-          <Link href="/" aria-label="9inference — beranda" className="flex shrink-0 items-center">
-            <img src={brandLogo} alt="9inference" className="h-auto w-28 object-contain sm:w-32" />
+          <Link href="/" aria-label="9inference — beranda" className="flex shrink-0 items-center text-black">
+            <BrandLogo />
           </Link>
 
           <nav className="hidden items-center gap-6 lg:flex">

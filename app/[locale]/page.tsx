@@ -12,6 +12,7 @@ import { MobilePackageCta } from "@/app/components/landing/mobile-package-cta";
 import { getAllPackages } from "@/app/lib/packages";
 import { HeroIso } from "@/app/components/landing/iso-scene";
 import { FeatureTabs } from "@/app/components/landing/feature-tabs";
+import { BrandLogo, BrandMark } from "@/app/components/landing/brand-logo";
 import { PackageBrandIcon, brandGroupOf } from "@/app/components/package-brand-icon";
 
 export const dynamic = "force-dynamic";
@@ -515,7 +516,10 @@ export default async function Home({
         <div className="mx-auto max-w-[1320px]">
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="max-w-xs text-[14px] leading-relaxed text-[var(--muted-foreground)]">{tf("tagline")}</p>
+              <Link href="/" aria-label="9inference" className="text-white">
+                <BrandLogo />
+              </Link>
+              <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-[var(--muted-foreground)]">{tf("tagline")}</p>
               <Link href="/status" className="mt-6 inline-flex items-center gap-2 text-[13px] text-white hover:text-[var(--lp-green)]">
                 <span aria-hidden className="h-2 w-2 bg-[var(--lp-green)]" />
                 {tf("status")}
@@ -555,8 +559,9 @@ export default async function Home({
           <Link
             href="/"
             aria-label="9inference"
-            className="lp-display mt-16 block select-none text-[22vw] leading-[0.8] !tracking-[-0.06em] text-white transition-colors hover:text-[var(--lp-green)] sm:mt-20 lg:text-[19.5rem]"
+            className="lp-display mt-16 flex select-none items-center gap-[0.12em] text-[18vw] leading-[0.8] !tracking-[-0.06em] text-white transition-colors hover:text-[var(--lp-green)] sm:mt-20 lg:text-[16rem]"
           >
+            <BrandMark className="h-[0.62em] w-auto shrink-0" />
             9inference
           </Link>
 
