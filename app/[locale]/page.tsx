@@ -104,9 +104,10 @@ export default async function Home({
   const isEn = locale === "en";
 
   /* ---------- Paket token (fokus utama landing page) ---------- */
-  // Urutan: yang masih ada stok dulu, lalu dari harga termurah.
-  const landingPackages: LandingPackage[] = [...allPackages]
-    .sort((a, b) => Number(a.stock <= 0) - Number(b.stock <= 0) || a.price - b.price)
+  // Paket yang stoknya habis tidak ditampilkan di landing page; urut dari harga termurah.
+  const landingPackages: LandingPackage[] = allPackages
+    .filter((p) => p.stock > 0)
+    .sort((a, b) => a.price - b.price)
     .map((p) => ({
       id: p.id,
       name: p.name,
