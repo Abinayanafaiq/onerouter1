@@ -22,7 +22,7 @@ export function MobilePackageCta({ label }: { label: string }) {
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-background/90 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl transition-transform duration-300 sm:hidden ${
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-[var(--lp-line)] bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 transition-transform duration-300 sm:hidden ${
         show ? "translate-y-0" : "pointer-events-none translate-y-full"
       }`}
       aria-hidden={!show}
@@ -30,9 +30,10 @@ export function MobilePackageCta({ label }: { label: string }) {
       <a
         href="#paket"
         tabIndex={show ? 0 : -1}
-        className="lp-btn min-h-11 w-full text-sm"
+        className="lp-btn min-h-11 w-full justify-between px-5 text-sm"
       >
         {label}
+        <span aria-hidden className="lp-caret" />
       </a>
     </div>
   );

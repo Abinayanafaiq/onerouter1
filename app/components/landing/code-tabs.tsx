@@ -111,15 +111,18 @@ export function CodeTabs() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-5">
+    <div className="grid gap-8 lg:grid-cols-5 lg:gap-10">
       {/* Left: integrations */}
       <div className="min-w-0 lg:col-span-2">
-        <div className="lp-eyebrow">Works with your stack</div>
+        <div className="lp-label">Works with your stack</div>
         <div className="mt-4 border-t">
           {INTEGRATIONS.map((it) => (
-            <div key={it.name} className="flex items-baseline justify-between gap-4 border-b py-3.5">
-              <div className="text-[14px] font-medium text-foreground">{it.name}</div>
-              <div className="text-[12px] text-muted-foreground">{it.desc}</div>
+            <div key={it.name} className="flex items-center justify-between gap-4 border-b py-3.5">
+              <div className="flex items-center gap-3 text-[15px] text-foreground">
+                <span aria-hidden className="h-1.5 w-1.5 bg-[var(--lp-green)]" />
+                {it.name}
+              </div>
+              <div className="lp-mono text-[11px] uppercase tracking-[0.04em] text-muted-foreground">{it.desc}</div>
             </div>
           ))}
         </div>
@@ -127,7 +130,7 @@ export function CodeTabs() {
 
       {/* Right: code */}
       <div className="min-w-0 lg:col-span-3">
-        <div className="overflow-hidden rounded-2xl border bg-white/[0.02]">
+        <div className="lp-invert overflow-hidden lp-outline">
           {/* Tabs */}
           <div className="flex items-center border-b px-2">
             {TABS.map((t, i) => (
@@ -135,7 +138,7 @@ export function CodeTabs() {
                 key={t.id}
                 type="button"
                 onClick={() => setActive(i)}
-                className={`relative flex items-center gap-2 px-3.5 py-3 text-[12px] font-medium transition ${
+                className={`lp-mono relative flex items-center gap-2 px-3.5 py-3 text-[12px] transition ${
                   active === i ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -153,11 +156,11 @@ export function CodeTabs() {
             <button
               type="button"
               onClick={copy}
-              className="ml-auto mr-2 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground transition hover:text-foreground"
+              className="lp-mono ml-auto mr-1 inline-flex items-center gap-1.5 bg-white px-2.5 py-1.5 text-[11px] uppercase text-black transition hover:bg-[var(--lp-green)]"
             >
               {copied ? (
                 <>
-                  <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-accent">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
                     <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Copied
@@ -175,7 +178,7 @@ export function CodeTabs() {
           </div>
 
           {/* Code body */}
-          <div className="relative bg-black/40">
+          <div className="relative bg-black">
             <AnimatePresence mode="wait">
               <motion.pre
                 key={tab.id}
@@ -183,7 +186,7 @@ export function CodeTabs() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
-                className="overflow-x-auto p-5 font-mono text-[12px] leading-relaxed text-foreground/90"
+                className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed text-[#d7face] sm:p-6"
               >
                 <code>{tab.code}</code>
               </motion.pre>

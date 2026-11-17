@@ -382,34 +382,72 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 0 0 2px var(--background), 0 0 0 4px rgba(0, 255, 136, 0.5);
 }
 
+@layer base {
+  /* Warna garis default di landing (utilitas border-* tetap bisa menimpa) */
+  .landing-shell *,
+  .landing-shell ::before,
+  .landing-shell ::after {
+    border-color: var(--color-border);
+  }
+}
+
+@layer components {
+
 /* ============================================================
-   Landing (home) — tema hitam-putih
+   Landing (home) — gaya "lab putih" (terinspirasi baseten.co)
+   Putih bersih, tinta hitam, sudut tegas, label mono, aksen hijau.
    Token di-scope ke .landing-shell supaya halaman lain
-   (dashboard, auth, dst.) tetap memakai tema utama.
+   (dashboard, auth, dst.) tetap memakai tema gelap utama.
    ============================================================ */
 .landing-shell {
-  --background: #050505;
-  --foreground: #f5f5f5;
-  --muted-foreground: #8f8f8f;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.3);
-  --accent: #ffffff;
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #000000;
+  --muted-foreground: #575d56;
+  --border: #d5dfd2;
+  --border-strong: #000000;
+  --accent: #19e76e;
+
+  /* Palet khusus landing */
+  --lp-sage: #a2ae9d;
+  --lp-line: #c7d4c4;
+  --lp-pale: #f1f5f0;
+  --lp-pale-2: #e3eae1;
+  --lp-green: #19e76e;
+  --lp-green-soft: #d7face;
+  --lp-ink-2: #323432;
+
+  background-color: var(--lp-pale);
+  background-image: radial-gradient(circle, var(--lp-line) 1px, transparent 1.2px);
+  background-size: 14px 14px;
   color: var(--foreground);
 }
 
-/* Permukaan terbalik (putih, teks hitam) — kartu unggulan & CTA penutup */
+/* Permukaan gelap (footer, blok kode) */
 .lp-invert {
-  --background: #f5f5f5;
-  --foreground: #0a0a0a;
-  --muted-foreground: #5c5c5c;
-  --border: rgba(0, 0, 0, 0.12);
-  --border-strong: rgba(0, 0, 0, 0.4);
-  --accent: #0a0a0a;
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted-foreground: #a2ae9d;
+  --border: #323432;
+  --border-strong: #ffffff;
+  --accent: #19e76e;
+}
+
+/* Permukaan hijau (kartu paket unggulan) */
+.lp-green {
+  --background: #19e76e;
+  --foreground: #000000;
+  --muted-foreground: #0e4a28;
+  --border: rgba(0, 0, 0, 0.18);
+  --border-strong: #000000;
+  --accent: #000000;
 }
 
 /* Token --color-* di-resolve ulang di tiap scope agar utilitas ikut berubah */
 .landing-shell,
-.lp-invert {
+.lp-invert,
+.lp-green {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
@@ -417,35 +455,95 @@ html { scroll-behavior: smooth; }
   --color-accent: var(--accent);
 }
 
+.lp-invert,
+.lp-green {
+  background: var(--background);
+  color: var(--foreground);
+}
+
 .landing-shell ::selection {
+  background: var(--lp-green);
+  color: #000000;
+}
+
+/* Bingkai konten putih dengan garis tepi kiri-kanan, di atas latar titik-titik */
+.lp-frame {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 1320px;
+  background: #ffffff;
+  border-left: 1px solid var(--lp-line);
+  border-right: 1px solid var(--lp-line);
+}
+@media (max-width: 1360px) {
+  .lp-frame { border-left: 0; border-right: 0; }
+}
+
+.landing-section { position: relative; z-index: 1; }
+.lp-rule { border-top: 1px solid var(--border); }
+
+/* ---------- Tipografi ---------- */
+.lp-display {
+  font-family: var(--font-geist-sans), var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.lp-display em {
+  font-style: normal;
+  color: var(--muted-foreground);
+}
+
+.lp-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Label bab: chip mono hijau pucat dengan awalan "::" */
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  background: var(--lp-pale-2, #e3eae1);
+  color: #000000;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.lp-eyebrow::before {
+  content: "::";
+  opacity: 0.55;
+}
+.lp-invert .lp-eyebrow,
+.lp-eyebrow-light {
   background: #ffffff;
   color: #000000;
 }
 
-.lp-display {
-  font-family: var(--font-instrument-serif), "Times New Roman", serif;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 1.04;
-}
-
-.lp-eyebrow {
+/* Label kecil polos (tanpa chip) — tabel, kartu, statistik */
+.lp-label {
   color: var(--muted-foreground);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
+/* ---------- Tombol ---------- */
 .lp-btn,
 .lp-btn-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  font-weight: 500;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  gap: 0.75rem;
+  border-radius: 0;
+  font-weight: 400;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .lp-btn {
   border: 1px solid var(--foreground);
@@ -453,61 +551,137 @@ html { scroll-behavior: smooth; }
   color: var(--background);
 }
 .lp-btn:hover {
-  background: transparent;
-  color: var(--foreground);
+  border-color: var(--lp-green, #19e76e);
+  background: var(--lp-green, #19e76e);
+  color: #000000;
+}
+.lp-green .lp-btn {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
+}
+.lp-green .lp-btn:hover {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #000000;
 }
 .lp-btn-ghost {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
+  background: var(--background);
   color: var(--foreground);
 }
 .lp-btn-ghost:hover {
   border-color: var(--foreground);
-  background: var(--foreground);
-  color: var(--background);
 }
 .lp-btn:focus-visible,
 .lp-btn-ghost:focus-visible,
-.lp-chip:focus-visible {
-  outline: 2px solid var(--foreground);
+.lp-chip:focus-visible,
+.lp-tab:focus-visible {
+  outline: 2px solid var(--lp-green, #19e76e);
   outline-offset: 2px;
 }
+/* Segitiga kecil ▸ khas tombol */
+.lp-caret {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid currentColor;
+  flex-shrink: 0;
+}
+
+/* ---------- Kartu & chip ---------- */
+.lp-outline { border: 1px solid #000000; }
 
 .lp-card {
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  transition: border-color 0.25s ease;
+  border-radius: 0;
+  background: var(--background);
+  transition: border-color 0.2s ease;
 }
 .lp-card:hover { border-color: var(--border-strong); }
-.lp-invert {
-  background: var(--background);
-  color: var(--foreground);
-}
 
 .lp-chip {
   border: 1px solid var(--border);
-  border-radius: 9999px;
-  color: var(--muted-foreground);
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-.lp-chip:hover {
-  border-color: var(--border-strong);
+  border-radius: 0;
+  background: #ffffff;
   color: var(--foreground);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
+.lp-chip:hover { border-color: #000000; }
 .lp-chip[aria-selected="true"] {
-  border-color: var(--foreground);
-  background: var(--foreground);
-  color: var(--background);
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
 }
 
 .lp-tag {
-  border: 1px solid var(--border-strong);
-  border-radius: 9999px;
-  padding: 0.2rem 0.6rem;
-  color: var(--foreground);
+  padding: 0.25rem 0.45rem;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.06em;
+  line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* Ubin provider (mirip deretan logo pelanggan) */
+.lp-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: var(--lp-pale);
+  color: #000000;
+  transition: background-color 0.2s ease;
+}
+.lp-tile:hover { background: var(--lp-green-soft); }
+
+/* Tab fitur (daftar kiri) */
+.lp-tab {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+  color: var(--muted-foreground);
+  text-align: left;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.lp-tab:hover { color: #000000; }
+.lp-tab[aria-selected="true"] {
+  background: var(--lp-pale);
+  color: #000000;
+}
+
+/* Language switcher (komponen bersama) disesuaikan ke tema terang */
+.lp-lang {
+  border-color: var(--border) !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+}
+.lp-lang button { border-radius: 0 !important; }
+.lp-lang button[class*="bg-white"] {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Akordeon FAQ */
+.lp-faq summary::-webkit-details-marker { display: none; }
+.lp-faq[open] .lp-faq-icon { background: var(--lp-green); }
+
+/* Grid bergaris tanpa celah: wadah memberi garis kiri+atas, sel memberi kanan+bawah */
+.lp-cells {
+  border-left: 1px solid var(--lp-line, #c7d4c4);
+  border-top: 1px solid var(--lp-line, #c7d4c4);
+}
+.lp-cell {
+  border-right: 1px solid var(--lp-line, #c7d4c4);
+  border-bottom: 1px solid var(--lp-line, #c7d4c4);
+}
+
 }

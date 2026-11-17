@@ -10,6 +10,9 @@ import { CodeTabs } from "@/app/components/landing/code-tabs";
 import { PackagePricing, type LandingPackage } from "@/app/components/landing/package-pricing";
 import { MobilePackageCta } from "@/app/components/landing/mobile-package-cta";
 import { getAllPackages } from "@/app/lib/packages";
+import { HeroIso } from "@/app/components/landing/iso-scene";
+import { FeatureTabs } from "@/app/components/landing/feature-tabs";
+import { PackageBrandIcon, brandGroupOf } from "@/app/components/package-brand-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -191,122 +194,174 @@ export default async function Home({
   ];
 
   return (
-    <div className="landing-shell relative min-h-screen overflow-x-hidden bg-background">
+    <div className="landing-shell relative min-h-screen overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
       />
       <LandingHeader isAuthed={isAuthed} />
 
-      {/* ============================================================
-          HERO + HARGA PAKET TOKEN (tampilan utama)
-          ============================================================ */}
-      <section id="paket" className="landing-section relative scroll-mt-16 px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-40">
-        <div
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(50% 32% at 50% 0%, rgba(255,255,255,0.07) 0%, transparent 70%)",
-          }}
-          aria-hidden
-        />
-
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center">
+      <main className="lp-frame pt-16">
+        {/* ============================================================
+            HERO
+            ============================================================ */}
+        <section className="landing-section">
+          <div className="px-4 pb-8 pt-10 sm:px-8 sm:pb-12 sm:pt-16 lg:px-10">
             <p className="lp-eyebrow">
               {isEn ? `${modelCount} AI models · OpenAI-compatible` : `${modelCount} model AI · Kompatibel OpenAI`}
             </p>
-
-            <h1 className="lp-display mt-6 text-[2.75rem] sm:text-6xl lg:text-7xl">
+            <h1 className="lp-display mt-6 max-w-5xl text-[3.1rem] sm:text-7xl lg:text-[6.5rem]">
               {isEn ? (
-                <>AI Token Packages,<br /><em>cheap &amp; clear</em></>
+                <>AI Token Packages, <em>cheap &amp; clear</em></>
               ) : (
-                <>Paket Token AI,<br /><em>murah &amp; jelas</em></>
+                <>Paket Token AI, <em>murah &amp; jelas</em></>
               )}
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">
-              {isEn
-                ? "Pick a package, pay once, and get an API key instantly. One key for DeepSeek, GLM, Qwen, Kimi and more."
-                : "Pilih paket, bayar sekali, API key langsung jadi. Satu key untuk DeepSeek, GLM, Qwen, Kimi, dan lainnya."}
-            </p>
-
-            <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px] text-muted-foreground sm:gap-x-3">
-              {heroPoints.map((point, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  {i > 0 && <span aria-hidden className="hidden h-3 w-px bg-white/20 sm:block" />}
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <div id="paket-list" className="mt-12 sm:mt-16">
+          <div className="grid border-t lg:grid-cols-12">
+            {/* Ilustrasi + kotak intro */}
+            <div className="relative overflow-hidden border-b lg:col-span-8 lg:border-b-0 lg:border-r">
+              <HeroIso className="absolute inset-0 h-full w-full" />
+              <div className="relative z-10 flex min-h-[520px] flex-col justify-between gap-10 p-4 sm:min-h-[560px] sm:p-8 lg:p-10">
+                <div className="max-w-md lp-outline bg-white p-5 sm:p-6">
+                  <p className="text-[15px] leading-relaxed text-black sm:text-[17px]">
+                    {isEn
+                      ? "Pick a package, pay once, and get an API key instantly. One key for DeepSeek, GLM, Qwen, Kimi and more."
+                      : "Pilih paket, bayar sekali, API key langsung jadi. Satu key untuk DeepSeek, GLM, Qwen, Kimi, dan lainnya."}
+                  </p>
+                  <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                    <a href="#paket-list" className="lp-btn h-11 justify-between px-4 text-[14px]">
+                      {isEn ? "See token packages" : "Lihat paket token"}
+                      <span aria-hidden className="lp-caret" />
+                    </a>
+                    {isAuthed ? (
+                      <Link href="/dashboard/beli-paket" className="lp-btn-ghost h-11 justify-between px-4 text-[14px]">
+                        {isEn ? "Buy a package" : "Beli paket sekarang"}
+                        <span aria-hidden className="lp-caret" />
+                      </Link>
+                    ) : (
+                      <Link href="/register" className="lp-btn-ghost h-11 justify-between px-4 text-[14px]">
+                        {t("registerFree")}
+                        <span aria-hidden className="lp-caret" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                <ul className="flex flex-wrap gap-2">
+                  {heroPoints.map((point, i) => (
+                    <li
+                      key={i}
+                      className="lp-mono inline-flex items-center gap-2 border border-[var(--lp-line)] bg-white px-2.5 py-1.5 text-[11px] uppercase tracking-[0.04em] text-muted-foreground"
+                    >
+                      <span aria-hidden className="h-1.5 w-1.5 bg-[var(--lp-green)]" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Ubin provider */}
+            <div className="flex flex-col lg:col-span-4">
+              <div className="border-b px-4 py-3 sm:px-6">
+                <span className="lp-label">{t("providersLabel")}</span>
+              </div>
+              <div className="grid flex-1 grid-cols-2 gap-px bg-[var(--lp-line)]">
+                {PROVIDERS.map((p) => {
+                  const group = brandGroupOf(p);
+                  return (
+                    <div key={p} className="lp-tile min-h-24 px-3 text-[15px] tracking-tight sm:min-h-28 sm:text-[17px]">
+                      {group && <PackageBrandIcon group={group} className="h-5 w-5 shrink-0 brightness-0" />}
+                      <span className="truncate">{p}</span>
+                    </div>
+                  );
+                })}
+                <Link
+                  href="/models"
+                  className="lp-tile min-h-24 flex-col !gap-1 bg-black px-3 text-white hover:!bg-[var(--lp-green)] hover:text-black sm:min-h-28"
+                >
+                  <span className="lp-display text-3xl">{modelCount}+</span>
+                  <span className="lp-mono text-[10px] uppercase tracking-[0.06em]">{tf("aiModels")}</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================
+            PERNYATAAN
+            ============================================================ */}
+        <section className="landing-section lp-rule px-4 py-20 sm:px-8 sm:py-28 lg:px-10">
+          <p className="lp-display mx-auto max-w-4xl text-center text-[1.75rem] !leading-[1.15] !tracking-[-0.02em] sm:text-[2.5rem]">
+            {t("subheadline")}
+          </p>
+        </section>
+
+        {/* ============================================================
+            HARGA PAKET TOKEN (fokus utama)
+            ============================================================ */}
+        <section id="paket" className="landing-section lp-rule scroll-mt-16 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <SectionHead
+            eyebrow={isEn ? "Token packages" : "Paket token"}
+            title={isEn ? "Pay once. Get your key." : "Bayar sekali. Key langsung jadi."}
+            desc={
+              isEn
+                ? "No subscription, no auto-renewal. Every package comes with a dedicated API key."
+                : "Tanpa langganan, tanpa perpanjangan otomatis. Setiap paket dapat API key khusus."
+            }
+          />
+
+          <div id="paket-list" className="mt-10 scroll-mt-24 sm:mt-12">
             <PackagePricing packages={landingPackages} groups={packageGroups} isEn={isEn} />
           </div>
 
-          <p className="mt-8 text-center text-[12px] leading-relaxed text-muted-foreground">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
             {isEn ? "Token quota counts input + output. " : "Kuota token dihitung input + output. "}
             {isEn ? "Prefer to pay only for what you use? " : "Mau bayar sesuai pemakaian saja? "}
-            <a href="#payg" className="text-foreground underline underline-offset-4">
+            <a href="#payg" className="text-black underline underline-offset-4 hover:bg-[var(--lp-green-soft)]">
               {isEn ? "See pay-as-you-go rates" : "Lihat tarif per model"}
             </a>
           </p>
-        </div>
-      </section>
+        </section>
 
-      {/* ============================================================
-          PROVIDERS
-          ============================================================ */}
-      <section className="landing-section px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <span className="lp-eyebrow">{t("providersLabel")}</span>
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-            {PROVIDERS.map((p) => (
-              <span key={p} className="lp-display text-xl italic text-foreground/80">
-                {p}
-              </span>
-            ))}
+        {/* ============================================================
+            CARA BELI — 3 langkah
+            ============================================================ */}
+        <section className="landing-section lp-rule px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <SectionHead
+              eyebrow={isEn ? "How it works" : "Cara beli"}
+              title={isEn ? "Three steps to your API key" : "Tiga langkah, API key siap"}
+            />
+            <Link
+              href={isAuthed ? "/dashboard/beli-paket" : "/register"}
+              className="lp-btn h-12 w-full justify-between px-5 text-sm sm:w-auto sm:min-w-56"
+            >
+              {isAuthed ? (isEn ? "Buy a package" : "Beli paket sekarang") : isEn ? "Sign up free" : "Daftar gratis"}
+              <span aria-hidden className="lp-caret" />
+            </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          CARA BELI — 3 langkah
-          ============================================================ */}
-      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <SectionHead
-            eyebrow={isEn ? "How it works" : "Cara beli"}
-            title={isEn ? "Three steps to your API key" : "Tiga langkah, API key siap"}
-          />
-          <ol className="mt-10 grid gap-px overflow-hidden rounded-2xl border bg-[var(--color-border)] sm:mt-12 sm:grid-cols-3">
+          <ol className="lp-cells mt-10 grid sm:mt-12 sm:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="bg-background p-6 sm:p-8">
-                <span className="lp-display text-4xl text-muted-foreground">0{i + 1}</span>
-                <h3 className="mt-6 text-[15px] font-medium text-foreground">{s.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</p>
+              <li key={s.title} className="lp-cell relative bg-white p-6 sm:p-8">
+                <span className="lp-mono text-[11px] text-muted-foreground">STEP</span>
+                <div className="lp-display mt-2 text-6xl">0{i + 1}</div>
+                <h3 className="mt-10 text-[17px] tracking-tight text-foreground">{s.title}</h3>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{s.desc}</p>
+                {i < STEPS.length - 1 && (
+                  <span aria-hidden className="absolute right-6 top-8 hidden h-2.5 w-2.5 bg-[var(--lp-green)] sm:block" />
+                )}
               </li>
             ))}
           </ol>
-          <div className="mt-10">
-            <Link
-              href={isAuthed ? "/dashboard/beli-paket" : "/register"}
-              className="lp-btn min-h-12 w-full px-7 text-sm sm:w-auto"
-            >
-              {isAuthed ? (isEn ? "Buy a package" : "Beli paket sekarang") : isEn ? "Sign up free" : "Daftar gratis"}
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ============================================================
-          TARIF PER MODEL (bayar per pemakaian)
-          ============================================================ */}
-      <section id="payg" className="landing-section scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+        {/* ============================================================
+            TARIF PER MODEL (bayar per pemakaian)
+            ============================================================ */}
+        <section id="payg" className="landing-section lp-rule scroll-mt-20 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <SectionHead
               eyebrow={isEn ? "Alternative: pay as you go" : "Alternatif: bayar per pemakaian"}
@@ -317,8 +372,8 @@ export default async function Home({
                   : "Isi saldo TOKS, bayar hanya token yang dipakai. Saldo tidak kedaluwarsa."
               }
             />
-            <p className="shrink-0 text-[13px] text-muted-foreground">
-              1 TOKS <span aria-hidden>=</span> <span className="text-foreground">Rp1.000</span>
+            <p className="lp-mono inline-flex shrink-0 items-center gap-2 self-start bg-[var(--lp-green-soft)] px-3 py-2 text-[12px] text-black sm:self-auto">
+              1 TOKS <span aria-hidden>=</span> Rp1.000
             </p>
           </div>
 
@@ -326,44 +381,33 @@ export default async function Home({
             <PremiumPricingTable models={models} t={t} tc={tc} isEn={isEn} />
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href={isAuthed ? "/dashboard/wallet" : "/register"} className="lp-btn-ghost min-h-12 px-7 text-sm">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <Link href={isAuthed ? "/dashboard/wallet" : "/register"} className="lp-btn h-12 justify-between px-5 text-sm sm:min-w-52">
               {isEn ? "Top up balance" : "Isi saldo TOKS"}
+              <span aria-hidden className="lp-caret" />
             </Link>
-            <Link
-              href="/models"
-              className="inline-flex min-h-12 items-center justify-center px-4 text-sm text-muted-foreground transition hover:text-foreground"
-            >
+            <Link href="/models" className="lp-btn-ghost h-12 px-5 text-sm">
               {t("viewAllModelsArrow")}
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ============================================================
-          KEUNGGULAN PLATFORM
-          ============================================================ */}
-      <section id="platform" className="landing-section scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <SectionHead eyebrow={t("infraEyebrow")} title={t("infraTitle")} desc={t("infraDesc")} />
-
-          <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border bg-[var(--color-border)] sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
-            {INFRA_FEATURES.map((f) => (
-              <div key={f.title} className="bg-background p-6 sm:p-8">
-                <span className="text-foreground">{f.icon}</span>
-                <h3 className="mt-6 text-[15px] font-medium tracking-tight text-foreground">{f.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{f.desc}</p>
-              </div>
-            ))}
+        {/* ============================================================
+            KEUNGGULAN PLATFORM
+            ============================================================ */}
+        <section id="platform" className="landing-section lp-rule scroll-mt-20 pt-16 sm:pt-24">
+          <div className="px-4 sm:px-8 lg:px-10">
+            <SectionHead eyebrow={t("infraEyebrow")} title={t("infraTitle")} desc={t("infraDesc")} />
           </div>
-        </div>
-      </section>
+          <div className="mt-10 sm:mt-12">
+            <FeatureTabs items={INFRA_FEATURES} label={t("infraEyebrow")} />
+          </div>
+        </section>
 
-      {/* ============================================================
-          DEVELOPER EXPERIENCE
-          ============================================================ */}
-      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+        {/* ============================================================
+            DEVELOPER EXPERIENCE
+            ============================================================ */}
+        <section className="landing-section px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <SectionHead
             eyebrow={t("dxEyebrow")}
             title={t("dxTitle")}
@@ -376,79 +420,105 @@ export default async function Home({
           <div className="mt-10 min-w-0 sm:mt-12">
             <CodeTabs />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ============================================================
-          FAQ
-          ============================================================ */}
-      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-3xl">
-          <SectionHead
-            center
-            eyebrow={isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
-            title={isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
-          />
-
-          <div className="mt-10 border-t sm:mt-12">
-            {FAQS.map((f) => (
-              <details key={f.q} className="group border-b">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 py-5 text-[15px] font-medium text-foreground [&::-webkit-details-marker]:hidden">
-                  {f.q}
-                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45" aria-hidden>
-                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                </summary>
-                <p className="pb-6 pr-10 text-[14px] leading-relaxed text-muted-foreground">{f.a}</p>
-              </details>
-            ))}
+        {/* ============================================================
+            FAQ
+            ============================================================ */}
+        <section className="landing-section lp-rule px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-4">
+              <SectionHead
+                eyebrow={isEn ? "Frequently Asked Questions" : "Pertanyaan Umum"}
+                title={isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
+              />
+            </div>
+            <div className="border-t lg:col-span-8">
+              {FAQS.map((f) => (
+                <details key={f.q} className="lp-faq group border-b">
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 py-5 text-[16px] text-foreground">
+                    {f.q}
+                    <span className="lp-faq-icon inline-flex h-7 w-7 shrink-0 items-center justify-center border border-[var(--lp-line)] transition-colors">
+                      <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-45" aria-hidden>
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <p className="pb-6 pr-12 text-[14px] leading-relaxed text-muted-foreground">{f.a}</p>
+                </details>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ============================================================
-          FINAL CTA
-          ============================================================ */}
-      <section className="landing-section px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="lp-invert rounded-3xl px-6 py-14 text-center sm:px-14 sm:py-20">
-            <h2 className="lp-display text-4xl sm:text-6xl">
+        {/* ============================================================
+            FINAL CTA + angka
+            ============================================================ */}
+        <section className="landing-section lp-rule overflow-hidden pt-20 sm:pt-28">
+          <div className="px-4 text-center sm:px-8">
+            <p className="lp-eyebrow">{isEn ? "Get started" : "Mulai sekarang"}</p>
+            <h2 className="lp-display mx-auto mt-6 max-w-5xl text-[2.75rem] sm:text-7xl">
               {isEn ? (
                 <>Start saving on AI <em>today</em></>
               ) : (
                 <>Hemat biaya AI <em>mulai hari ini</em></>
               )}
             </h2>
-            <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground sm:text-base">
               {isEn
                 ? "Pick a token package, pay via QRIS, and your API key is ready in seconds."
                 : "Pilih paket token, bayar via QRIS, API key siap dalam hitungan detik."}
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <a href="#paket" className="lp-btn min-h-12 px-7 text-sm">
+            <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <a href="#paket" className="lp-btn h-12 justify-between px-5 text-sm sm:min-w-52">
                 {isEn ? "See token packages" : "Lihat paket token"}
+                <span aria-hidden className="lp-caret" />
               </a>
               {!isAuthed && (
-                <Link href="/register" className="lp-btn-ghost min-h-12 px-7 text-sm">
+                <Link href="/register" className="lp-btn-ghost h-12 justify-between px-5 text-sm sm:min-w-44">
                   {t("registerFree")}
+                  <span aria-hidden className="lp-caret" />
                 </Link>
               )}
             </div>
           </div>
-        </div>
-      </section>
+
+          <SlabStrip />
+
+          <dl className="grid grid-cols-1 border-t sm:grid-cols-3">
+            {[
+              { value: `${modelCount}`, label: tf("aiModels") },
+              ...(cheapest
+                ? [
+                    {
+                      value: `Rp${cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}`,
+                      label: isEn ? "Packages from" : "Paket mulai dari",
+                    },
+                  ]
+                : []),
+              { value: isEn ? "Rp1,000" : "Rp1.000", label: "= 1 TOKS" },
+            ].map((s, i) => (
+              <div key={s.label} className={`flex flex-col-reverse px-4 py-8 sm:px-8 sm:py-10 ${i > 0 ? "border-t sm:border-l sm:border-t-0" : ""}`}>
+                <dt className="lp-label mt-3">{s.label}</dt>
+                <dd className="lp-display text-5xl sm:text-6xl">{s.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </main>
 
       {/* ============================================================
           FOOTER
           ============================================================ */}
-      <footer className="landing-section px-4 pb-24 pt-12 sm:px-6 sm:pb-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
-            <div className="col-span-2 lg:col-span-1">
-              <Link href="/" className="lp-display text-2xl text-foreground">
-                9inference
+      <footer className="lp-invert landing-section px-4 pb-24 pt-14 sm:px-8 sm:pb-10 lg:px-10">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="max-w-xs text-[14px] leading-relaxed text-[var(--muted-foreground)]">{tf("tagline")}</p>
+              <Link href="/status" className="mt-6 inline-flex items-center gap-2 text-[13px] text-white hover:text-[var(--lp-green)]">
+                <span aria-hidden className="h-2 w-2 bg-[var(--lp-green)]" />
+                {tf("status")}
               </Link>
-              <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{tf("tagline")}</p>
             </div>
 
             <FooterCol
@@ -470,23 +540,31 @@ export default async function Home({
                 { label: tf("terms"), href: "/terms" },
               ]}
             />
-            <div className="col-span-2 lg:col-span-1">
-              <FooterCol
-                title={tf("learn")}
-                links={[
-                  { label: tf("apiCheap"), href: "/blog/api-model-ai-murah-indonesia" },
-                  { label: tf("deepseekCheap"), href: "/blog/deepseek-api-murah-cara-pakai" },
-                  { label: tf("openaiAlt"), href: "/blog/alternatif-openai-api-murah" },
-                  { label: tf("payPerToken"), href: "/blog/bayar-per-token-vs-langganan" },
-                ]}
-              />
-            </div>
+            <FooterCol
+              title={tf("learn")}
+              links={[
+                { label: tf("apiCheap"), href: "/blog/api-model-ai-murah-indonesia" },
+                { label: tf("deepseekCheap"), href: "/blog/deepseek-api-murah-cara-pakai" },
+                { label: tf("openaiAlt"), href: "/blog/alternatif-openai-api-murah" },
+                { label: tf("payPerToken"), href: "/blog/bayar-per-token-vs-langganan" },
+              ]}
+            />
           </div>
 
-          <div className="mt-12 border-t pt-6 text-center sm:flex sm:items-center sm:justify-between sm:text-left">
-            <p className="text-[12px] text-muted-foreground">{tf("copyright", { year: new Date().getFullYear() })}</p>
-            <p className="mt-2 text-[12px] text-muted-foreground sm:mt-0">
+          <Link
+            href="/"
+            aria-label="9inference"
+            className="lp-display mt-16 block select-none text-[22vw] leading-[0.8] !tracking-[-0.06em] text-white transition-colors hover:text-[var(--lp-green)] sm:mt-20 lg:text-[19.5rem]"
+          >
+            9inference
+          </Link>
+
+          <div className="mt-8 flex flex-col gap-2 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="lp-mono text-[11px] uppercase tracking-[0.04em] text-[var(--muted-foreground)]">
               {isEn ? "No subscription. No hidden fees." : "Tanpa langganan. Tanpa biaya tersembunyi."}
+            </p>
+            <p className="lp-mono text-[11px] uppercase tracking-[0.04em] text-[var(--muted-foreground)]">
+              {tf("copyright", { year: new Date().getFullYear() })}
             </p>
           </div>
         </div>
@@ -524,8 +602,8 @@ function SectionHead({
   return (
     <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
       <p className="lp-eyebrow">{eyebrow}</p>
-      <h2 className="lp-display mt-4 text-[2rem] sm:text-5xl">{title}</h2>
-      {desc && <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">{desc}</p>}
+      <h2 className="lp-display mt-5 text-[2.4rem] sm:text-[3.5rem]">{title}</h2>
+      {desc && <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">{desc}</p>}
     </div>
   );
 }
@@ -539,11 +617,11 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className="lp-eyebrow">{title}</div>
-      <ul className="mt-4 space-y-2">
+      <div className="lp-mono bg-white px-2.5 py-1.5 text-[11px] uppercase tracking-[0.04em] text-black">{title}</div>
+      <ul className="mt-4 space-y-2.5">
         {links.map((l) => (
           <li key={l.href}>
-            <Link href={l.href} className="block py-0.5 text-[13px] text-muted-foreground transition hover:text-foreground">
+            <Link href={l.href} className="block text-[14px] text-white transition hover:text-[var(--lp-green)]">
               {l.label}
             </Link>
           </li>
@@ -553,13 +631,40 @@ function FooterCol({
   );
 }
 
-/** Status model satu warna: titik penuh = aktif, cincin kosong = pemeliharaan. */
+/** Deretan lempengan isometrik, memudar dari hijau pucat ke hitam. */
+function SlabStrip() {
+  const n = 14;
+  const slabs = Array.from({ length: n }, (_, i) => {
+    const t = i / (n - 1);
+    const x = 40 + i * 92;
+    const lift = Math.sin(t * Math.PI * 1.3) * 26;
+    const dark = t > 0.78;
+    const top = dark ? "#ffffff" : `rgba(199,226,192,${0.35 + t * 0.6})`;
+    const side = dark ? "#000000" : `rgba(150,190,140,${0.25 + t * 0.6})`;
+    const y = 70 - lift;
+    return (
+      <g key={i}>
+        <polygon points={`${x},${y + 40} ${x + 60},${y} ${x + 80},${y + 12} ${x + 20},${y + 52}`} fill={top} stroke={dark ? "#000" : "none"} strokeWidth="1" />
+        <polygon points={`${x + 20},${y + 52} ${x + 80},${y + 12} ${x + 80},${y + 26} ${x + 20},${y + 66}`} fill={side} />
+      </g>
+    );
+  });
+  return (
+    <div className="mt-16 overflow-hidden sm:mt-20" aria-hidden>
+      <svg viewBox="0 0 1320 150" className="h-auto w-full min-w-[720px]" preserveAspectRatio="xMidYMid meet">
+        {slabs}
+      </svg>
+    </div>
+  );
+}
+
+/** Status model: kotak hijau = aktif, kotak kosong = pemeliharaan. */
 function ModelStatus({ maintenance, tc }: { maintenance: boolean; tc: (key: string) => string }) {
   return (
-    <span className={`inline-flex items-center gap-2 text-[12px] ${maintenance ? "text-muted-foreground" : "text-foreground"}`}>
+    <span className={`lp-mono inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.04em] ${maintenance ? "text-muted-foreground" : "text-foreground"}`}>
       <span
         aria-hidden
-        className={`h-1.5 w-1.5 rounded-full ${maintenance ? "ring-1 ring-inset ring-white/50" : "bg-foreground"}`}
+        className={`h-2 w-2 ${maintenance ? "border border-[var(--lp-sage)]" : "bg-[var(--lp-green)]"}`}
       />
       {maintenance ? tc("maintenance") : tc("active")}
     </span>
@@ -579,7 +684,7 @@ function PremiumPricingTable({
 }) {
   if (models.length === 0) {
     return (
-      <div className="rounded-2xl border p-10 text-center text-sm text-muted-foreground">
+      <div className="border p-10 text-center text-sm text-muted-foreground">
         {isEn ? "Prices are being updated." : "Harga sedang diperbarui."}
       </div>
     );
@@ -587,19 +692,19 @@ function PremiumPricingTable({
   const nf = (n: number) => n.toLocaleString(isEn ? "en-US" : "id-ID");
   const toks = (n: number) => (n / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 });
   const perM = isEn ? "/ 1M tokens" : "/ 1 juta token";
-  const th = "px-6 py-4 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground";
+  const th = "lp-mono px-5 py-3 text-[11px] font-normal uppercase tracking-[0.04em] text-black";
 
   return (
-    <div className="overflow-hidden rounded-2xl border">
+    <div className="border">
       {/* HP: daftar ringkas, tanpa scroll horizontal */}
       <ul className="md:hidden">
         {models.map((m) => (
-          <li key={m.id} className="border-b px-5 py-4">
+          <li key={m.id} className="border-b px-4 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link
                   href={`/models/${encodeURIComponent(m.modelId)}`}
-                  className="block truncate text-[15px] font-medium text-foreground"
+                  className="block truncate text-[15px] text-foreground"
                 >
                   {m.name}
                 </Link>
@@ -612,11 +717,11 @@ function PremiumPricingTable({
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-4 text-[13px]">
               <div>
-                <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Input</dt>
+                <dt className="lp-label">Input</dt>
                 <dd className="mt-1 font-mono text-foreground">Rp{nf(m.inputPricePerMillion)}</dd>
               </div>
               <div>
-                <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Output</dt>
+                <dt className="lp-label">Output</dt>
                 <dd className="mt-1 font-mono text-foreground">Rp{nf(m.outputPricePerMillion)}</dd>
               </div>
             </dl>
@@ -628,7 +733,7 @@ function PremiumPricingTable({
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-left">
+            <tr className="border-b bg-[var(--lp-pale)] text-left">
               <th className={th}>Model</th>
               <th className={th}>Provider</th>
               <th className={th}>{isEn ? "Context" : "Konteks"}</th>
@@ -639,27 +744,27 @@ function PremiumPricingTable({
           </thead>
           <tbody>
             {models.map((m) => (
-              <tr key={m.id} className="border-b transition-colors hover:bg-white/[0.03]">
-                <td className="px-6 py-4">
+              <tr key={m.id} className="border-b transition-colors hover:bg-[var(--lp-pale)]">
+                <td className="px-5 py-4">
                   <Link
                     href={`/models/${encodeURIComponent(m.modelId)}`}
-                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                    className="text-[15px] text-foreground underline-offset-4 hover:underline"
                   >
                     {m.name}
                   </Link>
                   <code className="mt-0.5 block text-[11px] text-muted-foreground">{m.modelId}</code>
                 </td>
-                <td className="px-6 py-4 text-[13px] text-muted-foreground">{m.provider}</td>
-                <td className="px-6 py-4 font-mono text-[12px] text-muted-foreground">{m.contextWindow || "—"}</td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-5 py-4 text-[13px] text-muted-foreground">{m.provider}</td>
+                <td className="px-5 py-4 font-mono text-[12px] text-muted-foreground">{m.contextWindow || "—"}</td>
+                <td className="px-5 py-4 text-right">
                   <div className="font-mono text-foreground">Rp{nf(m.inputPricePerMillion)}</div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">{toks(m.inputPricePerMillion)} TOKS</div>
+                  <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">{toks(m.inputPricePerMillion)} TOKS</div>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-5 py-4 text-right">
                   <div className="font-mono text-foreground">Rp{nf(m.outputPricePerMillion)}</div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">{toks(m.outputPricePerMillion)} TOKS</div>
+                  <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">{toks(m.outputPricePerMillion)} TOKS</div>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-5 py-4 text-right">
                   <ModelStatus maintenance={m.maintenanceMode} tc={tc} />
                 </td>
               </tr>
@@ -667,7 +772,7 @@ function PremiumPricingTable({
           </tbody>
         </table>
       </div>
-      <div className="px-5 py-3.5 text-[12px] leading-relaxed text-muted-foreground sm:px-6">
+      <div className="bg-[var(--lp-pale)] px-4 py-3.5 text-[12px] leading-relaxed text-muted-foreground sm:px-5">
         {t("pricingTableNote")}
       </div>
     </div>

@@ -38,13 +38,13 @@ function formatDuration(days: number, isEn: boolean): string {
   return days === 1 ? "24 jam" : `${days} hari`;
 }
 
-/** Logo brand satu warna: putih di kartu gelap, hitam di permukaan terang. */
-function MonoBrandIcon({ group, onLight }: { group: string; onLight: boolean }) {
+/** Logo brand satu warna: hitam di permukaan terang, putih di permukaan gelap. */
+function MonoBrandIcon({ group, onDark }: { group: string; onDark: boolean }) {
   if (!BRANDED_GROUPS.has(group)) return null;
   return (
     <PackageBrandIcon
       group={group}
-      className={`h-3.5 w-3.5 shrink-0 brightness-0 ${onLight ? "" : "invert"}`}
+      className={`h-3.5 w-3.5 shrink-0 brightness-0 ${onDark ? "invert" : ""}`}
     />
   );
 }
@@ -70,7 +70,7 @@ export function PackagePricing({
 
   if (packages.length === 0) {
     return (
-      <div className="rounded-2xl border px-5 py-14 text-center text-sm text-muted-foreground">
+      <div className="border px-5 py-14 text-center text-sm text-muted-foreground">
         {isEn ? "Packages are being updated. Please check back soon." : "Paket sedang diperbarui. Silakan cek kembali sebentar lagi."}
       </div>
     );
@@ -80,8 +80,8 @@ export function PackagePricing({
     <div>
       {/* Filter model — bisa di-scroll horizontal di HP */}
       {groups.length > 1 && (
-        <div className="-mx-4 mb-8 overflow-x-auto px-4 pb-1 sm:mx-0 sm:mb-10 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap sm:justify-center" role="tablist" aria-label={isEn ? "Filter packages" : "Filter paket"}>
+        <div className="-mx-4 mb-6 overflow-x-auto px-4 pb-1 sm:mx-0 sm:mb-8 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="tablist" aria-label={isEn ? "Filter packages" : "Filter paket"}>
             {[{ key: "all", title: isEn ? "All packages" : "Semua paket" }, ...groups].map((g) => {
               const active = selected === g.key;
               return (
@@ -93,7 +93,7 @@ export function PackagePricing({
                   onClick={() => setSelected(g.key)}
                   className="lp-chip inline-flex shrink-0 items-center gap-2 px-4 py-2 text-[13px] font-medium"
                 >
-                  <MonoBrandIcon group={g.key} onLight={active} />
+                  <MonoBrandIcon group={g.key} onDark={active} />
                   {g.title}
                 </button>
               );
@@ -102,7 +102,7 @@ export function PackagePricing({
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+      <div className="lp-cells grid sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((pkg) => {
           const soldOut = pkg.stock <= 0;
           const lowStock = !soldOut && pkg.stock <= 5;
@@ -120,12 +120,12 @@ export function PackagePricing({
           return (
             <article
               key={pkg.id}
-              className={`lp-card flex flex-col p-6 sm:p-7 ${pkg.highlight ? "lp-invert" : ""} ${soldOut ? "opacity-60" : ""}`}
+              className={`lp-cell flex flex-col p-6 sm:p-7 ${pkg.highlight ? "lp-green" : "bg-white"} ${soldOut ? "opacity-60" : ""}`}
             >
               {/* Baris atas: kelompok model + label */}
               <div className="flex min-h-6 items-center justify-between gap-3">
-                <div className="lp-eyebrow flex min-w-0 items-center gap-2">
-                  <MonoBrandIcon group={pkg.group} onLight={pkg.highlight} />
+                <div className="lp-label flex min-w-0 items-center gap-2">
+                  <MonoBrandIcon group={pkg.group} onDark={false} />
                   <span className="truncate">{groupTitle}</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -134,16 +134,16 @@ export function PackagePricing({
                 </div>
               </div>
 
-              <h3 className="mt-5 break-words text-[17px] font-medium leading-snug tracking-tight text-foreground">
+              <h3 className="mt-6 break-words text-[18px] leading-snug tracking-tight text-foreground">
                 {pkg.name}
               </h3>
 
               {/* Harga */}
               <div className="mt-6 flex items-baseline gap-1.5">
-                <span className="text-sm text-muted-foreground">Rp</span>
-                <span className="lp-display text-5xl text-foreground">{nf(pkg.price)}</span>
+                <span className="text-base text-muted-foreground">Rp</span>
+                <span className="lp-display text-[3.25rem] text-foreground">{nf(pkg.price)}</span>
               </div>
-              <p className="mt-2 text-[12px] text-muted-foreground">
+              <p className="lp-mono mt-3 text-[11px] uppercase tracking-[0.04em] text-muted-foreground">
                 {isEn ? "One-time payment" : "Sekali bayar"}
                 {pkg.toksPrice != null && pkg.toksPrice > 0 && (
                   <>
@@ -158,7 +158,7 @@ export function PackagePricing({
                 {specs.map((s) => (
                   <div key={s.label} className="flex items-baseline justify-between gap-4 border-b py-3">
                     <dt className="text-muted-foreground">{s.label}</dt>
-                    <dd className="text-right font-medium text-foreground">{s.value}</dd>
+                    <dd className="text-right text-foreground">{s.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -167,9 +167,7 @@ export function PackagePricing({
                 <ul className="mt-5 space-y-2 text-[13px] leading-relaxed text-muted-foreground">
                   {extraFeatures.map((f) => (
                     <li key={f} className="flex gap-2.5">
-                      <svg viewBox="0 0 24 24" fill="none" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-foreground" aria-hidden>
-                        <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <span aria-hidden className={`mt-[7px] h-1.5 w-1.5 shrink-0 ${pkg.highlight ? "bg-black" : "bg-[var(--lp-green)]"}`} />
                       <span className="min-w-0 break-words">{f}</span>
                     </li>
                   ))}
@@ -178,23 +176,21 @@ export function PackagePricing({
 
               <div className="mt-auto pt-7">
                 {lowStock && (
-                  <p className="mb-3 text-center text-[12px] text-muted-foreground">
+                  <p className="lp-mono mb-3 text-[11px] uppercase tracking-[0.04em] text-muted-foreground">
                     {isEn ? `${nf(pkg.stock)} left` : `Tersisa ${nf(pkg.stock)}`}
                   </p>
                 )}
                 {soldOut ? (
-                  <span className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-full border px-4 text-sm font-medium text-muted-foreground">
+                  <span className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center border px-4 text-sm text-muted-foreground">
                     {isEn ? "Sold out" : "Stok habis"}
                   </span>
                 ) : (
                   <Link
                     href={`/checkout/${pkg.id}`}
-                    className={`${pkg.highlight ? "lp-btn" : "lp-btn-ghost"} min-h-12 w-full px-4 text-sm`}
+                    className="lp-btn min-h-12 w-full justify-between px-5 text-sm"
                   >
                     {isEn ? "Buy package" : "Beli paket"}
-                    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                      <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <span aria-hidden className="lp-caret" />
                   </Link>
                 )}
               </div>
@@ -204,7 +200,7 @@ export function PackagePricing({
       </div>
 
       {canCollapse && (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 flex">
           <button
             type="button"
             onClick={() => setShowSoldOut((v) => !v)}
