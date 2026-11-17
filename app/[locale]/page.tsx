@@ -13,6 +13,7 @@ import { getAllPackages } from "@/app/lib/packages";
 import { HeroIso } from "@/app/components/landing/iso-scene";
 import { FeatureTabs } from "@/app/components/landing/feature-tabs";
 import { BrandLogo, BrandMark } from "@/app/components/landing/brand-logo";
+import { CountUp } from "@/app/components/landing/count-up";
 import { PackageBrandIcon, brandGroupOf } from "@/app/components/package-brand-icon";
 
 export const dynamic = "force-dynamic";
@@ -213,11 +214,10 @@ export default async function Home({
               {isEn ? `${modelCount} AI models · OpenAI-compatible` : `${modelCount} model AI · Kompatibel OpenAI`}
             </p>
             <h1 className="lp-display mt-6 max-w-5xl text-[3.1rem] sm:text-7xl lg:text-[6.5rem]">
-              {isEn ? (
-                <>AI Token Packages, <em>cheap &amp; clear</em></>
-              ) : (
-                <>Paket Token AI, <em>murah &amp; jelas</em></>
-              )}
+              <AnimatedWords text={isEn ? "AI Token Packages," : "Paket Token AI,"} />{" "}
+              <em>
+                <AnimatedWords text={isEn ? "cheap & clear" : "murah & jelas"} start={3} />
+              </em>
             </h1>
           </div>
 
@@ -271,10 +271,14 @@ export default async function Home({
                 <span className="lp-label">{t("providersLabel")}</span>
               </div>
               <div className="grid flex-1 grid-cols-2 gap-px bg-[var(--lp-line)]">
-                {PROVIDERS.map((p) => {
+                {PROVIDERS.map((p, i) => {
                   const group = brandGroupOf(p);
                   return (
-                    <div key={p} className="lp-tile min-h-24 px-3 text-[15px] tracking-tight sm:min-h-28 sm:text-[17px]">
+                    <div
+                      key={p}
+                      className="lp-tile lp-scan min-h-24 px-3 text-[15px] tracking-tight sm:min-h-28 sm:text-[17px]"
+                      style={{ animationDelay: `${i * 1.8}s` }}
+                    >
                       {group && <PackageBrandIcon group={group} className="h-5 w-5 shrink-0 brightness-0" />}
                       <span className="truncate">{p}</span>
                     </div>
@@ -296,7 +300,7 @@ export default async function Home({
             PERNYATAAN
             ============================================================ */}
         <section className="landing-section lp-rule px-4 py-20 sm:px-8 sm:py-28 lg:px-10">
-          <p className="lp-display mx-auto max-w-4xl text-center text-[1.75rem] !leading-[1.15] !tracking-[-0.02em] sm:text-[2.5rem]">
+          <p className="lp-reveal lp-display mx-auto max-w-4xl text-center text-[1.75rem] !leading-[1.15] !tracking-[-0.02em] sm:text-[2.5rem]">
             {t("subheadline")}
           </p>
         </section>
@@ -315,7 +319,7 @@ export default async function Home({
             }
           />
 
-          <div id="paket-list" className="mt-10 scroll-mt-24 sm:mt-12">
+          <div id="paket-list" className="lp-reveal mt-10 scroll-mt-24 sm:mt-12">
             <PackagePricing packages={landingPackages} groups={packageGroups} isEn={isEn} />
           </div>
 
@@ -345,7 +349,7 @@ export default async function Home({
               <span aria-hidden className="lp-caret" />
             </Link>
           </div>
-          <ol className="lp-cells mt-10 grid sm:mt-12 sm:grid-cols-3">
+          <ol className="lp-cells lp-reveal mt-10 grid sm:mt-12 sm:grid-cols-3">
             {STEPS.map((s, i) => (
               <li key={s.title} className="lp-cell relative bg-white p-6 sm:p-8">
                 <span className="lp-mono text-[11px] text-muted-foreground">STEP</span>
@@ -379,7 +383,7 @@ export default async function Home({
             </p>
           </div>
 
-          <div className="mt-10 sm:mt-12">
+          <div className="lp-reveal mt-10 sm:mt-12">
             <PremiumPricingTable models={models} t={t} tc={tc} isEn={isEn} />
           </div>
 
@@ -419,7 +423,7 @@ export default async function Home({
                 : "Sudah pakai OpenAI SDK? Cukup arahkan client ke base URL kami — selesai."
             }
           />
-          <div className="mt-10 min-w-0 sm:mt-12">
+          <div className="lp-reveal mt-10 min-w-0 sm:mt-12">
             <CodeTabs />
           </div>
         </section>
@@ -435,7 +439,7 @@ export default async function Home({
                 title={isEn ? "Still unsure? Read this" : "Masih bingung? Baca ini"}
               />
             </div>
-            <div className="border-t lg:col-span-8">
+            <div className="lp-reveal border-t lg:col-span-8">
               {FAQS.map((f) => (
                 <details key={f.q} className="lp-faq group border-b">
                   <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 py-5 text-[16px] text-foreground">
@@ -489,20 +493,17 @@ export default async function Home({
 
           <dl className="grid grid-cols-1 border-t sm:grid-cols-3">
             {[
-              { value: `${modelCount}`, label: tf("aiModels") },
+              { value: modelCount, prefix: "", label: tf("aiModels") },
               ...(cheapest
-                ? [
-                    {
-                      value: `Rp${cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}`,
-                      label: isEn ? "Packages from" : "Paket mulai dari",
-                    },
-                  ]
+                ? [{ value: cheapest.price, prefix: "Rp", label: isEn ? "Packages from" : "Paket mulai dari" }]
                 : []),
-              { value: isEn ? "Rp1,000" : "Rp1.000", label: "= 1 TOKS" },
+              { value: 1000, prefix: "Rp", label: "= 1 TOKS" },
             ].map((s, i) => (
               <div key={s.label} className={`flex flex-col-reverse px-4 py-8 sm:px-8 sm:py-10 ${i > 0 ? "border-t sm:border-l sm:border-t-0" : ""}`}>
                 <dt className="lp-label mt-3">{s.label}</dt>
-                <dd className="lp-display text-5xl sm:text-6xl">{s.value}</dd>
+                <dd className="lp-display text-5xl sm:text-6xl">
+                  <CountUp value={s.value} prefix={s.prefix} locale={isEn ? "en-US" : "id-ID"} />
+                </dd>
               </div>
             ))}
           </dl>
@@ -521,7 +522,7 @@ export default async function Home({
               </Link>
               <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-[var(--muted-foreground)]">{tf("tagline")}</p>
               <Link href="/status" className="mt-6 inline-flex items-center gap-2 text-[13px] text-white hover:text-[var(--lp-green)]">
-                <span aria-hidden className="h-2 w-2 bg-[var(--lp-green)]" />
+                <span aria-hidden className="lp-live h-2 w-2 bg-[var(--lp-green)]" />
                 {tf("status")}
               </Link>
             </div>
@@ -594,6 +595,23 @@ export default async function Home({
 
 /* ===== Helpers ===== */
 
+/** Teks yang muncul kata demi kata saat halaman dibuka. */
+function AnimatedWords({ text, start = 0 }: { text: string; start?: number }) {
+  const words = text.split(" ");
+  return (
+    <>
+      {words.map((w, i) => (
+        <span key={i}>
+          <span className="lp-word" style={{ animationDelay: `${0.08 + (start + i) * 0.09}s` }}>
+            {w}
+          </span>
+          {i < words.length - 1 ? " " : null}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function SectionHead({
   eyebrow,
   title,
@@ -606,7 +624,7 @@ function SectionHead({
   center?: boolean;
 }) {
   return (
-    <div className={center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
+    <div className={`lp-reveal ${center ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}`}>
       <p className="lp-eyebrow">{eyebrow}</p>
       <h2 className="lp-display mt-5 text-[2.4rem] sm:text-[3.5rem]">{title}</h2>
       {desc && <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">{desc}</p>}
@@ -649,7 +667,7 @@ function SlabStrip() {
     const side = dark ? "#000000" : `rgba(150,190,140,${0.25 + t * 0.6})`;
     const y = 70 - lift;
     return (
-      <g key={i}>
+      <g key={i} className="lp-wave" style={{ animationDelay: `${(i * 0.16).toFixed(2)}s` }}>
         <polygon points={`${x},${y + 40} ${x + 60},${y} ${x + 80},${y + 12} ${x + 20},${y + 52}`} fill={top} stroke={dark ? "#000" : "none"} strokeWidth="1" />
         <polygon points={`${x + 20},${y + 52} ${x + 80},${y + 12} ${x + 80},${y + 26} ${x + 20},${y + 66}`} fill={side} />
       </g>

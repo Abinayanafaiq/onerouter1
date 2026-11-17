@@ -28,9 +28,16 @@ export type IsoCube = {
   windows?: boolean;
   /** Garis-garis seperti kode di sisi kiri. */
   code?: boolean;
+  /** Jeda (detik) animasi melayang naik-turun; kosong = diam. */
+  bob?: number;
+  /** Kelas tambahan untuk grup kubus (mis. animasi muncul). */
+  className?: string;
 };
 
-export type IsoTile = { x: number; y: number; color: string };
+export type IsoTile = { x: number; y: number; color: string; /** Jeda animasi kedip pelan. */ pulse?: number };
+
+/** Paket data kecil yang meluncur di atas lantai dari `from` ke `to` (koordinat grid). */
+export type IsoPacket = { from: [number, number]; to: [number, number]; delay: number; dur?: number };
 
 const COS = Math.cos(Math.PI / 6);
 
@@ -83,12 +90,15 @@ function Cube({ c, project }: { c: IsoCube; project: (p: Vec3) => [number, numbe
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
         if ((i * 7 + j * 3) % 5 === 0) continue;
+        const blink = (i + j * 2) % 3 === 0;
         extras.push(
           <polygon
             key={`l${i}-${j}`}
             points={pts(project, faceRect(leftO, leftU, leftV, (i + gap) / cols, (i + 1 - gap) / cols, (j + gap) / rows, (j + 1 - gap) / rows))}
             fill={palette.win}
             opacity={0.85}
+            className={blink ? "lp-blink" : undefined}
+            style={blink ? { animationDelay: `${((i * 1.7 + j * 0.9 + x) % 4.5).toFixed(2)}s` } : undefined}
           />,
         );
       }
@@ -122,19 +132,21 @@ function Cube({ c, project }: { c: IsoCube; project: (p: Vec3) => [number, numbe
     });
   }
 
-  return (
-    <g>
+  const body = (
+    <g className={c.bob != null ? "lp-bob" : undefined} style={c.bob != null ? { animationDelay: `${c.bob}s` } : undefined}>
       <polygon points={pts(project, faceRect(leftO, leftU, leftV, 0, 1, 0, 1))} fill={palette.left} stroke={stroke} strokeWidth={0.6} />
       <polygon points={pts(project, faceRect(rightO, rightU, rightV, 0, 1, 0, 1))} fill={palette.right} stroke={stroke} strokeWidth={0.6} />
       <polygon points={pts(project, top)} fill={palette.top} stroke={stroke} strokeWidth={0.6} />
       {extras}
     </g>
   );
+  return c.className ? <g className={c.className}>{body}</g> : body;
 }
 
 export function IsoScene({
   cubes,
   tiles = [],
+  packets = [],
   grid = 12,
   scale = 38,
   width = 900,
@@ -146,6 +158,7 @@ export function IsoScene({
 }: {
   cubes: IsoCube[];
   tiles?: IsoTile[];
+  packets?: IsoPacket[];
   grid?: number;
   scale?: number;
   width?: number;
@@ -180,11 +193,42 @@ export function IsoScene({
             [t.x, t.y + 1, 0],
           ])}
           fill={t.color}
+          className={t.pulse != null ? "lp-tile-pulse" : undefined}
+          style={t.pulse != null ? { animationDelay: `${t.pulse}s` } : undefined}
         />
       ))}
       <g stroke="#c7d4c4" strokeWidth={0.8}>{lines}</g>
+      {packets.map((pk, i) => {
+        const [fx, fy] = pk.from;
+        const [a, b] = project([fx, fy, 0]);
+        const [c2, d2] = project([pk.to[0], pk.to[1], 0]);
+        const h = 0.28;
+        return (
+          <polygon
+            key={`p${i}`}
+            className="lp-packet"
+            points={pts(project, [
+              [fx - h, fy - h, 0],
+              [fx + h, fy - h, 0],
+              [fx + h, fy + h, 0],
+              [fx - h, fy + h, 0],
+            ])}
+            fill="#19e76e"
+            stroke="#0b8f43"
+            strokeWidth={0.8}
+            style={
+              {
+                "--dx": `${(c2 - a).toFixed(1)}px`,
+                "--dy": `${(d2 - b).toFixed(1)}px`,
+                animationDelay: `${pk.delay}s`,
+                animationDuration: `${pk.dur ?? 3.6}s`,
+              } as React.CSSProperties
+            }
+          />
+        );
+      })}
       {ordered.map((c, i) => (
-        <Cube key={i} c={c} project={project} />
+        <Cube key={c.className ? `${i}-${c.className}` : i} c={c} project={project} />
       ))}
       {children}
     </svg>
@@ -197,7 +241,16 @@ const TILE_COLORS = ["#d7face", "#e2d8ff", "#ffe2cc", "#fbd5e8", "#d4ebff", "#f3
 
 export const HERO_TILES: IsoTile[] = [
   [1, 1], [2, 1], [5, 0], [7, 2], [9, 1], [10, 4], [3, 3], [0, 5], [6, 5], [8, 7], [11, 6], [2, 8], [4, 9], [9, 9], [11, 10], [6, 11], [1, 10], [10, 0], [0, 2], [7, 9],
-].map(([x, y], i) => ({ x, y, color: TILE_COLORS[i % TILE_COLORS.length] }));
+].map(([x, y], i) => ({ x, y, color: TILE_COLORS[i % TILE_COLORS.length], pulse: i % 3 === 0 ? (i * 0.8) % 7 : undefined }));
+
+/** Jalur paket data menuju kubus hijau utama (melewati area depan yang kosong). */
+const HERO_PACKETS: IsoPacket[] = [
+  { from: [4.6, 12], to: [4.6, 6.1], delay: 0 },
+  { from: [4.6, 12], to: [4.6, 6.1], delay: 1.8 },
+  { from: [12, 6.6], to: [5.2, 6.6], delay: 0.9, dur: 4.2 },
+  { from: [12, 6.6], to: [5.2, 6.6], delay: 3, dur: 4.2 },
+  { from: [0, 6.6], to: [3.9, 6.6], delay: 2.4, dur: 3 },
+];
 
 export function HeroIso({ className }: { className?: string }) {
   const P = ISO_PALETTES;
@@ -206,20 +259,21 @@ export function HeroIso({ className }: { className?: string }) {
       className={className}
       originX={560}
       tiles={HERO_TILES}
+      packets={HERO_PACKETS}
       cubes={[
-        { x: 7, y: 1, w: 2, d: 2, h: 1.2, palette: P.lav, windows: true },
-        { x: 9.5, y: 2.5, w: 1.6, d: 1.6, h: 2.4, palette: P.plum, windows: true },
+        { x: 7, y: 1, w: 2, d: 2, h: 1.2, palette: P.lav, windows: true, bob: 0.4 },
+        { x: 9.5, y: 2.5, w: 1.6, d: 1.6, h: 2.4, palette: P.plum, windows: true, bob: 2.1 },
         { x: 4, y: 3, w: 2.6, d: 2.6, h: 3.4, palette: P.green, code: true },
-        { x: 6.8, y: 4.4, w: 1.8, d: 1.8, h: 1.6, palette: P.green, windows: true },
-        { x: 2, y: 7, w: 1.6, d: 1.6, h: 1, palette: P.paper, windows: true },
-        { x: 8.5, y: 7, w: 2.2, d: 1.4, h: 0.8, palette: P.mint, windows: true },
-        { x: 5, y: 8, w: 1.2, d: 1.2, h: 2.2, palette: P.ink, windows: true },
+        { x: 6.8, y: 4.4, w: 1.8, d: 1.8, h: 1.6, palette: P.green, windows: true, bob: 1.2 },
+        { x: 2, y: 7, w: 1.6, d: 1.6, h: 1, palette: P.paper, windows: true, bob: 3 },
+        { x: 8.5, y: 7, w: 2.2, d: 1.4, h: 0.8, palette: P.mint, windows: true, bob: 4.2 },
+        { x: 5, y: 8, w: 1.2, d: 1.2, h: 2.2, palette: P.ink, windows: true, bob: 0 },
       ]}
     >
       {/* Label melayang di atas kubus utama */}
       <g transform="translate(495 78)" className="max-sm:hidden">
         <rect width="196" height="30" fill="#ffffff" stroke="#000000" strokeWidth="1" />
-        <rect x="10" y="11" width="8" height="8" fill="#19e76e" />
+        <rect x="10" y="11" width="8" height="8" fill="#19e76e" className="lp-live" />
         <text x="26" y="19.5" fontFamily="var(--font-geist-mono), monospace" fontSize="11" fill="#000000">
           POST /v1/chat/completions
         </text>
@@ -247,7 +301,13 @@ export function FeatureIso({ accent, className }: { accent: number; className?: 
       originX={360}
       originY={110}
       tiles={HERO_TILES.slice(0, 12)}
-      cubes={base.map((c, i) => ({ ...c, palette: i === accent ? P.green : rest[i], code: i === accent }))}
+      cubes={base.map((c, i) => ({
+        ...c,
+        palette: i === accent ? P.green : rest[i],
+        code: i === accent,
+        bob: i === accent ? undefined : i * 1.3,
+        className: i === accent ? `lp-rise lp-accent-${accent}` : undefined,
+      }))}
     />
   );
 }

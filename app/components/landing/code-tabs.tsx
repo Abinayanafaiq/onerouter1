@@ -189,6 +189,7 @@ export function CodeTabs() {
                 className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed text-[#d7face] sm:p-6"
               >
                 <code>{tab.code}</code>
+                <span aria-hidden className="lp-cursor" />
               </motion.pre>
             </AnimatePresence>
           </div>

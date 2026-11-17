@@ -45,7 +45,10 @@ export function FeatureTabs({ items, label }: { items: FeatureItem[]; label: str
       {/* Panel */}
       <div className="relative min-h-[420px] overflow-hidden lg:col-span-8 lg:min-h-[480px]">
         <FeatureIso accent={active} className="absolute inset-0 h-full w-full" />
-        <div className="relative m-4 max-w-sm lp-outline bg-white p-5 sm:absolute sm:bottom-6 sm:right-6 sm:m-0 sm:p-6">
+        <div
+          key={active}
+          className="lp-card-in relative m-4 max-w-sm lp-outline bg-white p-5 sm:absolute sm:bottom-6 sm:right-6 sm:m-0 sm:p-6"
+        >
           <div className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center bg-[var(--lp-green)] text-black">{item.icon}</span>
             <h3 className="text-[17px] font-medium tracking-tight text-foreground">{item.title}</h3>

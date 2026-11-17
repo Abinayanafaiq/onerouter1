@@ -685,3 +685,98 @@ html { scroll-behavior: smooth; }
 }
 
 }
+
+/* ============================================================
+   Landing — animasi (gaya baseten: tenang, berulang, berbasis transform)
+   Semua dimatikan otomatis oleh aturan prefers-reduced-motion di atas.
+   ============================================================ */
+@keyframes lp-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes lp-blink {
+  0%, 100% { opacity: 0.85; }
+  45% { opacity: 0.85; }
+  50% { opacity: 0.15; }
+  70% { opacity: 0.15; }
+  75% { opacity: 0.85; }
+}
+@keyframes lp-packet {
+  0% { transform: translate(0, 0); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+@keyframes lp-tile-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+@keyframes lp-wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+@keyframes lp-rise {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes lp-word {
+  from { transform: translateY(0.35em); opacity: 0; filter: blur(6px); }
+  to { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+@keyframes lp-scan {
+  0%, 14%, 100% { background-color: var(--lp-pale); }
+  5% { background-color: var(--lp-green-soft); }
+}
+@keyframes lp-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes lp-reveal {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lp-card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lp-bob { animation: lp-bob 6s ease-in-out infinite; }
+.lp-blink { animation: lp-blink 4.5s steps(1, end) infinite; }
+.lp-packet { animation: lp-packet 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.lp-tile-pulse { animation: lp-tile-pulse 7s ease-in-out infinite; }
+.lp-wave { animation: lp-wave 3.2s ease-in-out infinite; }
+.lp-rise { animation: lp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.lp-card-in { animation: lp-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.lp-scan { animation: lp-scan 9s ease-in-out infinite; }
+.lp-live { animation: lp-live 1.6s ease-in-out infinite; }
+.lp-word {
+  display: inline-block;
+  animation: lp-word 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lp-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--lp-green, #19e76e);
+  animation: blink 1s step-end infinite;
+}
+
+/* Muncul saat di-scroll — hanya di browser yang mendukung scroll-driven
+   animation; browser lain langsung menampilkan konten apa adanya. */
+@supports (animation-timeline: view()) {
+  .lp-reveal {
+    animation: lp-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 70%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal,
+  .lp-word,
+  .lp-rise,
+  .lp-card-in { animation: none !important; }
+  .lp-packet { display: none; }
+}
