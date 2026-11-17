@@ -102,7 +102,7 @@ export function SumopodForm({ initial }: { initial: InitialData }) {
       <div>
         <h2 className="text-sm font-medium text-neutral-300">Sumopod Payment Gateway</h2>
         <p className="text-xs text-neutral-500 mt-0.5">
-          Pembayaran QRIS via Sumopod. Diverifikasi otomatis via webhook + re-verifikasi API.
+          Pembayaran QRIS via Sumopod. Diverifikasi otomatis via webhook — wajib isi Webhook Token atau Signing Secret.
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export function SumopodForm({ initial }: { initial: InitialData }) {
           className={inputCls}
         />
         <p className="text-[10px] text-neutral-600 mt-1">
-          Dari dashboard Sumopod. Diperlukan untuk membuat payment link & cek status.
+          Dari dashboard Sumopod. Diperlukan untuk membuat payment link.
         </p>
       </div>
 

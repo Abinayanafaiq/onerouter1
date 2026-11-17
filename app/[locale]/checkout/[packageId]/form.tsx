@@ -7,8 +7,8 @@ import { triggerWalletRefresh } from "@/app/components/credit-badge";
 
 type Chain = { id: string; label: string; chain: string };
 
-type PakasirResult = {
-  qrImage: string | null;
+type SumopodResult = {
+  checkoutLink: string | null;
   totalPayment: number;
   expiredAt: string | null;
   orderId: string;
@@ -27,7 +27,7 @@ export function CheckoutForm({
   toksBalance,
   chains,
   btcpayConfigured,
-  pakasirConfigured,
+  sumopodConfigured,
   bscConfigured,
   renewApiKeyId,
 }: {
@@ -37,7 +37,7 @@ export function CheckoutForm({
   toksBalance: number;
   chains: readonly Chain[];
   btcpayConfigured: boolean;
-  pakasirConfigured: boolean;
+  sumopodConfigured: boolean;
   bscConfigured: boolean;
   renewApiKeyId?: string | null;
 }) {
@@ -49,14 +49,14 @@ export function CheckoutForm({
   const bscEnabled = bscConfigured && !renewApiKeyId;
   // Pembayaran instan via saldo TOKS — tersedia juga untuk perpanjangan paket.
   const toksEnabled = toksPrice != null && toksPrice > 0;
-  const defaultTab: "TOKS" | "PAKASIR" | "CRYPTO" | "BSC" = toksEnabled
+  const defaultTab: "TOKS" | "SUMOPOD" | "CRYPTO" | "BSC" = toksEnabled
     ? "TOKS"
-    : pakasirConfigured
-      ? "PAKASIR"
+    : sumopodConfigured
+      ? "SUMOPOD"
       : bscEnabled
         ? "BSC"
         : "CRYPTO";
-  const [method, setMethod] = useState<"TOKS" | "PAKASIR" | "CRYPTO" | "BSC">(defaultTab);
+  const [method, setMethod] = useState<"TOKS" | "SUMOPOD" | "CRYPTO" | "BSC">(defaultTab);
   const [chain, setChain] = useState(chains[0]?.id ?? "");
   const [whatsapp, setWhatsapp] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -67,8 +67,8 @@ export function CheckoutForm({
   const [bscError, setBscError] = useState<string | null>(null);
   const [bscStatus, setBscStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const [bscConfirmations, setBscConfirmations] = useState<number | null>(null);
-  const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
-  const [pakasirError, setPakasirError] = useState<string | null>(null);
+  const [sumopodResult, setSumopodResult] = useState<SumopodResult | null>(null);
+  const [sumopodError, setSumopodError] = useState<string | null>(null);
   const [toksError, setToksError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -85,15 +85,15 @@ export function CheckoutForm({
     return () => stopPolling();
   }, [stopPolling]);
 
-  const view: "approved" | "crypto" | "bsc" | "pakasir" | "input" =
+  const view: "approved" | "crypto" | "bsc" | "sumopod" | "input" =
     paymentStatus === "APPROVED" || bscStatus === "APPROVED"
       ? "approved"
       : cryptoResult?.ok
         ? "crypto"
         : bscResult
           ? "bsc"
-          : pakasirResult
-            ? "pakasir"
+          : sumopodResult
+            ? "sumopod"
             : "input";
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export function CheckoutForm({
       stopPolling();
       const endpoint = isBsc
         ? `/api/orders/bsc/status?orderId=${encodeURIComponent(orderId)}`
-        : `/api/orders/pakasir/status?orderId=${encodeURIComponent(orderId)}`;
+        : `/api/orders/sumopod/status?orderId=${encodeURIComponent(orderId)}`;
       pollRef.current = setInterval(async () => {
         try {
           const res = await fetch(endpoint, { cache: "no-store" });
@@ -234,17 +234,17 @@ export function CheckoutForm({
     setSubmitting(false);
   }
 
-  async function handlePakasirCreate() {
+  async function handleSumopodCreate() {
     if (!whatsapp.trim()) {
-      setPakasirError("Nomor WhatsApp wajib diisi");
+      setSumopodError("Nomor WhatsApp wajib diisi");
       return;
     }
-    setPakasirError(null);
+    setSumopodError(null);
     setSubmitting(true);
-    setPakasirResult(null);
+    setSumopodResult(null);
     setPaymentStatus("PENDING");
     try {
-      const res = await fetch("/api/orders/pakasir/create", {
+      const res = await fetch("/api/orders/sumopod/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -256,24 +256,24 @@ export function CheckoutForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        qrImage?: string | null;
+        checkoutLink?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
       };
       if (data.success && data.orderId) {
-        setPakasirResult({
-          qrImage: data.qrImage ?? null,
+        setSumopodResult({
+          checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? amount,
           expiredAt: data.expiredAt ?? null,
           orderId: data.orderId,
         });
         startPolling(data.orderId, false);
       } else {
-        setPakasirError(data.error || "Gagal membuat invoice QRIS");
+        setSumopodError(data.error || "Gagal membuat invoice QRIS");
       }
     } catch {
-      setPakasirError("Koneksi gagal");
+      setSumopodError("Koneksi gagal");
     }
     setSubmitting(false);
   }
@@ -333,7 +333,7 @@ export function CheckoutForm({
     );
   }
 
-  const showPakasirTab = pakasirConfigured;
+  const showSumopodTab = sumopodConfigured;
 
   return (
     <div ref={rootRef} className="scroll-mt-20 space-y-5">
@@ -371,12 +371,12 @@ export function CheckoutForm({
               TOKS
             </button>
           )}
-          {showPakasirTab && (
+          {showSumopodTab && (
             <button
               type="button"
-              onClick={() => setMethod("PAKASIR")}
+              onClick={() => setMethod("SUMOPOD")}
               className={`rounded-lg py-2.5 text-sm font-medium transition ${
-                method === "PAKASIR"
+                method === "SUMOPOD"
                   ? "bg-foreground text-background shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
               }`}
@@ -413,7 +413,7 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {!toksEnabled && !showPakasirTab && !cryptoEnabled && !bscEnabled && (
+      {!toksEnabled && !showSumopodTab && !cryptoEnabled && !bscEnabled && (
         <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
           Pembayaran belum dikonfigurasi. Hubungi admin.
         </div>
@@ -584,39 +584,40 @@ export function CheckoutForm({
         </div>
       )}
 
-      {method === "PAKASIR" && showPakasirTab && (
+      {method === "SUMOPOD" && showSumopodTab && (
         <div className="glass rounded-2xl p-5 space-y-4">
-          {pakasirResult ? (
+          {sumopodResult ? (
             <>
               <div className="text-center">
                 <p className="text-sm font-semibold">Invoice QRIS Dibuat</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Scan QR di bawah dengan aplikasi pembayaran (GoPay, OVO, DANA, ShopeePay, atau mobile banking).
+                  Klik tombol di bawah untuk membayar via QRIS di halaman pembayaran Sumopod.
                 </p>
               </div>
 
-              {pakasirResult.qrImage ? (
-                <div className="mx-auto w-fit rounded-xl bg-white p-3">
-                  <img
-                    src={pakasirResult.qrImage}
-                    alt="QRIS Pembayaran"
-                    className="h-56 w-56"
-                  />
-                </div>
+              {sumopodResult.checkoutLink ? (
+                <a
+                  href={sumopodResult.checkoutLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-accent block w-full rounded-xl py-3 text-sm font-medium text-center"
+                >
+                  Bayar Sekarang
+                </a>
               ) : (
                 <p className="text-sm text-amber-400 text-center">
-                  QR pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
+                  Link pembayaran tidak tersedia, tapi status tetap dipantau otomatis.
                 </p>
               )}
 
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-sm space-y-1">
                 <p>
                   <span className="text-muted-foreground">Total Pembayaran:</span>{" "}
-                  <span className="font-bold">Rp{pakasirResult.totalPayment.toLocaleString("id-ID")}</span>
+                  <span className="font-bold">Rp{sumopodResult.totalPayment.toLocaleString("id-ID")}</span>
                 </p>
-                {pakasirResult.expiredAt && (
+                {sumopodResult.expiredAt && (
                   <p className="text-xs text-muted-foreground">
-                    Berlaku s/d {new Date(pakasirResult.expiredAt).toLocaleString("id-ID")}
+                    Berlaku s/d {new Date(sumopodResult.expiredAt).toLocaleString("id-ID")}
                   </p>
                 )}
               </div>
@@ -642,7 +643,7 @@ export function CheckoutForm({
                 <button
                   type="button"
                   onClick={() => {
-                    setPakasirResult(null);
+                    setSumopodResult(null);
                     setPaymentStatus("PENDING");
                   }}
                   className="block w-full rounded-xl border border-white/[0.1] bg-white/[0.03] py-2.5 text-sm font-medium transition hover:bg-white/[0.06]"
@@ -652,7 +653,7 @@ export function CheckoutForm({
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                Pembayaran diverifikasi otomatis via API. Tidak perlu upload bukti.
+                Pembayaran diverifikasi otomatis. Tidak perlu upload bukti.
               </p>
             </>
           ) : (
@@ -668,12 +669,12 @@ export function CheckoutForm({
                   <span className="font-bold">Rp{amount.toLocaleString("id-ID")}</span>
                 </p>
               </div>
-              {pakasirError && (
-                <p className="text-sm text-red-400">{pakasirError}</p>
+              {sumopodError && (
+                <p className="text-sm text-red-400">{sumopodError}</p>
               )}
               <button
                 type="button"
-                onClick={handlePakasirCreate}
+                onClick={handleSumopodCreate}
                 disabled={submitting}
                 className="btn-accent block w-full rounded-xl py-3 text-sm font-medium disabled:opacity-50"
               >

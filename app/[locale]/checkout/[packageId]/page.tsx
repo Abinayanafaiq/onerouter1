@@ -2,7 +2,7 @@ import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { findPackage, PACKAGE_CRYPTO_ENABLED } from "@/app/lib/packages";
 import { CRYPTO_CHAINS, isBtcpayConfigured } from "@/app/lib/btcpay";
-import { isPakasirConfigured } from "@/app/lib/pakasir";
+import { isSumopodConfigured } from "@/app/lib/sumopod";
 import { isBscConfigured } from "@/app/lib/crypto-bsc";
 import { getWalletBalance } from "@/app/lib/wallet";
 import { formatToks, idrToToks } from "@/app/lib/constants";
@@ -87,8 +87,8 @@ export default async function CheckoutPage({
     }
   }
 
-  const [pakasirConfigured, bscConfigured, walletBalanceIdr] = await Promise.all([
-    isPakasirConfigured(),
+  const [sumopodConfigured, bscConfigured, walletBalanceIdr] = await Promise.all([
+    isSumopodConfigured(),
     isBscConfigured(),
     userId ? getWalletBalance(userId) : Promise.resolve(0),
   ]);
@@ -240,7 +240,7 @@ export default async function CheckoutPage({
             toksBalance={toksBalance}
             chains={[...CRYPTO_CHAINS]}
             btcpayConfigured={PACKAGE_CRYPTO_ENABLED && isBtcpayConfigured()}
-            pakasirConfigured={pakasirConfigured}
+            sumopodConfigured={sumopodConfigured}
             bscConfigured={PACKAGE_CRYPTO_ENABLED && bscConfigured}
             renewApiKeyId={renewalKey?.id ?? null}
           />

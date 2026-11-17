@@ -15,9 +15,9 @@ function usdRef(idr: number): string {
   });
 }
 
-type PakasirResult = {
+type SumopodResult = {
   orderId: string;
-  qrImage: string | null;
+  checkoutLink: string | null;
   totalPayment: number;
   expiredAt: string | null;
   toks: number;
@@ -161,12 +161,12 @@ export function WalletTopUpForm({
   const locale = useLocale();
   const [amount, setAmount] = useState("");
   const [wa, setWa] = useState(whatsapp || "");
-  const [method, setMethod] = useState<"PAKASIR" | "BSC">(
-    bscConfigured ? "BSC" : "PAKASIR",
+  const [method, setMethod] = useState<"SUMOPOD" | "BSC">(
+    bscConfigured ? "BSC" : "SUMOPOD",
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pakasirResult, setPakasirResult] = useState<PakasirResult | null>(null);
+  const [sumopodResult, setSumopodResult] = useState<SumopodResult | null>(null);
   const [bscResult, setBscResult] = useState<BscResult | null>(null);
   const [bscError, setBscError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "APPROVED" | "CANCELLED">("PENDING");
@@ -183,13 +183,13 @@ export function WalletTopUpForm({
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  const view: "approved" | "bsc" | "pakasir" | "input" =
+  const view: "approved" | "bsc" | "sumopod" | "input" =
     paymentStatus === "APPROVED"
       ? "approved"
       : bscResult
         ? "bsc"
-        : pakasirResult
-          ? "pakasir"
+        : sumopodResult
+          ? "sumopod"
           : "input";
 
   useEffect(() => {
@@ -202,7 +202,7 @@ export function WalletTopUpForm({
       stopPolling();
       const endpoint = isBsc
         ? `/api/orders/bsc/status?orderId=${encodeURIComponent(orderId)}`
-        : `/api/orders/pakasir/status?orderId=${encodeURIComponent(orderId)}`;
+        : `/api/orders/sumopod/status?orderId=${encodeURIComponent(orderId)}`;
       pollRef.current = setInterval(async () => {
         try {
           const res = await fetch(endpoint, { cache: "no-store" });
@@ -233,7 +233,7 @@ export function WalletTopUpForm({
     [stopPolling, router],
   );
 
-  async function handlePakasirCreate() {
+  async function handleSumopodCreate() {
     const toks = parseInt(amount, 10);
     if (!toks || toks < MIN_TOKS) {
       setError(t("errorMinTopUp", { min: MIN_TOKS, unit: TOKS_LABEL }));
@@ -246,10 +246,10 @@ export function WalletTopUpForm({
     const idrAmount = toksToIdr(toks);
     setError(null);
     setSubmitting(true);
-    setPakasirResult(null);
+    setSumopodResult(null);
     setPaymentStatus("PENDING");
     try {
-      const res = await fetch("/api/wallet/topup-pakasir/create", {
+      const res = await fetch("/api/wallet/topup-sumopod/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: idrAmount, whatsapp: wa.trim() }),
@@ -257,15 +257,15 @@ export function WalletTopUpForm({
       const data = (await res.json()) as {
         success: boolean;
         error?: string;
-        qrImage?: string | null;
+        checkoutLink?: string | null;
         totalPayment?: number;
         expiredAt?: string | null;
         orderId?: string;
       };
       if (data.success && data.orderId) {
-        setPakasirResult({
+        setSumopodResult({
           orderId: data.orderId,
-          qrImage: data.qrImage ?? null,
+          checkoutLink: data.checkoutLink ?? null,
           totalPayment: data.totalPayment ?? idrAmount,
           expiredAt: data.expiredAt ?? null,
           toks,
@@ -330,11 +330,11 @@ export function WalletTopUpForm({
   function handleSubmit() {
     if (submitting) return;
     if (method === "BSC") handleBscCreate();
-    else handlePakasirCreate();
+    else handleSumopodCreate();
   }
 
   function resetForm() {
-    setPakasirResult(null);
+    setSumopodResult(null);
     setBscResult(null);
     setBscConfirmations(null);
     setPaymentStatus("PENDING");
@@ -461,7 +461,7 @@ export function WalletTopUpForm({
   }
 
   /* ---------------- QRIS invoice state ---------------- */
-  if (pakasirResult) {
+  if (sumopodResult) {
     return (
       <div ref={rootRef} className="scroll-mt-20 space-y-4 animate-fade-up">
         <div className="rounded-2xl border border-white/[0.08] bg-card p-6 space-y-4">
@@ -475,17 +475,18 @@ export function WalletTopUpForm({
             </p>
           </div>
 
-          {pakasirResult.qrImage ? (
-            <div className="mx-auto w-fit rounded-xl bg-white p-3">
-              <img
-                src={pakasirResult.qrImage}
-                alt="QRIS Pembayaran"
-                className="h-56 w-56"
-              />
-            </div>
+          {sumopodResult.checkoutLink ? (
+            <a
+              href={sumopodResult.checkoutLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition hover:opacity-90"
+            >
+              {t("payNow")}
+            </a>
           ) : (
             <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-xs text-amber-400">
-              {t("qrUnavailable")}
+              {t("paymentLinkUnavailable")}
             </p>
           )}
 
@@ -493,18 +494,18 @@ export function WalletTopUpForm({
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("creditLabel")}</span>
               <span className="font-semibold">
-                {pakasirResult.toks.toLocaleString(locale)} {TOKS_LABEL}
+                {sumopodResult.toks.toLocaleString(locale)} {TOKS_LABEL}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("totalPaymentLabel")}</span>
               <span className="font-semibold text-accent">
-                Rp{pakasirResult.totalPayment.toLocaleString(locale)}
+                Rp{sumopodResult.totalPayment.toLocaleString(locale)}
               </span>
             </div>
-            {pakasirResult.expiredAt && (
+            {sumopodResult.expiredAt && (
               <p className="text-xs text-muted-foreground pt-1">
-                {t("payBefore", { date: new Date(pakasirResult.expiredAt).toLocaleString(locale) })}
+                {t("payBefore", { date: new Date(sumopodResult.expiredAt).toLocaleString(locale) })}
               </p>
             )}
           </div>
@@ -701,20 +702,20 @@ export function WalletTopUpForm({
           {/* QRIS */}
           <button
             type="button"
-            onClick={() => setMethod("PAKASIR")}
+            onClick={() => setMethod("SUMOPOD")}
             className={`relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${
-              method === "PAKASIR"
+              method === "SUMOPOD"
                 ? "border-accent/60 bg-accent/[0.07] shadow-[0_0_0_1px_rgba(0,255,136,0.2),0_12px_36px_-16px_var(--accent-glow)]"
                 : "border-white/[0.08] bg-card hover:border-white/20 hover:bg-white/[0.03]"
             }`}
           >
-            {method === "PAKASIR" && (
+            {method === "SUMOPOD" && (
               <span className="absolute right-2.5 top-2.5 grid h-5 w-5 place-items-center rounded-full bg-accent text-black">
                 <CheckIcon className="h-3.5 w-3.5" />
               </span>
             )}
             <div className="flex items-center gap-2.5 mb-3">
-              <span className={`grid h-9 w-9 place-items-center rounded-xl ${method === "PAKASIR" ? "bg-accent/15 text-accent" : "bg-white/[0.04] text-muted-foreground"}`}>
+              <span className={`grid h-9 w-9 place-items-center rounded-xl ${method === "SUMOPOD" ? "bg-accent/15 text-accent" : "bg-white/[0.04] text-muted-foreground"}`}>
                 <QrIcon className="h-5 w-5" />
               </span>
               <span className="text-sm font-semibold">QRIS</span>
