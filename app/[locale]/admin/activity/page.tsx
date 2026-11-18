@@ -4,6 +4,11 @@ import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 
+// Jam lengkap (WIB) supaya urutan request bisa dicek, tidak cuma "baru saja".
+function clock(date: Date): string {
+  return date.toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
 function timeAgo(date: Date): string {
   const diff = Date.now() - date.getTime();
   const m = Math.floor(diff / 60000);
@@ -20,22 +25,34 @@ export default async function AdminActivityPage() {
   const now = Date.now();
   const dayAgo = new Date(now - 24 * 3600_000);
   const weekAgo = new Date(now - 7 * 24 * 3600_000);
+  // Log bertanggal "masa depan" (tercatat saat jam server sempat salah) akan
+  // selalu nangkring di urutan teratas dan menimbun request baru. Batasi ke
+  // waktu sekarang (+1 menit toleransi) dan tampilkan peringatan terpisah.
+  const cutoff = new Date(now + 60_000);
 
-  const [newUsers24h, newUsers7d, hits24h, recentUsers, recentRequests] = await Promise.all([
+  const [newUsers24h, newUsers7d, hits24h, recentUsers, recentRequests, futureLogs] = await Promise.all([
     prisma.user.count({ where: { createdAt: { gte: dayAgo } } }),
     prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.apiRequestLog.count({ where: { createdAt: { gte: dayAgo } } }),
+    prisma.apiRequestLog.count({ where: { createdAt: { gte: dayAgo, lte: cutoff } } }),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 12,
       select: { id: true, email: true, name: true, whatsapp: true, role: true, createdAt: true },
     }),
     prisma.apiRequestLog.findMany({
+      where: { createdAt: { lte: cutoff } },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: { user: { select: { email: true } } },
     }),
+    prisma.apiRequestLog.aggregate({
+      where: { createdAt: { gt: cutoff } },
+      _count: { _all: true },
+      _min: { createdAt: true },
+      _max: { createdAt: true },
+    }),
   ]);
+  const futureCount = futureLogs._count._all;
 
   const stats = [
     { label: "User baru (24 jam)", value: newUsers24h.toLocaleString("id-ID"), accent: "text-blue-400" },
@@ -51,6 +68,19 @@ export default async function AdminActivityPage() {
           User yang baru daftar & request API terbaru (read-only)
         </p>
       </div>
+
+      {futureCount > 0 && (
+        <div className="border border-amber-500/30 bg-amber-500/10 rounded-lg p-4 text-xs text-amber-200 leading-relaxed">
+          <div className="font-semibold text-amber-300">
+            {futureCount.toLocaleString("id-ID")} log request bertanggal di masa depan disembunyikan dari daftar ini
+          </div>
+          <div className="mt-1 text-amber-200/80">
+            Rentang waktunya {futureLogs._min.createdAt?.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} –{" "}
+            {futureLogs._max.createdAt?.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB. Biasanya karena jam
+            server sempat salah (misalnya setelah reboot/maintenance). Data tidak hilang, hanya waktunya yang keliru.
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
@@ -159,8 +189,9 @@ export default async function AdminActivityPage() {
                         {r.statusCode}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap" title={r.createdAt.toLocaleString("id-ID")}>
+                    <td className="px-3 py-2.5 text-neutral-500 text-xs whitespace-nowrap" title={r.createdAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}>
                       {timeAgo(r.createdAt)}
+                      <span className="ml-1.5 font-mono text-neutral-600">{clock(r.createdAt)}</span>
                     </td>
                   </tr>
                 ))}
