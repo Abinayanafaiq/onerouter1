@@ -10,10 +10,11 @@ import { CodeTabs } from "@/app/components/landing/code-tabs";
 import { PackagePricing, type LandingPackage } from "@/app/components/landing/package-pricing";
 import { MobilePackageCta } from "@/app/components/landing/mobile-package-cta";
 import { getAllPackages } from "@/app/lib/packages";
-import { HeroIso } from "@/app/components/landing/iso-scene";
+import { HeroScene } from "@/app/components/landing/hero-scene";
 import { FeatureTabs } from "@/app/components/landing/feature-tabs";
 import { BrandLogo, BrandMark } from "@/app/components/landing/brand-logo";
 import { CountUp } from "@/app/components/landing/count-up";
+import { HarnessGrid } from "@/app/components/landing/harness-grid";
 import { PackageBrandIcon, brandGroupOf } from "@/app/components/package-brand-icon";
 
 export const dynamic = "force-dynamic";
@@ -222,10 +223,12 @@ export default async function Home({
           </div>
 
           <div className="grid border-t lg:grid-cols-12">
-            {/* Ilustrasi + kotak intro */}
-            <div className="relative overflow-hidden border-b lg:col-span-8 lg:border-b-0 lg:border-r">
-              <HeroIso className="absolute inset-0 h-full w-full" />
-              <div className="relative z-10 flex min-h-[520px] flex-col justify-between gap-10 p-4 sm:min-h-[560px] sm:p-8 lg:p-10">
+            {/* Ilustrasi hidup + kotak intro */}
+            <HeroScene
+              className="overflow-hidden border-b lg:col-span-8 lg:border-b-0 lg:border-r"
+              isEn={isEn}
+              fromPrice={cheapest ? `Rp${cheapest.price.toLocaleString(isEn ? "en-US" : "id-ID")}` : "Rp—"}
+              intro={
                 <div className="max-w-md lp-outline bg-white p-5 sm:p-6">
                   <p className="text-[15px] leading-relaxed text-black sm:text-[17px]">
                     {isEn
@@ -249,21 +252,20 @@ export default async function Home({
                       </Link>
                     )}
                   </div>
+                  <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
+                    {heroPoints.map((point, i) => (
+                      <li
+                        key={i}
+                        className="lp-mono inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.04em] text-muted-foreground"
+                      >
+                        <span aria-hidden className="h-1.5 w-1.5 bg-[var(--lp-green)]" />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <ul className="flex flex-wrap gap-2">
-                  {heroPoints.map((point, i) => (
-                    <li
-                      key={i}
-                      className="lp-mono inline-flex items-center gap-2 border border-[var(--lp-line)] bg-white px-2.5 py-1.5 text-[11px] uppercase tracking-[0.04em] text-muted-foreground"
-                    >
-                      <span aria-hidden className="h-1.5 w-1.5 bg-[var(--lp-green)]" />
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+              }
+            />
 
             {/* Ubin provider */}
             <div className="flex flex-col lg:col-span-4">
@@ -294,6 +296,13 @@ export default async function Home({
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ============================================================
+            HARNESS & TOOL YANG DIDUKUNG (dinding logo ala baseten)
+            ============================================================ */}
+        <section id="harness" className="landing-section lp-rule scroll-mt-16">
+          <HarnessGrid isEn={isEn} isAuthed={isAuthed} />
         </section>
 
         {/* ============================================================

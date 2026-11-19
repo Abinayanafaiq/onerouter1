@@ -763,6 +763,30 @@ html { scroll-behavior: smooth; }
   animation: blink 1s step-end infinite;
 }
 
+/* ---------- Hero hidup (adegan berganti ala baseten) ---------- */
+@keyframes lp-block-rise {
+  from { transform: translateY(var(--h, 120px)); }
+  to { transform: translateY(0); }
+}
+@keyframes lp-block-sink {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--h, 120px)); }
+}
+@keyframes lp-timer {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.lp-block-rise { animation: lp-block-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.lp-block-sink { animation: lp-block-sink 0.45s cubic-bezier(0.55, 0, 1, 0.45) both; }
+.lp-floor-tile { transition: fill 0.7s ease; }
+.lp-timer {
+  transform-origin: left center;
+  animation-name: lp-timer;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+.lp-paused .lp-timer { animation-play-state: paused; }
+
 /* Muncul saat di-scroll — hanya di browser yang mendukung scroll-driven
    animation; browser lain langsung menampilkan konten apa adanya. */
 @supports (animation-timeline: view()) {

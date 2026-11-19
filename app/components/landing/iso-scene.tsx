@@ -243,46 +243,6 @@ export const HERO_TILES: IsoTile[] = [
   [1, 1], [2, 1], [5, 0], [7, 2], [9, 1], [10, 4], [3, 3], [0, 5], [6, 5], [8, 7], [11, 6], [2, 8], [4, 9], [9, 9], [11, 10], [6, 11], [1, 10], [10, 0], [0, 2], [7, 9],
 ].map(([x, y], i) => ({ x, y, color: TILE_COLORS[i % TILE_COLORS.length], pulse: i % 3 === 0 ? (i * 0.8) % 7 : undefined }));
 
-/** Jalur paket data menuju kubus hijau utama (melewati area depan yang kosong). */
-const HERO_PACKETS: IsoPacket[] = [
-  { from: [4.6, 12], to: [4.6, 6.1], delay: 0 },
-  { from: [4.6, 12], to: [4.6, 6.1], delay: 1.8 },
-  { from: [12, 6.6], to: [5.2, 6.6], delay: 0.9, dur: 4.2 },
-  { from: [12, 6.6], to: [5.2, 6.6], delay: 3, dur: 4.2 },
-  { from: [0, 6.6], to: [3.9, 6.6], delay: 2.4, dur: 3 },
-];
-
-export function HeroIso({ className }: { className?: string }) {
-  const P = ISO_PALETTES;
-  return (
-    <IsoScene
-      className={className}
-      originX={560}
-      tiles={HERO_TILES}
-      packets={HERO_PACKETS}
-      cubes={[
-        { x: 7, y: 1, w: 2, d: 2, h: 1.2, palette: P.lav, windows: true, bob: 0.4 },
-        { x: 9.5, y: 2.5, w: 1.6, d: 1.6, h: 2.4, palette: P.plum, windows: true, bob: 2.1 },
-        { x: 4, y: 3, w: 2.6, d: 2.6, h: 3.4, palette: P.green, code: true },
-        { x: 6.8, y: 4.4, w: 1.8, d: 1.8, h: 1.6, palette: P.green, windows: true, bob: 1.2 },
-        { x: 2, y: 7, w: 1.6, d: 1.6, h: 1, palette: P.paper, windows: true, bob: 3 },
-        { x: 8.5, y: 7, w: 2.2, d: 1.4, h: 0.8, palette: P.mint, windows: true, bob: 4.2 },
-        { x: 5, y: 8, w: 1.2, d: 1.2, h: 2.2, palette: P.ink, windows: true, bob: 0 },
-      ]}
-    >
-      {/* Label melayang di atas kubus utama */}
-      <g transform="translate(495 78)" className="max-sm:hidden">
-        <rect width="196" height="30" fill="#ffffff" stroke="#000000" strokeWidth="1" />
-        <rect x="10" y="11" width="8" height="8" fill="#19e76e" className="lp-live" />
-        <text x="26" y="19.5" fontFamily="var(--font-geist-mono), monospace" fontSize="11" fill="#000000">
-          POST /v1/chat/completions
-        </text>
-      </g>
-      <line x1="593" y1="108" x2="593" y2="146" stroke="#000000" strokeWidth="1" className="max-sm:hidden" />
-    </IsoScene>
-  );
-}
-
 /** Adegan untuk panel fitur — kubus ke-`accent` disorot hijau. */
 export function FeatureIso({ accent, className }: { accent: number; className?: string }) {
   const P = ISO_PALETTES;
